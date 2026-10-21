@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # 留空时使用仓库根 data/tidewatch.db（绝对路径，避免随启动目录漂移）
     database_url: str = ""
 
-    jwt_secret: str = "dev-only-change-me"
+    jwt_secret: str = "dev-only-change-me-0123456789abcdef-32bytes"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 720
 
