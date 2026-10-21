@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2017",
+    "module": "CommonJS",
+    "moduleResolution": "classic",
+    "lib": [
+      "ES2020"
+    ],
+    "types": [
+      "miniprogram-api-typings"
+    ],
+    "outDir": "dist",
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "sourceMap": false,
+    "experimentalDecorators": false
+  },
+  "include": [
+    "./**/*.ts",
+    "./typings/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

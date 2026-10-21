@@ -1,0 +1,26 @@
+<view class="container">
+  <view class="tw-card profile-card">
+    <view class="profile-name">{{user.displayName || user.username || '未登录'}}</view>
+    <view class="tw-muted">账号：{{user.username || '—'}}</view>
+    <view class="tw-muted">角色：{{roleText}}</view>
+  </view>
+
+  <view class="tw-card ws-card">
+    <view class="ws-row">
+      <text>实时通道状态</text>
+      <text class="tw-badge ws-badge-{{wsState}}">{{wsStateText}}</text>
+    </view>
+    <view class="tw-muted">M3 后端就绪后自动建立 WebSocket 连接（25s 心跳、断线自动重连）。</view>
+  </view>
+
+  <view class="tw-card">
+    <view class="tw-card-title">数据口径</view>
+    <view class="tw-muted policy">
+      本端展示的连续监测数据来自 MQTT 模拟链路时均带「模拟数据」标签；
+      官方公开月报仅为月度水质类别背景，不作为实时读数。
+      离线/无数据不等同于现场正常。
+    </view>
+  </view>
+
+  <button class="tw-btn-primary logout-btn" bindtap="onLogout">退出登录</button>
+</view>

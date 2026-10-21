@@ -1,0 +1,18 @@
+# TideWatch backend runtime dependencies (Python 3.12)
+# 镜像不写死：默认官方源；本机如不通，用清华源加速（见 README）：
+#   pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 精确可复现版本由 requirements-lock.txt 锁定（WP1 安装后生成）。
+fastapi
+uvicorn[standard]
+pydantic>=2
+pydantic-settings
+sqlalchemy>=2
+alembic
+paho-mqtt>=2
+PyJWT
+bcrypt
+python-multipart
+pandas
+openpyxl
+pytest
+httpx

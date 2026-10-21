@@ -1,0 +1,98 @@
+/* app.wxss - 全局样式：深蓝 / 科技蓝 / 浅灰，与 PC Web 同一设计语言 */
+page {
+  --tw-color-bg: #f2f5f9;
+  --tw-color-surface: #ffffff;
+  --tw-color-primary: #0b2a4a;
+  --tw-color-accent: #1e6fe0;
+  --tw-color-text: #1d2b3a;
+  --tw-color-text-secondary: #5d7186;
+  --tw-color-border: #e2e8f0;
+  --tw-color-ok: #12a594;     /* 正常 - 青绿 */
+  --tw-color-watch: #e8902a;  /* 关注 - 橙 */
+  --tw-color-danger: #d84c4c; /* 高风险 - 红 */
+  --tw-color-offline: #94a3b8;
+
+  background-color: var(--tw-color-bg);
+  color: var(--tw-color-text);
+  font-size: 28rpx;
+  line-height: 1.55;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+.container {
+  padding: 24rpx;
+}
+
+/* 卡片 */
+.tw-card {
+  background: var(--tw-color-surface);
+  border-radius: 16rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(11, 42, 74, 0.06);
+}
+
+.tw-card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--tw-color-primary);
+  margin-bottom: 16rpx;
+}
+
+.tw-muted {
+  color: var(--tw-color-text-secondary);
+  font-size: 24rpx;
+}
+
+/* 状态徽标：颜色必须配合文字，不仅靠颜色 */
+.tw-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+.tw-badge-ok { background: rgba(18, 165, 148, 0.12); color: var(--tw-color-ok); }
+.tw-badge-watch { background: rgba(232, 144, 42, 0.12); color: var(--tw-color-watch); }
+.tw-badge-danger { background: rgba(216, 76, 76, 0.12); color: var(--tw-color-danger); }
+.tw-badge-offline { background: rgba(148, 163, 184, 0.16); color: #475569; }
+
+/* 数据来源标签：官方 / 模拟 / 人工 必须显式区分 */
+.tw-source-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2rpx 12rpx;
+  border-radius: 6rpx;
+  font-size: 20rpx;
+  border: 1rpx solid var(--tw-color-border);
+  color: var(--tw-color-text-secondary);
+  background: #fff;
+}
+
+/* 按钮 */
+.tw-btn-primary {
+  background: var(--tw-color-accent);
+  color: #fff;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+}
+.tw-btn-primary[disabled] {
+  opacity: 0.5;
+}
+
+/* 四态占位 */
+.tw-state {
+  text-align: center;
+  color: var(--tw-color-text-secondary);
+  padding: 96rpx 32rpx;
+  font-size: 26rpx;
+}
+
+.tw-page-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--tw-color-primary);
+  margin: 8rpx 0 20rpx;
+}

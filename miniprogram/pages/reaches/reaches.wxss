@@ -1,0 +1,32 @@
+.topo-note {
+  font-size: 22rpx;
+  color: #5d7186;
+  background: rgba(30, 111, 224, 0.08);
+  border-radius: 10rpx;
+  padding: 14rpx 20rpx;
+  margin-bottom: 20rpx;
+}
+.reach-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.reach-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #0b2a4a;
+}
+.reach-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 24rpx;
+  color: #5d7186;
+  padding-top: 12rpx;
+}
+.err-msg {
+  margin: 16rpx 0 24rpx;
+}
+.retry-btn {
+  width: 240rpx;
+  margin-top: 16rpx;
+}

@@ -1,0 +1,51 @@
+.ws-bar {
+  font-size: 22rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 10rpx;
+  margin-bottom: 20rpx;
+}
+.ws-open {
+  background: rgba(18, 165, 148, 0.1);
+  color: #0d7d70;
+}
+.ws-connecting {
+  background: rgba(232, 144, 42, 0.1);
+  color: #b96b12;
+}
+.ws-disconnected {
+  background: rgba(148, 163, 184, 0.18);
+  color: #475569;
+}
+.task-card {
+  border-left: 8rpx solid #1e6fe0;
+}
+.task-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.task-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #0b2a4a;
+}
+.task-meta {
+  display: flex;
+  gap: 12rpx;
+  margin: 12rpx 0;
+  font-size: 24rpx;
+  color: #5d7186;
+}
+.task-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 24rpx;
+}
+.err-msg {
+  margin: 16rpx 0 24rpx;
+}
+.retry-btn {
+  width: 240rpx;
+  margin-top: 16rpx;
+}

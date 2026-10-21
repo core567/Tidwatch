@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "巡检任务",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "source-tag": "/components/source-tag/source-tag"
+  }
+}

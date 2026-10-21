@@ -1,0 +1,9 @@
+{
+  "desc": "TideWatch 小程序页面索引（开发期允许全部页面被索引）",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "监测点详情",
+  "usingComponents": {
+    "source-tag": "/components/source-tag/source-tag"
+  }
+}

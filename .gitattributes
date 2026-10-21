@@ -1,0 +1,29 @@
+# 默认文本文件统一以 LF 入库并在检出时保持 LF，
+# 消除 Windows 上 "LF will be replaced by CRLF" 警告。
+* text=auto eol=lf
+
+# Windows 专用脚本保留 CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# 二进制文件，不做换行符转换
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.xlsx binary
+*.xls  binary
+*.docx binary
+*.doc  binary
+*.zip  binary
+*.7z   binary
+*.gz   binary
+*.tar  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.wasm  binary

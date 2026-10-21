@@ -1,0 +1,54 @@
+.filter-bar {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+  overflow-x: auto;
+}
+.filter-item {
+  padding: 10rpx 28rpx;
+  border-radius: 999rpx;
+  background: #fff;
+  border: 1rpx solid #e2e8f0;
+  font-size: 24rpx;
+  color: #5d7186;
+  white-space: nowrap;
+}
+.filter-active {
+  background: #0b2a4a;
+  border-color: #0b2a4a;
+  color: #fff;
+}
+.event-card {
+  border-left: 8rpx solid #e8902a;
+}
+.event-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.event-id {
+  font-weight: 600;
+  color: #1e6fe0;
+  font-size: 26rpx;
+}
+.event-title {
+  font-size: 30rpx;
+  color: #1d2b3a;
+  margin: 12rpx 0;
+}
+.event-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 24rpx;
+}
+.event-time {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+}
+.err-msg {
+  margin: 16rpx 0 24rpx;
+}
+.retry-btn {
+  width: 240rpx;
+  margin-top: 16rpx;
+}

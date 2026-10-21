@@ -1,0 +1,33 @@
+.src-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2rpx 14rpx;
+  border-radius: 6rpx;
+  font-size: 20rpx;
+  line-height: 1.7;
+  border: 1rpx solid transparent;
+  white-space: nowrap;
+}
+.src-tag-official {
+  background: rgba(30, 111, 224, 0.1);
+  border-color: rgba(30, 111, 224, 0.35);
+  color: #1e6fe0;
+}
+.src-tag-simulated {
+  background: rgba(232, 144, 42, 0.1);
+  border-color: rgba(232, 144, 42, 0.35);
+  color: #b96b12;
+}
+.src-tag-manual {
+  background: rgba(11, 42, 74, 0.06);
+  border-color: rgba(11, 42, 74, 0.25);
+  color: #0b2a4a;
+}
+.src-tag-external,
+.src-tag-rule,
+.src-tag-model,
+.src-tag-neutral {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #5d7186;
+}

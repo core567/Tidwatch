@@ -1,0 +1,52 @@
+<view class="container">
+  <view class="tw-card" wx:if="{{taskId}}">
+    <view class="tw-muted">任务编号</view>
+    <view class="rec-taskid">{{taskId}}</view>
+  </view>
+
+  <view class="tw-card">
+    <view class="tw-card-title">现场观察记录</view>
+    <textarea
+      class="rec-textarea"
+      placeholder="记录现场水面、气味、排口、漂浮物等实际观察（人工记录，不伪装为模型结论）"
+      value="{{observationNote}}"
+      bindinput="onNoteInput"
+      maxlength="1000"
+    />
+    <view class="tw-muted rec-count">{{observationNote.length}}/1000</view>
+  </view>
+
+  <view class="tw-card">
+    <view class="tw-card-title">现场照片</view>
+    <view class="photo-grid">
+      <view wx:for="{{photos}}" wx:key="localPath" class="photo-item">
+        <image src="{{item.localPath}}" mode="aspectFill" class="photo-img" data-idx="{{index}}" bindtap="previewPhoto" />
+        <view class="photo-status status-{{item.status}}">{{item.statusText}}</view>
+        <view class="photo-del" data-idx="{{index}}" bindtap="removePhoto">×</view>
+      </view>
+      <view class="photo-add" bindtap="choosePhoto" wx:if="{{photos.length < 6}}">
+        <text>＋ 拍照/相册</text>
+      </view>
+    </view>
+    <view class="tw-muted">照片仅保存附件元数据；V1.0 不做图像自动判级，结论由人工确认。</view>
+  </view>
+
+  <view class="tw-card">
+    <view class="tw-card-title">现场结论</view>
+    <radio-group bindchange="onConclusionChange">
+      <label class="radio-row"><radio value="NORMAL" checked="{{conclusion === 'NORMAL'}}" />未见明显异常</label>
+      <label class="radio-row"><radio value="ABNORMAL" checked="{{conclusion === 'ABNORMAL'}}" />发现异常，建议再评估</label>
+      <label class="radio-row"><radio value="UNCERTAIN" checked="{{conclusion === 'UNCERTAIN'}}" />无法确认</label>
+    </radio-group>
+  </view>
+
+  <view wx:if="{{errorMsg}}" class="rec-error">{{errorMsg}}</view>
+
+  <button
+    class="tw-btn-primary"
+    loading="{{submitting}}"
+    disabled="{{submitting}}"
+    bindtap="onSubmit"
+  >提交巡检结果</button>
+  <view class="tw-muted rec-hint">提交后由后端写入任务结果并按规则决定是否触发事件再评估。</view>
+</view>

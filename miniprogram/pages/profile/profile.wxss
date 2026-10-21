@@ -1,0 +1,24 @@
+.profile-card {
+  text-align: left;
+}
+.profile-name {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #0b2a4a;
+  margin-bottom: 12rpx;
+}
+.ws-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+.ws-badge-open { color: #0d7d70; }
+.ws-badge-connecting { color: #b96b12; }
+.ws-badge-disconnected { color: #475569; }
+.policy {
+  line-height: 1.7;
+}
+.logout-btn {
+  margin-top: 12rpx;
+}

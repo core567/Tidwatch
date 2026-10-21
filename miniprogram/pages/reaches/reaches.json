@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "监测点",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "source-tag": "/components/source-tag/source-tag"
+  }
+}

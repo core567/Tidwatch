@@ -1,0 +1,48 @@
+{
+  "pages": [
+    "pages/tasks/tasks",
+    "pages/login/login",
+    "pages/events/events",
+    "pages/event-detail/event-detail",
+    "pages/reaches/reaches",
+    "pages/reach-detail/reach-detail",
+    "pages/task-detail/task-detail",
+    "pages/record/record",
+    "pages/profile/profile"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#0B2A4A",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "TideWatch 巡检",
+    "backgroundColor": "#F2F5F9",
+    "backgroundTextStyle": "dark",
+    "enablePullDownRefresh": false
+  },
+  "tabBar": {
+    "color": "#8AA0B8",
+    "selectedColor": "#1E6FE0",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/tasks/tasks",
+        "text": "任务"
+      },
+      {
+        "pagePath": "pages/events/events",
+        "text": "事件"
+      },
+      {
+        "pagePath": "pages/reaches/reaches",
+        "text": "监测点"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

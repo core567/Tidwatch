@@ -1,0 +1,2 @@
+<!-- 数据来源标签：官方公开 / 模拟数据 / 人工记录等，文字+颜色双通道 -->
+<view class="src-tag src-tag-{{theme}}">{{label}}</view>
