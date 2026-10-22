@@ -93,6 +93,42 @@ export interface ActiveEvent {
   ruleVersion: string;
 }
 
+export interface StatusTransition {
+  fromStatus: EventStatus | null;
+  toStatus: EventStatus;
+  trigger: 'RULE' | 'MANUAL' | 'SCENARIO';
+  reason: string | null;
+  actor: string;
+  ruleVersion: string;
+  createdAt: string;
+}
+
+export interface TemporalRelation {
+  relationId: string;
+  fromChangeId: string;
+  toChangeId: string;
+  deltaSeconds: number;
+  relationType: string;
+  evidenceState: string;
+  createdAt: string;
+}
+
+export interface EventDetail extends ActiveEvent {
+  transitions: StatusTransition[];
+  temporalRelations: TemporalRelation[];
+  changeCount: number;
+}
+
+export type EventAction =
+  | 'START_INVESTIGATION'
+  | 'ESCALATE'
+  | 'KEEP_MONITORING'
+  | 'NARROW_SCOPE'
+  | 'MARK_RECOVERY_PENDING'
+  | 'CONFIRM_RECOVERED'
+  | 'MARK_UNRESOLVED'
+  | 'REOPEN';
+
 export interface StreamMessage<T = unknown> {
   messageId: string;
   messageType:

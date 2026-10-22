@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useAuthStore } from './store/auth';
 import AppLayout from './app/layout/AppLayout';
 import LoginPage from './pages/Login/LoginPage';
 import OverviewPage from './pages/P01Overview/OverviewPage';
@@ -20,6 +22,13 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
+  const restore = useAuthStore((s) => s.restore);
+
+  // 整页刷新后用 localStorage 中的 token 恢复登录态
+  useEffect(() => {
+    void restore();
+  }, [restore]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>

@@ -89,11 +89,27 @@ cd miniprogram && npm install && npx tsc --noEmit       # 小程序类型检查
 
 ## 里程碑
 
-- **M0（当前）** 工程基线：三端工程、24 张表、Pydantic 契约、规则与状态机、JWT、SSE/WS Hub、种子数据
-- **M1** 数据链：MQTT 正常接入（去重/乱序/迟到）、观测 API、月报导入、P01/P02/P12、S1、**3D 全景**
-- **M2** 事件：8 态事件机、S2/S3、P03、**3D 镜头飞行与异常联动**
-- **M3** 研判闭环：证据/再评估/盲区/巡检/研判单/月报分析、S4/S5、**小程序业务对接**、规则 vs ML
+- **M0** 工程基线：三端工程、24 张表、Pydantic 契约、规则与状态机、JWT、SSE/WS Hub、种子数据
+- **M1** 数据链：MQTT 正常接入（去重/乱序/迟到/死信/LWT/看门狗）、观测与诊断 API、
+  官方月报预览→确认→撤销、P01/P02/P12、S1 场景、**3D 河流全景**
+- **M2（当前）** 异常事件：滑动窗口变化检测、8 态事件机、跨断面时序关系与 Focus、
+  S2/S3 虚拟时钟场景、P03 事件中心、P04 研判工作台（人工操作+409）、
+  **3D 镜头飞行/节点详情/异常脉冲**
+- **M3** 研判闭环：证据/再评估/盲区/巡检派发/研判单/月报分析、S4/S5、
+  小程序业务对接、规则 vs ML
 - **M4** 联调交付：S1–S5 回归、故障矩阵、部署与演示材料
+
+### 场景演示
+
+```bash
+# 后端需 MQTT_ENABLED=true；simulator 发布到本机 Mosquitto
+cd simulator
+../backend/.venv/Scripts/python.exe run_scenario.py --scenario S1   # 稳定基线（零事件）
+../backend/.venv/Scripts/python.exe run_scenario.py --scenario S2 --speed 4  # A→B 单事件
+../backend/.venv/Scripts/python.exe run_scenario.py --scenario S3 --speed 6  # A→B→C
+```
+
+真实 broker 端到端回归：`backend/.venv/Scripts/python.exe scripts/e2e_scenarios.py`
 
 ## 边界声明
 

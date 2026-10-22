@@ -1,0 +1,2 @@
+# simulator 仅依赖 paho-mqtt（可直接使用 backend/.venv 运行，无需单独安装）
+paho-mqtt>=2

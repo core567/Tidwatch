@@ -9,6 +9,7 @@ from app.models.event import (
     TemporalRelation,
 )
 from app.models.focus import BlindSpot, ObservationFocus
+from app.models.ingestion import IngestionError, ProcessedMessage
 from app.models.observation import (
     Attachment,
     ImportBatch,
@@ -49,6 +50,8 @@ __all__ = [
     "Hypothesis",
     "ObservationFocus",
     "BlindSpot",
+    "ProcessedMessage",
+    "IngestionError",
     "InspectionTask",
     "Assessment",
     "RunTrace",

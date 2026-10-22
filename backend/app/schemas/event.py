@@ -67,6 +67,8 @@ class EventDetail(CamelModel):
     version: int
     rule_version: str
     transitions: list[EventStatusTransitionOut] = Field(default_factory=list)
+    temporal_relations: list[TemporalRelationOut] = Field(default_factory=list)
+    change_count: int = 0
 
 
 class EventActionRequest(CamelModel):

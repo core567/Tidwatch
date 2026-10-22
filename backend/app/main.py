@@ -9,7 +9,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app import __version__
-from app.api import routes_auth, routes_health, routes_stream
+from app.api import (
+    routes_admin,
+    routes_auth,
+    routes_events,
+    routes_health,
+    routes_import,
+    routes_reaches,
+    routes_stream,
+)
 from app.core.config import settings
 from app.core.errors import (
     AppError,
@@ -29,9 +37,43 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
+        import asyncio
+
         hub.bind_loop(asyncio.get_running_loop())
         logger.info("stream hub bound to event loop")
-        yield
+
+        # MQTT 入库服务（默认关闭，.env 中 MQTT_ENABLED=true 启用）
+        mqtt_ingestor = None
+        watchdog_stop: asyncio.Event | None = None
+        watchdog_task = None
+        if settings.mqtt_enabled:
+            from app.ingestion.mqtt_ingestor import MqttIngestor, freshness_watchdog
+
+            mqtt_ingestor = MqttIngestor()
+            mqtt_ingestor.start()
+            watchdog_stop = asyncio.Event()
+            watchdog_task = asyncio.create_task(freshness_watchdog(watchdog_stop))
+
+            # 从历史观测重建变化检测器状态（重建期不产生新事件）
+            from app.db.session import SessionLocal
+            from app.services.event_service import processor
+
+            db = SessionLocal()
+            try:
+                processor.rebuild_from_history(db)
+            finally:
+                db.close()
+            logger.info("MQTT ingestor enabled")
+
+        try:
+            yield
+        finally:
+            if watchdog_stop is not None:
+                watchdog_stop.set()
+            if watchdog_task is not None:
+                await watchdog_task
+            if mqtt_ingestor is not None:
+                mqtt_ingestor.stop()
 
     app = FastAPI(
         title="TideWatch API",
@@ -74,6 +116,10 @@ def create_app() -> FastAPI:
 
     app.include_router(routes_health.router)
     app.include_router(routes_auth.router)
+    app.include_router(routes_reaches.router)
+    app.include_router(routes_events.router)
+    app.include_router(routes_import.router)
+    app.include_router(routes_admin.router)
     app.include_router(routes_stream.router)
 
     @app.get("/")

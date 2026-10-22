@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user
 from app.core.errors import AppError
 from app.core.security import create_access_token, verify_password
 from app.db.session import get_db
@@ -12,6 +13,17 @@ from app.models.system import User
 from app.schemas.auth import LoginRequest, LoginResponse, UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+@router.get("/me", response_model=UserOut)
+def me(current: User = Depends(get_current_user)) -> UserOut:
+    """供前端刷新页面后用 token 恢复登录态。"""
+    return UserOut(
+        user_id=current.user_id,
+        username=current.username,
+        display_name=current.display_name,
+        role=current.role,
+    )
 
 
 @router.post("/login", response_model=LoginResponse)

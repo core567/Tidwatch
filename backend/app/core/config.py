@@ -30,8 +30,9 @@ class Settings(BaseSettings):
     mqtt_host: str = "127.0.0.1"
     mqtt_port: int = 1883
     mqtt_topic_prefix: str = "tidewatch/v1"
-    mqtt_client_id: str = "tidewatch-backend"
     mqtt_enabled: bool = False
+    mqtt_stale_seconds: int = 30
+    mqtt_client_id: str = "tidewatch-backend"
 
     rule_version: str = "demo-rules-v1"
 
