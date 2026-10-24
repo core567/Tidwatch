@@ -1,23 +1,42 @@
-"""测试夹具：临时 SQLite + 种子用户 + TestClient。"""
+"""测试夹具：内存 SQLite（StaticPool 单连接，无锁）+ 种子用户 + TestClient。"""
 from __future__ import annotations
 
 import os
-import tempfile
-from pathlib import Path
 
-import pytest
+# 必须在导入 app/db 前指定内存库 + StaticPool
+os.environ["DATABASE_URL"] = "sqlite://"
+os.environ.setdefault("MQTT_ENABLED", "false")
 
-# 必须在导入 app 配置前指定临时数据库
-_tmp_dir = tempfile.mkdtemp(prefix="tidewatch_test_")
-_db_path = Path(_tmp_dir) / "test.db"
-os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
+import pytest  # noqa: E402
+from sqlalchemy import create_engine, event  # noqa: E402
+from sqlalchemy.pool import StaticPool  # noqa: E402
+
+_test_engine = create_engine(
+    "sqlite://",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+
+
+@event.listens_for(_test_engine, "connect")
+def _fk_pragma(dbapi_conn, _record):
+    cur = dbapi_conn.cursor()
+    cur.execute("PRAGMA foreign_keys=ON")
+    cur.close()
+
 
 from fastapi.testclient import TestClient  # noqa: E402
+
+# 替换 app.db.session 的引擎与 Session 工厂（需在导入业务模块前完成）
+import app.db.session as _dbsession  # noqa: E402
+
+_dbsession.engine = _test_engine
+_dbsession.SessionLocal.configure(bind=_test_engine)
 
 from app.core.security import hash_password  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import Base  # noqa: E402
-from app.db.session import engine, SessionLocal  # noqa: E402
+from app.db.session import SessionLocal  # noqa: E402
 from app.models.reach import MetricDictionary, Reach  # noqa: E402
 from app.models.system import RuleConfig, User  # noqa: E402
 from app.rules import DEMO_RULES_V1  # noqa: E402
@@ -26,7 +45,7 @@ import json  # noqa: E402
 
 @pytest.fixture(scope="session")
 def client():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=_test_engine)
     db = SessionLocal()
     db.add(
         User(
@@ -113,3 +132,31 @@ def analyst_token(client) -> str:
     )
     assert resp.status_code == 200
     return resp.json()["accessToken"]
+
+
+@pytest.fixture()
+def clean_event_tables(client):
+    """清空事件相关全部表（含证据/评估/盲区/任务），供事件类测试隔离。"""
+    from app.models.event import ChangeEvent, EventScope, EventStatusTransition, TemporalRelation
+    from app.models.evidence import Evidence, Hypothesis
+    from app.models.focus import BlindSpot, ObservationFocus
+    from app.models.workflow import Assessment, EventReview, InspectionTask, RunTrace
+    from app.models.observation import Attachment, Observation
+    from app.models.event import ActiveEvent
+
+    tables = (
+        TemporalRelation, ChangeEvent, EventStatusTransition, EventScope,
+        Evidence, Hypothesis, Assessment, BlindSpot, ObservationFocus,
+        RunTrace, EventReview, InspectionTask, Attachment, Observation, ActiveEvent,
+    )
+    db = SessionLocal()
+    for m in tables:
+        db.query(m).delete()
+    db.commit()
+    db.close()
+    yield
+    db = SessionLocal()
+    for m in tables:
+        db.query(m).delete()
+    db.commit()
+    db.close()

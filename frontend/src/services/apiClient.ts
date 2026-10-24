@@ -128,6 +128,64 @@ export const api = {
       method: 'POST',
       body: { action, reason: reason || null },
     }),
+  eventReview: (eventId: string) =>
+    request<import('@/types/contract').EventReview>(`/events/${encodeURIComponent(eventId)}/review`),
+  monthlyStats: () => request<import('@/types/contract').MonthlyStats>('/reports/monthly'),
+  eventFrequency: () => request<import('@/types/contract').EventFrequency>('/reports/event-frequency'),
+  // 证据 / 假设
+  evidence: (eventId: string) =>
+    request<import('@/types/contract').Evidence[]>(`/events/${encodeURIComponent(eventId)}/evidence`),
+  addEvidence: (
+    eventId: string,
+    body: { type: string; sourceRef: string; polarity: string; note?: string },
+  ) =>
+    request<import('@/types/contract').Evidence>(`/events/${encodeURIComponent(eventId)}/evidence`, {
+      method: 'POST',
+      body,
+    }),
+  hypotheses: (eventId: string) =>
+    request<import('@/types/contract').Hypothesis[]>(`/events/${encodeURIComponent(eventId)}/hypotheses`),
+  createHypothesis: (eventId: string, statement: string, basisEvidenceIds: string[] = []) =>
+    request<import('@/types/contract').Hypothesis>(`/events/${encodeURIComponent(eventId)}/hypotheses`, {
+      method: 'POST',
+      body: { statement, basisEvidenceIds },
+    }),
+  linkHypothesis: (
+    hypothesisId: string,
+    polarity: 'SUPPORT' | 'COUNTER',
+    evidenceIds: string[],
+  ) =>
+    request<import('@/types/contract').Hypothesis>(
+      `/events/hypotheses/${encodeURIComponent(hypothesisId)}/link`,
+      { method: 'POST', body: { polarity, evidenceIds } },
+    ),
+  // 巡检任务（PC 管理端）
+  tasks: (params: { status?: string; eventId?: string; mine?: boolean } = {}) =>
+    apiPage<import('@/types/contract').InspectionTask>('/inspection-tasks', params),
+  createTask: (body: {
+    eventId?: string;
+    focusId?: string;
+    reachId: string;
+    title: string;
+    priority?: string;
+    reason?: string;
+    assignee?: string;
+  }) =>
+    request<import('@/types/contract').InspectionTask>('/inspection-tasks', { method: 'POST', body }),
+  assessments: (eventId: string) =>
+    request<import('@/types/contract').Assessment[]>(
+      `/events/${encodeURIComponent(eventId)}/assessments`,
+    ),
+  blindSpots: (active = true) =>
+    request<import('@/types/contract').BlindSpot[]>(`/blind-spots?active=${active}`),
+  mlComparison: () =>
+    request<{
+      model: string;
+      items: {
+        reachId: string; ruleStatus: string | null; ruleAnomaly: boolean;
+        mlState: string; mlScore: number | null; agree: boolean | null; note: string;
+      }[];
+    }>('/ml/comparison'),
 
   // 通用分页查询占位，M1 起按领域补充
   page: <T>(path: string, query: Record<string, string | number | undefined> = {}) => {
@@ -140,7 +198,7 @@ export const api = {
   },
 };
 
-function apiPage<T>(path: string, query: Record<string, string | number | undefined>) {
+function apiPage<T>(path: string, query: Record<string, string | number | boolean | undefined>) {
   const qs = new URLSearchParams();
   Object.entries(query).forEach(([k, v]) => {
     if (v !== undefined && v !== '') qs.set(k, String(v));

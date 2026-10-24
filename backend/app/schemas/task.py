@@ -1,4 +1,4 @@
-"""巡检任务与结果回填契约。"""
+"""巡检任务契约。"""
 from __future__ import annotations
 
 from datetime import datetime
@@ -8,48 +8,48 @@ from pydantic import Field
 
 from app.schemas.base import CamelModel
 
-TaskActionType = Literal[
-    "CONTINUE_OBSERVE",
-    "FOCUS_REACH_B",
-    "FOCUS_REACH_C",
-    "KEEP_LOCAL_SCOPE",
-    "INSPECT_DATA_LINK",
-    "MANUAL_CHECK",
-    "RE_EVALUATE_AFTER_RECOVERY",
-]
-
 TaskStatus = Literal["PENDING", "ACCEPTED", "IN_PROGRESS", "SUBMITTED", "CANCELLED"]
-TaskPriority = Literal["LOW", "NORMAL", "HIGH"]
+Conclusion = Literal["NORMAL", "ABNORMAL", "UNCERTAIN"]
 
 
-class InspectionTaskOut(CamelModel):
+class TaskOut(CamelModel):
     task_id: str
     event_id: str | None = None
     focus_id: str | None = None
     reach_id: str
-    action_type: TaskActionType
+    action_type: str
     title: str
-    priority: TaskPriority
+    priority: str
     status: TaskStatus
     assignee: str | None = None
     due_at: datetime | None = None
-    reason: str
-    created_at: datetime
+    reason: str = ""
     result_note: str | None = None
-    result_conclusion: str | None = None
+    result_conclusion: Conclusion | None = None
     attachment_ids: list[str] = Field(default_factory=list)
+    observed_at: datetime | None = None
     completed_at: datetime | None = None
+    created_at: datetime
 
 
-class TaskActionRequest(CamelModel):
-    # 小程序流转：接收 / 开始 / 取消
+class CreateTaskIn(CamelModel):
+    event_id: str | None = None
+    focus_id: str | None = None
+    reach_id: str
+    action_type: str = "MANUAL_CHECK"
+    title: str = Field(min_length=2, max_length=200)
+    priority: str = "NORMAL"
+    due_at: datetime | None = None
+    reason: str = ""
+    assignee: str | None = None
+
+
+class TaskActionIn(CamelModel):
     action: Literal["ACCEPT", "START", "CANCEL"]
-    reason: str | None = Field(default=None, max_length=500)
 
 
-class TaskResultRequest(CamelModel):
+class SubmitTaskIn(CamelModel):
     observation_note: str = Field(min_length=1, max_length=2000)
-    observed_at: datetime
+    conclusion: Conclusion
     attachment_ids: list[str] = Field(default_factory=list)
-    conclusion: Literal["NORMAL", "ABNORMAL", "UNCERTAIN"] | None = None
-    request_reevaluate: bool = False
+    observed_at: datetime | None = None

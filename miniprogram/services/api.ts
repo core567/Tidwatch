@@ -18,6 +18,25 @@ function toQuery(params: Record<string, string | number | undefined>): string {
   return parts.length ? `?${parts.join('&')}` : '';
 }
 
+export interface InspectionTask {
+  taskId: string;
+  eventId: string | null;
+  focusId: string | null;
+  reachId: string;
+  actionType: TaskActionType;
+  title: string;
+  priority: 'LOW' | 'NORMAL' | 'HIGH';
+  status: TaskStatus;
+  assignee: string | null;
+  dueAt: string | null;
+  reason: string;
+  resultNote: string | null;
+  resultConclusion: 'NORMAL' | 'ABNORMAL' | 'UNCERTAIN' | null;
+  attachmentIds: string[];
+  completedAt: string | null;
+  createdAt: string;
+}
+
 // ---------- 鉴权 ----------
 
 export async function login(username: string, password: string): Promise<LoginResponse> {
@@ -84,7 +103,7 @@ export function uploadPhoto(filePath: string): Promise<AttachmentMeta> {
   return new Promise((resolve, reject) => {
     const token = getToken();
     wx.uploadFile({
-      url: `${ENV.API_BASE_URL}/api/uploads`,
+      url: `${ENV.API_BASE_URL}/api/inspection-tasks/uploads`,
       filePath,
       name: 'file',
       header: token ? { Authorization: `Bearer ${token}` } : {},

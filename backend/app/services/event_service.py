@@ -72,6 +72,8 @@ class EventProcessor:
 
     def __init__(self) -> None:
         self._detectors: dict[str, ChangeDetector] = {}
+        # event_id -> 已恢复断面集合（进程内运行态，配合检测器使用）
+        self._recovered: dict[str, set[str]] = {}
 
     def _detector(self, reach_id: str) -> ChangeDetector:
         if reach_id not in self._detectors:
@@ -139,7 +141,54 @@ class EventProcessor:
             event = self._active_event_for(db, reach_id, result.status)
         if result.recovered_now:
             self._on_recovered(db, reach_id, observed_at, notifier)
+        if result.status is EnvStatus.NORMAL:
+            # 该断面可能是某事件的未决 Focus（如 S5 中一直正常的 C）：
+            # 正常样本到达时也检查一次事件是否可整体恢复
+            if not result.recovered_now:
+                self._on_recovered(db, reach_id, observed_at, notifier)
+            # S4：关键观察点在关联窗口内持续稳定 → 传播假设反证、关闭 Focus
+            self._evaluate_focus_window(db, reach_id, observed_at, notifier)
         return event
+
+    def _evaluate_focus_window(self, db, reach_id: str, observed_at: datetime, notifier) -> None:
+        """该断面作为某事件的观察重点且持续正常：窗口到期则判定不支持扩展。"""
+        from app.services import assessment_service, evidence_service
+
+        focus = db.execute(
+            select(ObservationFocus).where(
+                ObservationFocus.reach_id == reach_id,
+                ObservationFocus.status == "ACTIVE",
+            )
+        ).scalars().first()
+        if focus is None:
+            return
+        event = db.get(ActiveEvent, focus.event_id)
+        if event is None:
+            return
+        elapsed = (_aware(observed_at) - _aware(event.first_seen_at)).total_seconds()
+        if elapsed < CORRELATION_WINDOW_SEC:
+            return  # 观察窗口未到，继续等
+        # 窗口到期且当前正常：形成缺失/反证，关闭 Focus，降级假设
+        focus.status = "RESOLVED"
+        focus.resolved_at = observed_at
+        evidence_service.add_evidence(
+            db, event.event_id, type="OBSERVATION", source_ref=f"focus:{reach_id}",
+            polarity="COUNTER",
+            note=f"{reach_id} 在观察窗口内保持稳定，未出现同向变化",
+            created_by="SYSTEM", observed_at=observed_at,
+        )
+        downgraded = assessment_service.downgrade_unsupported_hypotheses(db, event.event_id)
+        scope = json.loads(self._latest_scope(db, event.event_id))
+        assessment_service.create_assessment(
+            db, event.event_id, scope, scope,
+            reason=f"{reach_id} 窗口内稳定，事件不向该断面扩展，传播假设不支持",
+            hypothesis_snapshot=[{"hypothesisId": h, "state": "NOT_SUPPORT"} for h in downgraded],
+            warnings=[f"{reach_id} 无同向变化证据"],
+            trigger_reason="focus.window_expired",
+        )
+        db.commit()
+        if notifier:
+            notifier("focus.resolved", {"eventId": event.event_id, "reachId": reach_id}, None)
 
     # ---------- 确认变化 ----------
 
@@ -148,7 +197,8 @@ class EventProcessor:
     ) -> ActiveEvent:
         # 找同类型、在跨断面关联窗口内首发的活动事件归入；否则新建
         existing = self._correlatable_event(db, result.status, observed_at)
-        if existing is None:
+        is_new_event = existing is None
+        if is_new_event:
             event = self._create_event(db, reach_id, result.status, observed_at, scenario_id)
         else:
             event = existing
@@ -181,10 +231,18 @@ class EventProcessor:
             created_by="SYSTEM",
             observed_at=observed_at,
         ))
+        db.flush()
+        evidence = db.query(Evidence).filter(
+            Evidence.source_ref == change.change_id
+        ).one()
+
+        is_new_reach = reach_id not in json.loads(self._latest_scope(db, event.event_id))
+        self._recovered.setdefault(event.event_id, set()).discard(reach_id)
 
         # 范围扩展
         scope = [r for r in json.loads(self._latest_scope(db, event.event_id))]
-        if reach_id not in scope:
+        scope_before = list(scope)
+        if is_new_reach:
             scope.append(reach_id)
             scope = self._topo_sorted(db, scope)
             event.version += 1
@@ -201,6 +259,17 @@ class EventProcessor:
                 focus.resolved_at = observed_at
             self._auto_focus(db, event, scope, observed_at)
             self._relate_to_previous(db, event, change, observed_at)
+
+        # 再评估：新事件初始化假设+v1；后续断面扩展生成新版本
+        from app.services import assessment_service
+        if is_new_event:
+            self._init_reasoning(db, event, change, evidence, scope, observed_at)
+        elif scope_before != scope:
+            assessment_service.create_assessment(
+                db, event.event_id, scope_before, scope,
+                reason=f"{reach_id} 同向持续变化，范围扩展至 {len(scope)} 个断面",
+                trigger_reason="change.confirmed",
+            )
 
         db.add(RunTrace(
             trace_id=_id("trc"),
@@ -245,6 +314,40 @@ class EventProcessor:
         db.flush()
         return event
 
+    def _init_reasoning(self, db, event: ActiveEvent, first_change: ChangeEvent,
+                        first_evidence: Evidence, scope: list[str], observed_at) -> None:
+        """事件首次确认：建立待验证假设与 v1 再评估。"""
+        from app.models.evidence import Hypothesis
+        from app.services import assessment_service
+        from app.services import evidence_service
+
+        downstream = "reach-b" if "reach-a" in scope else "reach-c" if "reach-b" in scope else None
+        statement = (
+            f"{scope[0]} 的持续异常将沿河道向下游传播，{downstream} 可能出现同向变化"
+            if downstream else "异常范围可能扩大"
+        )
+        h = Hypothesis(
+            hypothesis_id=_id("hyp"),
+            event_id=event.event_id,
+            statement=statement,
+            state="OPEN",
+            support_refs=json.dumps([first_evidence.evidence_id]),
+            counter_refs="[]",
+            run_id=None,
+        )
+        db.add(h)
+        db.flush()
+        assessment_service.create_assessment(
+            db, event.event_id, [], scope,
+            hypothesis_snapshot=[{
+                "hypothesisId": h.hypothesis_id, "state": "OPEN",
+                "support": 1, "counter": 0,
+            }],
+            reason=f"事件建立，首发断面 {scope[0]}",
+            task_suggestions=[f"CONTINUE_OBSERVE:{downstream}"] if downstream else [],
+            trigger_reason="change.confirmed",
+        )
+
     def _relate_to_previous(self, db, event, change, observed_at) -> None:
         """与事件内更早断面的变化建立时序关系（仅 OBSERVED_SEQUENCE，非因果）。"""
         prev = db.execute(
@@ -283,52 +386,105 @@ class EventProcessor:
             )
         ).scalar_one_or_none()
         if exists is None:
-            db.add(ObservationFocus(
+            focus = ObservationFocus(
                 focus_id=_id("foc"),
                 event_id=event.event_id,
                 reach_id=focus_reach,
                 reason="上游断面已出现同向持续变化，下游为下一观察重点（时序先后不构成因果证明）",
                 status="ACTIVE",
-            ))
+            )
+            db.add(focus)
+            db.flush()
+            # 同步派发巡检任务（默认分配 inspector）
+            from app.services import task_service
+            task_service.create_task(
+                db,
+                event_id=event.event_id,
+                focus_id=focus.focus_id,
+                reach_id=focus_reach,
+                action_type=f"FOCUS_REACH_{focus_reach.split('-')[1].upper()}",
+                title=f"现场核查 {focus_reach} 是否出现同向变化",
+                priority="HIGH",
+                reason=focus.reason,
+                assignee="inspector",
+            )
 
     # ---------- 恢复 ----------
 
     def _on_recovered(self, db, reach_id, observed_at, notifier) -> None:
-        # 该断面参与的、仍在活动且所有范围断面都已恢复的事件才结束；
-        # M2 简化：结束所有包含该断面的活动事件（S2/S3 单事件场景）
+        """某断面恢复正常：范围内全部断面当前不异常且无开放盲区才结束事件。"""
+        from app.services import blindspot_service
+
         events = db.execute(
             select(ActiveEvent).where(ActiveEvent.status != "RECOVERED")
         ).scalars()
         for event in events:
             scope = json.loads(self._latest_scope(db, event.event_id))
-            if reach_id not in scope:
+            focus_reaches = [
+                f.reach_id for f in db.execute(
+                    select(ObservationFocus).where(
+                        ObservationFocus.event_id == event.event_id,
+                        ObservationFocus.status == "ACTIVE",
+                    )
+                ).scalars()
+            ]
+            # 断面在范围内，或为该事件未决 Focus（如 S5 的 C）
+            if reach_id not in scope and reach_id not in focus_reaches:
                 continue
-            self._transition(db, event, EventAction.MARK_RECOVERY_PENDING, "RULE",
-                             "连续正常采样满足恢复窗口", observed_at)
-            self._transition(db, event, EventAction.CONFIRM_RECOVERED, "RULE",
-                             "恢复窗口确认", observed_at)
-            db.add(RunTrace(
-                trace_id=_id("trc"),
-                event_id=event.event_id,
-                actor="SYSTEM",
-                action="event.recovered",
-                input_refs=json.dumps([]),
-                output_refs=json.dumps([]),
-                rule_version=settings.rule_version,
-                detail=f"{reach_id} 持续恢复正常，事件关闭",
-            ))
-            for focus in db.execute(
-                select(ObservationFocus).where(
-                    ObservationFocus.event_id == event.event_id,
-                    ObservationFocus.status == "ACTIVE",
-                )
-            ).scalars():
-                focus.status = "RESOLVED"
-                focus.resolved_at = observed_at
-            db.commit()
-            if notifier:
-                notifier("event.status-changed",
-                         {"eventId": event.event_id, "status": "RECOVERED"}, None)
+            guard_reaches = list(set(scope) | set(focus_reaches))
+            if blindspot_service.has_open_blind_spot(db, guard_reaches):
+                db.add(RunTrace(
+                    trace_id=_id("trc"),
+                    event_id=event.event_id, actor="SYSTEM",
+                    action="recovery.blocked_by_blindspot",
+                    rule_version=settings.rule_version,
+                    detail=f"{reach_id} 恢复，但监测盲区未消除，事件保持活动",
+                ))
+                db.commit()
+                continue
+            # 范围内所有断面的检测器当前都不再处于确认异常态 → 可恢复
+            still_abnormal = [
+                r for r in scope
+                if self._detectors.get(r) is not None
+                and self._detectors[r].is_currently_confirmed()
+            ]
+            if still_abnormal:
+                db.add(RunTrace(
+                    trace_id=_id("trc"),
+                    event_id=event.event_id, actor="SYSTEM",
+                    action="reach.recovered",
+                    rule_version=settings.rule_version,
+                    detail=f"{reach_id} 恢复，仍有 {still_abnormal} 异常",
+                ))
+                db.commit()
+                continue
+            self._finish_recovery(db, event, observed_at, notifier)
+
+    def _finish_recovery(self, db, event, observed_at, notifier) -> None:
+        self._transition(db, event, EventAction.MARK_RECOVERY_PENDING, "RULE",
+                         "范围内全部断面连续正常且无盲区", observed_at)
+        self._transition(db, event, EventAction.CONFIRM_RECOVERED, "RULE",
+                         "恢复窗口确认", observed_at)
+        db.add(RunTrace(
+            trace_id=_id("trc"),
+            event_id=event.event_id, actor="SYSTEM", action="event.recovered",
+            input_refs=json.dumps([]), output_refs=json.dumps([]),
+            rule_version=settings.rule_version,
+            detail="范围内断面全部恢复，事件关闭",
+        ))
+        for focus in db.execute(
+            select(ObservationFocus).where(
+                ObservationFocus.event_id == event.event_id,
+                ObservationFocus.status == "ACTIVE",
+            )
+        ).scalars():
+            focus.status = "RESOLVED"
+            focus.resolved_at = observed_at
+        db.commit()
+        self._recovered.pop(event.event_id, None)
+        if notifier:
+            notifier("event.status-changed",
+                     {"eventId": event.event_id, "status": "RECOVERED"}, None)
 
     # ---------- 人工操作（P03） ----------
 

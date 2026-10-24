@@ -15,7 +15,7 @@ import pytest
 
 from app.db.session import SessionLocal
 from app.models.event import ActiveEvent, TemporalRelation
-from app.models.focus import ObservationFocus
+from app.models.focus import BlindSpot, ObservationFocus
 from app.models.observation import Observation
 from app.services.event_service import EventProcessor
 from app.models.event import EventScope
@@ -62,23 +62,41 @@ def _scope(db, event_id):
     return json.loads(row.reaches_json)
 
 
-@pytest.fixture()
-def clean_event_tables(client):
-    from app.models.event import ChangeEvent, EventStatusTransition
-    from app.models.evidence import Evidence
-    from app.models.workflow import RunTrace
+def test_s2_has_initial_hypothesis_and_assessment(clean_event_tables):
+    from app.models.evidence import Hypothesis
+    from app.models.workflow import Assessment
     db = SessionLocal()
-    for m in (TemporalRelation, ChangeEvent, EventStatusTransition, EventScope,
-              Evidence, ObservationFocus, RunTrace, Observation, ActiveEvent):
-        db.query(m).delete()
-    db.commit()
+    ep = EventProcessor()
+    _play(S2, db, ep)
+    event = db.query(ActiveEvent).one()
+    # 初始假设：下游可能同向变化，OPEN/PARTIAL
+    hyps = db.query(Hypothesis).filter_by(event_id=event.event_id).all()
+    assert len(hyps) >= 1
+    assert any("传播" in h.statement or "同向" in h.statement for h in hyps)
+    # 至少一个再评估版本（v1）
+    asm = db.query(Assessment).filter_by(event_id=event.event_id).order_by(
+        Assessment.assessment_version
+    ).all()
+    assert len(asm) >= 1
+    assert asm[0].current_scope_json == json.dumps(["reach-a"], ensure_ascii=False)
     db.close()
-    yield
+
+
+def test_s3_assessment_versions_capture_scope_diff(clean_event_tables):
+    from app.models.workflow import Assessment
     db = SessionLocal()
-    for m in (TemporalRelation, ChangeEvent, EventStatusTransition, EventScope,
-              Evidence, ObservationFocus, RunTrace, Observation, ActiveEvent):
-        db.query(m).delete()
-    db.commit()
+    ep = EventProcessor()
+    _play(S3, db, ep)
+    event = db.query(ActiveEvent).one()
+    versions = db.query(Assessment).filter_by(event_id=event.event_id).order_by(
+        Assessment.assessment_version
+    ).all()
+    # S3 三断面扩展，应至少 3 个版本，最后版本范围 A/B/C
+    assert len(versions) >= 3
+    assert json.loads(versions[-1].current_scope_json) == ["reach-a", "reach-b", "reach-c"]
+    # 每个版本范围单调扩大
+    scopes = [json.loads(v.current_scope_json) for v in versions]
+    assert len(scopes[-1]) > len(scopes[0])
     db.close()
 
 

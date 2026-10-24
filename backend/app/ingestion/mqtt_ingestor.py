@@ -12,6 +12,7 @@ import json
 from datetime import timedelta
 
 import paho.mqtt.client as mqtt
+from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -126,7 +127,6 @@ class MqttIngestor:
     def _run_event_processor(self, db, reach_id, observed_at, scenario_id, obs_ids) -> None:
         """从刚入库的最新水位/浊度取值，驱动变化检测→事件。"""
         from app.models.observation import Observation
-        from sqlalchemy import select
 
         def latest(metric: str):
             return db.execute(
@@ -174,6 +174,59 @@ class MqttIngestor:
             changed = mark_reach_status(db, reach_id, status, notifier=_notify)
             if changed:
                 logger.info("reach %s -> %s (LWT/status)", reach_id, status)
+            self._handle_blind_spot(db, reach_id, status)
+
+    def _handle_blind_spot(self, db, reach_id: str, status: str) -> None:
+        """关键观察点离线/陈旧形成盲区；恢复在线则关闭盲区。"""
+        import json as _json
+
+        from app.models.event import ActiveEvent, EventScope
+        from app.models.focus import ObservationFocus
+        from app.services import blindspot_service
+
+        # 该断面是否为某活动事件的关注重点或在其范围内
+        event_id: str | None = None
+        focus = db.execute(
+            select(ObservationFocus).where(
+                ObservationFocus.reach_id == reach_id,
+                ObservationFocus.status == "ACTIVE",
+            )
+        ).scalars().first()
+        if focus is not None:
+            event_id = focus.event_id
+        else:
+            for event in db.query(ActiveEvent).filter(
+                ActiveEvent.status.in_(
+                    ("OPEN", "INVESTIGATING", "MONITORING", "ESCALATED",
+                     "NARROWED", "RECOVERY_PENDING")
+                )
+            ):
+                latest = db.execute(
+                    select(EventScope.reaches_json)
+                    .where(EventScope.event_id == event.event_id)
+                    .order_by(EventScope.version.desc())
+                    .limit(1)
+                ).scalar_one_or_none()
+                if reach_id in _json.loads(latest or "[]"):
+                    event_id = event.event_id
+                    break
+
+        if status in {"OFFLINE", "STALE"}:
+            if event_id is not None or focus is not None:
+                reason = "数据链路中断（LWT 离线）" if status == "OFFLINE" else "数据陈旧超时"
+                bs = blindspot_service.open_blind_spot(db, reach_id, reason, event_id=event_id)
+                db.commit()
+                if bs is not None:
+                    _notify(
+                        "blindspot.opened",
+                        {"reachId": reach_id, "eventId": event_id, "reason": reason},
+                        None,
+                    )
+        elif status == "ONLINE":
+            bs = blindspot_service.resolve_blind_spot(db, reach_id, "数据链路恢复")
+            if bs is not None:
+                db.commit()
+                _notify("blindspot.resolved", {"reachId": reach_id}, None)
 
 
 async def freshness_watchdog(stop_event: asyncio.Event) -> None:

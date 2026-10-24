@@ -11,12 +11,18 @@ from fastapi.responses import JSONResponse
 from app import __version__
 from app.api import (
     routes_admin,
+    routes_assessments,
     routes_auth,
+    routes_blindspots,
     routes_events,
     routes_health,
     routes_import,
+    routes_ml,
     routes_reaches,
+    routes_reports,
+    routes_research,
     routes_stream,
+    routes_tasks,
 )
 from app.core.config import settings
 from app.core.errors import (
@@ -118,6 +124,12 @@ def create_app() -> FastAPI:
     app.include_router(routes_auth.router)
     app.include_router(routes_reaches.router)
     app.include_router(routes_events.router)
+    app.include_router(routes_research.router)
+    app.include_router(routes_assessments.router)
+    app.include_router(routes_blindspots.router)
+    app.include_router(routes_tasks.router)
+    app.include_router(routes_reports.router)
+    app.include_router(routes_ml.router)
     app.include_router(routes_import.router)
     app.include_router(routes_admin.router)
     app.include_router(routes_stream.router)

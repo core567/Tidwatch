@@ -133,8 +133,53 @@ S3 = ScenarioSpec(
     tick_step_seconds=60,
 )
 
-SCENARIOS: dict[str, ScenarioSpec] = {"S1": S1, "S2": S2, "S3": S3}
+# S4 反例：A 持续异常；B 短暂异常（13,14）后回落正常；C 在窗口内始终稳定。
+# 期望：事件范围到 A/B 为止，不扩到 C；传播假设被反证降级 NOT_SUPPORTED。
+S4 = ScenarioSpec(
+    scenario_id="S4",
+    name="不支持扩展（反例）",
+    description="A 异常、B 短暂异常后回落，C 窗口内稳定；事件不扩展到 C，传播假设被反证。",
+    seed=20261024,
+    interval_sec=0.6,
+    reaches=_reaches(),
+    anomalies=(
+        Anomaly("reach-a", 4, 27, "waterLevel", (9.0, 9.1)),
+        Anomaly("reach-b", 13, 14, "waterLevel", (8.9, 9.05)),
+        # C 无异常：始终正常，作为“未观察到传播”的反证窗口
+    ),
+    total_ticks=28,
+    tick_step_seconds=60,
+)
 
+
+@dataclass(frozen=True)
+class Outage:
+    reach_id: str
+    start_tick: int
+    end_tick: int | None  # None 表示持续到结束
+
+
+# S5：A→B 变化后，关键观察点 C 从 16 tick 起数据中断，形成监测盲区。
+S5 = ScenarioSpec(
+    scenario_id="S5",
+    name="观察点离线盲区",
+    description="A→B 变化后，关键观察点 C 在 16 tick 起数据中断，形成监测盲区；事件不能直接恢复。",
+    seed=20261025,
+    interval_sec=0.6,
+    reaches=_reaches(),
+    anomalies=(
+        Anomaly("reach-a", 4, 24, "waterLevel", (9.0, 9.1)),
+        Anomaly("reach-b", 13, 24, "waterLevel", (8.9, 9.05)),
+    ),
+    total_ticks=25,
+    tick_step_seconds=60,
+)
+
+# S5 的中断计划（发布器按此跳过 C 的消息）
+S5_OUTAGES: tuple[Outage, ...] = (Outage("reach-c", 16, None),)
+
+
+SCENARIOS: dict[str, ScenarioSpec] = {"S1": S1, "S2": S2, "S3": S3, "S4": S4, "S5": S5}
 
 class StableWalk:
     """单指标带界随机游走；同 seed 重置后产生完全相同序列。"""

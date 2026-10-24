@@ -42,7 +42,8 @@ export default function App() {
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/evidence" element={<EvidencePage />} />
             <Route path="/river-3d" element={<River3DPage />} />
-            <Route path="/reviews" element={<ReviewsPage />} />
+            <Route path="/reviews/:eventId" element={<ReviewsPage />} />
+            <Route path="/reviews" element={<Navigate to="/events" replace />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/mobile" element={<MobilePage />} />
             <Route path="/field-voice" element={<FieldVoicePage />} />

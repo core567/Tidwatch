@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { api, ApiError } from '@/services/apiClient';
 import { useAuthStore } from '@/store/auth';
 import { useRealtimeStream } from '@/services/useRealtimeStream';
@@ -80,6 +81,10 @@ export default function WorkbenchPage() {
         <span className="source-tag source-tag-simulated" style={{ marginLeft: 'auto' }}>
           规则 {event.ruleVersion}
         </span>
+        <Link to={`/reviews/${event.eventId}`}
+          style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--tw-accent)', borderRadius: 6, color: 'var(--tw-accent)' }}>
+          研判单
+        </Link>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
@@ -112,6 +117,8 @@ export default function WorkbenchPage() {
               </>
             )}
           </section>
+
+          <EvidenceHypothesisPanel eventId={eventId} />
 
           <section className="card">
             <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>状态迁移历史</h3>
@@ -185,5 +192,72 @@ function Row({ k, v }: { k: string; v: string }) {
       <span className="muted">{k}</span>
       <span>{v}</span>
     </div>
+  );
+}
+
+const EVIDENCE_TYPE_CN: Record<string, string> = {
+  OBSERVATION: '观测', RULE: '规则', MANUAL: '人工巡检', EXTERNAL: '外部', MODEL: '模型', KNOWLEDGE: '知识',
+};
+const POL_CN: Record<string, string> = { SUPPORT: '支持', COUNTER: '反证', MISSING: '缺失' };
+const HYP_CN: Record<string, string> = {
+  OPEN: '待验证', PARTIAL_SUPPORT: '部分支持', SUPPORT: '支持', NOT_SUPPORT: '不支持', UNKNOWN: '证据不足',
+};
+
+function EvidenceHypothesisPanel({ eventId }: { eventId: string }) {
+  const evidenceQ = useQuery({
+    queryKey: ['evidence', eventId], queryFn: () => api.evidence(eventId),
+  });
+  const hypQ = useQuery({
+    queryKey: ['hypotheses', eventId], queryFn: () => api.hypotheses(eventId),
+  });
+  const evidence = evidenceQ.data ?? [];
+  const hypotheses = hypQ.data ?? [];
+
+  return (
+    <>
+      <section className="card">
+        <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>证据链（{evidence.length}）</h3>
+        {evidence.length === 0 ? (
+          <div className="muted" style={{ fontSize: 13 }}>暂无证据</div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+            <tbody>
+              {evidence.map((e) => (
+                <tr key={e.evidenceId} style={{ borderTop: '1px solid var(--tw-border)' }}>
+                  <td style={{ padding: '7px 8px 7px 0', whiteSpace: 'nowrap' }}>
+                    <span className="badge" style={{ background: '#eef2f7', color: '#334155' }}>
+                      {EVIDENCE_TYPE_CN[e.type] ?? e.type}
+                    </span>{' '}
+                    <span className={`badge ${e.polarity === 'SUPPORT' ? 'badge-ok' : e.polarity === 'COUNTER' ? 'badge-danger' : 'badge-watch'}`}>
+                      {POL_CN[e.polarity] ?? e.polarity}
+                    </span>
+                  </td>
+                  <td>{e.note ?? e.sourceRef}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="card">
+        <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>假设（{hypotheses.length}）</h3>
+        {hypotheses.length === 0 ? (
+          <div className="muted" style={{ fontSize: 13 }}>暂无假设</div>
+        ) : (
+          hypotheses.map((h) => (
+            <div key={h.hypothesisId} style={{ padding: '8px 0', borderBottom: '1px solid var(--tw-border)' }}>
+              <span className={`badge ${h.state === 'SUPPORT' ? 'badge-ok' : h.state === 'NOT_SUPPORT' ? 'badge-offline' : 'badge-watch'}`}>
+                {HYP_CN[h.state] ?? h.state}
+              </span>
+              <div style={{ fontSize: 13, margin: '4px 0' }}>{h.statement}</div>
+              <div className="muted" style={{ fontSize: 11.5 }}>
+                支持 {h.supportRefs.length} · 反证 {h.counterRefs.length}
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+    </>
   );
 }

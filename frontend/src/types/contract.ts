@@ -119,6 +119,143 @@ export interface EventDetail extends ActiveEvent {
   changeCount: number;
 }
 
+export interface ReviewHypothesis {
+  id: string;
+  statement: string;
+  state: string;
+  support: number;
+  counter: number;
+}
+export interface ReviewAssessment {
+  version: number;
+  previousScope: string[];
+  currentScope: string[];
+  reason: string | null;
+  warnings: string[];
+  trigger: string | null;
+}
+export interface ReviewEvidence {
+  id: string;
+  type: string;
+  polarity: string;
+  note: string | null;
+  sourceRef: string;
+  by: string;
+  at: string | null;
+}
+export interface EventReview {
+  eventId: string;
+  title: string;
+  status: EventStatus;
+  priority: 'LOW' | 'NORMAL' | 'HIGH';
+  eventType: string;
+  ruleVersion: string;
+  firstSeenAt: string | null;
+  updatedAt: string | null;
+  scope: string[];
+  scopeHistory: { version: number; reaches: string[]; reason: string | null }[];
+  temporalRelations: { deltaSeconds: number; note: string }[];
+  hypotheses: ReviewHypothesis[];
+  assessments: ReviewAssessment[];
+  supportingEvidence: ReviewEvidence[];
+  counterEvidence: ReviewEvidence[];
+  unresolved: string[];
+  trace: { actor: string; action: string; detail: string | null }[];
+  tasks: { title: string; status: string; conclusion: string | null }[];
+  disclaimer: string;
+}
+
+export interface MonthlyStats {
+  totalRecords: number;
+  totalBatches: number;
+  byClass: Record<string, number>;
+  byReach: Record<string, number>;
+  byPeriod: Record<string, number>;
+  batches: {
+    batchId: string; period: string; agency: string | null; status: string;
+    rowCount: number; sourceUrl: string | null; createdAt: string | null;
+  }[];
+}
+
+export interface EventFrequency {
+  totalEvents: number;
+  byStatus: Record<string, number>;
+  byType: Record<string, number>;
+  eventsPerReach: Record<string, number>;
+}
+
+export type InspectionTaskStatus =
+  | 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'CANCELLED';
+
+export interface InspectionTask {
+  taskId: string;
+  eventId: string | null;
+  focusId: string | null;
+  reachId: string;
+  actionType: string;
+  title: string;
+  priority: string;
+  status: InspectionTaskStatus;
+  assignee: string | null;
+  dueAt: string | null;
+  reason: string;
+  resultNote: string | null;
+  resultConclusion: 'NORMAL' | 'ABNORMAL' | 'UNCERTAIN' | null;
+  attachmentIds: string[];
+  observedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface Evidence {
+  evidenceId: string;
+  eventId: string;
+  type: 'OBSERVATION' | 'RULE' | 'MANUAL' | 'EXTERNAL' | 'MODEL' | 'KNOWLEDGE';
+  sourceRef: string;
+  polarity: 'SUPPORT' | 'COUNTER' | 'MISSING';
+  qualityFlag: string | null;
+  note: string | null;
+  createdBy: string;
+  observedAt: string | null;
+  createdAt: string;
+}
+
+export interface Hypothesis {
+  hypothesisId: string;
+  eventId: string;
+  statement: string;
+  state: 'OPEN' | 'PARTIAL_SUPPORT' | 'SUPPORT' | 'NOT_SUPPORT' | 'UNKNOWN';
+  supportRefs: string[];
+  counterRefs: string[];
+  createdAt: string;
+}
+
+export interface Assessment {
+  id: number;
+  eventId: string;
+  assessmentVersion: number;
+  ruleVersion: string;
+  previousScope: string[];
+  currentScope: string[];
+  scopeChangeReason: string | null;
+  hypothesisChanges: unknown[];
+  taskSuggestions: string[];
+  warnings: string[];
+  triggerReason: string | null;
+  createdAt: string;
+}
+
+export interface BlindSpot {
+  blindSpotId: string;
+  eventId: string | null;
+  reachId: string;
+  startAt: string;
+  endAt: string | null;
+  reason: string;
+  impact: string | null;
+  resolution: string | null;
+}
+
 export type EventAction =
   | 'START_INVESTIGATION'
   | 'ESCALATE'

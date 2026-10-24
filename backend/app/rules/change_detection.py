@@ -85,6 +85,10 @@ class ChangeDetector:
         self._window: list[Sample] = []
         self._confirmed_status: EnvStatus | None = None  # 已确认的异常类型
 
+    def is_currently_confirmed(self) -> bool:
+        """当前是否处于已确认异常状态（未满足恢复条件）。"""
+        return self._confirmed_status is not None
+
     def add(self, sample: Sample) -> ChangeDetection:
         self._window = [
             s

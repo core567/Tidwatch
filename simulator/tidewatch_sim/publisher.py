@@ -10,7 +10,13 @@ from typing import Callable
 
 import paho.mqtt.client as mqtt
 
-from tidewatch_sim.generator import SCENARIOS, ScenarioSpec, anomaly_value, build_walkers
+from tidewatch_sim.generator import (
+    SCENARIOS,
+    ScenarioSpec,
+    anomaly_value,
+    build_walkers,
+)
+from tidewatch_sim.generator import S5_OUTAGES
 
 CST = timezone(timedelta(hours=8))
 
@@ -36,6 +42,7 @@ class ScenarioPublisher:
         self.walkers = build_walkers(spec)
         self.seq = 0
         self._stop = False
+        self._offline_announced: set[str] = set()
         self.on_publish: Callable[[str, dict], None] | None = None
         # 虚拟场景时钟：tick_step_seconds 为 None 时退回墙钟时间（S1）
         self._virtual_base = start_time or datetime.now(CST)
@@ -97,7 +104,24 @@ class ScenarioPublisher:
             observed_at = datetime.now(CST).isoformat()
 
         published: list[tuple[str, dict]] = []
+        outages = S5_OUTAGES if self.spec.scenario_id == "S5" else ()
+        offline_announced: set[str] = set()
         for reach in self.spec.reaches:
+            # S5：中断区间内的断面不发观测，仅在中断首个 tick 广播一次 OFFLINE
+            outage = next(
+                (o for o in outages if o.reach_id == reach.reach_id
+                 and tick >= o.start_tick and (o.end_tick is None or tick <= o.end_tick)),
+                None,
+            )
+            if outage is not None:
+                if reach.reach_id not in self._offline_announced:
+                    self.client.publish(
+                        self._topics(reach.reach_id)["status"],
+                        json.dumps({"status": "OFFLINE"}),
+                        qos=1,
+                    )
+                    self._offline_announced.add(reach.reach_id)
+                continue
             metrics = {}
             for key, walker in self.walkers[reach.reach_id].items():
                 spec_metric = next(m for m in reach.metrics if m.key == key)

@@ -36,20 +36,8 @@ def _obs(db, reach, t, wl, tu, scenario="S2") -> list[str]:
 
 
 @pytest.fixture()
-def ep(client):
-    """每个用例：清空事件相关表并返回全新处理器，避免 session 级库串扰。"""
-    from app.models.event import ChangeEvent, EventScope, EventStatusTransition, TemporalRelation
-    from app.models.evidence import Evidence
-    from app.models.focus import ObservationFocus
-    from app.models.workflow import RunTrace
-    from app.models.observation import Observation as Obs
-
-    db = SessionLocal()
-    for model in (TemporalRelation, ChangeEvent, EventStatusTransition, EventScope,
-                  Evidence, ObservationFocus, RunTrace, Obs, ActiveEvent):
-        db.query(model).delete()
-    db.commit()
-    db.close()
+def ep(clean_event_tables):
+    """复用统一清表夹具，返回全新处理器。"""
     return EventProcessor()
 
 

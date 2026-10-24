@@ -72,6 +72,9 @@ class RunTrace(Base):
     event_id: Mapped[str | None] = mapped_column(
         ForeignKey("active_events.event_id"), nullable=True, index=True
     )
+    task_id: Mapped[str | None] = mapped_column(
+        ForeignKey("inspection_tasks.task_id"), nullable=True, index=True
+    )
     actor: Mapped[str] = mapped_column(String(64), default="SYSTEM")  # SYSTEM/USER/SCENARIO
     action: Mapped[str] = mapped_column(String(64))
     input_refs: Mapped[str] = mapped_column(Text, default="[]")  # JSON
