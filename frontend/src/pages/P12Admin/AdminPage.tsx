@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api, type Diagnostics, type IngestionErrorItem } from '@/services/apiClient';
 import { useAuthStore } from '@/store/auth';
 import { useRealtimeStream } from '@/services/useRealtimeStream';
+import { ScenarioConsole } from '@/components/ScenarioConsole';
 
 const REASON_TEXT: Record<string, string> = {
   INVALID_JSON: '非法 JSON',
@@ -139,6 +140,8 @@ export default function AdminPage() {
           </div>
         </>
       )}
+
+      <ScenarioConsole />
     </div>
   );
 }

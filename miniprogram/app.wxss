@@ -96,3 +96,26 @@ page {
   color: var(--tw-color-primary);
   margin: 8rpx 0 20rpx;
 }
+
+/* 语音现场感知（P11） */
+.voice-btn {
+  margin-left: 12rpx;
+  font-size: 22rpx;
+  background: #f0f6ff;
+  color: #1e6fe0;
+  border: 1rpx solid #1e6fe0;
+}
+.voice-btn-active {
+  background: #d84c4c;
+  color: #fff;
+  border-color: #d84c4c;
+}
+.voice-tag {
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+  margin-right: 12rpx;
+  font-size: 20rpx;
+}
+.voice-plugin { background: rgba(30,111,224,.12); color: #1e6fe0; }
+.voice-manual { background: rgba(148,163,184,.2); color: #5d7186; }
+.voice-hint { margin-top: 8rpx; font-size: 22rpx; color: #e8902a; }

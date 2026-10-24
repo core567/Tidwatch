@@ -238,7 +238,9 @@ async def freshness_watchdog(stop_event: asyncio.Event) -> None:
             try:
                 now = utc_now()
                 for reach in db.query(Reach).filter(Reach.online_status == "ONLINE").all():
-                    if reach.last_seen_at is not None and now - _aware(reach.last_seen_at) > stale_after:
+                    # 看门狗基于链路接收时刻（墙钟），迟到观测不触发误判
+                    ref = reach.last_received_at or reach.last_seen_at
+                    if ref is not None and now - _aware(ref) > stale_after:
                         mark_reach_status(db, reach.reach_id, "STALE", notifier=_notify)
                         logger.info("reach %s -> STALE (no data > %ds)", reach.reach_id, settings.mqtt_stale_seconds)
             finally:

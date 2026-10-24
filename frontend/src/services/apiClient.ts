@@ -178,6 +178,23 @@ export const api = {
     ),
   blindSpots: (active = true) =>
     request<import('@/types/contract').BlindSpot[]>(`/blind-spots?active=${active}`),
+  scenarioStatus: () =>
+    request<{
+      running: boolean;
+      scenario: string | null;
+      speed?: number;
+      startedAt?: string;
+      finishedAt?: string | null;
+      returncode?: number | null;
+      stdoutTail?: string;
+    }>('/admin/scenarios/status'),
+  startScenario: (scenario: string, speed = 8) =>
+    request<{ started: string; speed: number }>('/admin/scenarios/start', {
+      method: 'POST',
+      body: { scenario, speed },
+    }),
+  stopScenario: () =>
+    request<{ stopped: boolean }>('/admin/scenarios/stop', { method: 'POST' }),
   mlComparison: () =>
     request<{
       model: string;

@@ -13,6 +13,18 @@
     <view class="tw-muted">M3 后端就绪后自动建立 WebSocket 连接（25s 心跳、断线自动重连）。</view>
   </view>
 
+  <view class="tw-card ws-card">
+    <view class="ws-row">
+      <text>语音现场感知</text>
+      <text class="tw-badge {{voiceAvailable ? 'ws-badge-open' : 'ws-badge-connecting'}}">
+        {{voiceAvailable ? '同声传译可用' : '手动输入模式'}}
+      </text>
+    </view>
+    <view class="tw-muted">
+      {{voiceAvailable ? '现场记录页可按住说话转写。' : '未配置同声传译插件或识别失败时降级为手动输入，不影响提交。'}}
+    </view>
+  </view>
+
   <view class="tw-card">
     <view class="tw-card-title">数据口径</view>
     <view class="tw-muted policy">

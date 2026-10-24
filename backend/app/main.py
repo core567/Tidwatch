@@ -21,6 +21,7 @@ from app.api import (
     routes_reaches,
     routes_reports,
     routes_research,
+    routes_scenario_console,
     routes_stream,
     routes_tasks,
 )
@@ -130,6 +131,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_tasks.router)
     app.include_router(routes_reports.router)
     app.include_router(routes_ml.router)
+    app.include_router(routes_scenario_console.router)
     app.include_router(routes_import.router)
     app.include_router(routes_admin.router)
     app.include_router(routes_stream.router)

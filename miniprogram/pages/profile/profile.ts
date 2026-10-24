@@ -1,6 +1,7 @@
 // pages/profile/profile.ts
 import { getCurrentUser, logout, isLoggedIn } from '../../utils/auth';
 import { wsClient } from '../../utils/ws';
+import { isVoicePluginAvailable } from '../../services/voice';
 
 const ROLE_TEXT: Record<string, string> = {
   admin: '系统管理员',
@@ -14,6 +15,7 @@ Page({
     roleText: '—',
     wsState: 'disconnected' as 'disconnected' | 'connecting' | 'open',
     wsStateText: '未连接',
+    voiceAvailable: false,
   },
 
   privateUnsub: null as null | (() => void),
@@ -31,7 +33,11 @@ Page({
       wx.reLaunch({ url: '/pages/login/login' });
       return;
     }
-    this.setData({ user, roleText: ROLE_TEXT[user.role] ?? user.role });
+    this.setData({
+      user,
+      roleText: ROLE_TEXT[user.role] ?? user.role,
+      voiceAvailable: isVoicePluginAvailable(),
+    });
     this.privateUnsub?.();
     this.privateUnsub = wsClient.onStateChange((s) => {
       this.setData({

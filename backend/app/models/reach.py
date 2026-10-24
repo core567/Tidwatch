@@ -20,6 +20,10 @@ class Reach(Base, TimestampMixin):
     last_seen_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # 链路最后接收时刻（墙钟，看门狗用；区别于业务观测时间 last_seen_at）
+    last_received_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # 坐标/拓扑核验状态：未核实前一律 LOGICAL + 示意拓扑
     coordinate_status: Mapped[str] = mapped_column(String(16), default="LOGICAL")

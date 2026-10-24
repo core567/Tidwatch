@@ -5,7 +5,15 @@
   </view>
 
   <view class="tw-card">
-    <view class="tw-card-title">现场观察记录</view>
+    <view class="tw-card-title">
+      现场观察记录
+      <button
+        class="voice-btn {{voiceState === 'start' ? 'voice-btn-active' : ''}}"
+        size="mini"
+        bindtouchstart="onVoiceStart"
+        bindtouchend="onVoiceEnd"
+      >{{voiceState === 'start' ? '松开发送' : '按住说话'}}</button>
+    </view>
     <textarea
       class="rec-textarea"
       placeholder="记录现场水面、气味、排口、漂浮物等实际观察（人工记录，不伪装为模型结论）"
@@ -13,7 +21,13 @@
       bindinput="onNoteInput"
       maxlength="1000"
     />
-    <view class="tw-muted rec-count">{{observationNote.length}}/1000</view>
+    <view class="tw-muted rec-count">
+      <text wx:if="{{voiceSource}}" class="voice-tag voice-{{voiceSource === 'VOICE_PLUGIN' ? 'plugin' : 'manual'}}">
+        {{voiceSource === 'VOICE_PLUGIN' ? '语音转写' : '手动输入'}}
+      </text>
+      {{observationNote.length}}/1000
+    </view>
+    <view wx:if="{{voiceHint}}" class="tw-muted voice-hint">{{voiceHint}}</view>
   </view>
 
   <view class="tw-card">

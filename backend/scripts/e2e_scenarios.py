@@ -1,10 +1,10 @@
-"""M2 端到端回归：经真实 Mosquitto + FastAPI(含 MQTT ingestor) 验证场景。
+"""M4 端到端回归：经真实 Mosquitto + FastAPI(MQTT ingestor) 验证 S1–S5。
 
-前置：Mosquitto 在 127.0.0.1:1883。本脚本：
-1) 启动 MQTT_ENABLED 的 uvicorn（独立端口、临时库）；
-2) 用真实 publisher 播放 S1，断言零事件；
-3) 重置，播放 S2，断言单事件 A/B + 时序关系 + Focus C。
-用于人工/M4 CI 复核，不进 pytest（依赖外部 broker 与端口）。
+前置：Mosquitto 在 127.0.0.1:1883。每场景独立临时库 + 独立 MQTT client_id。
+断言要点：
+  S1 零事件；S2 单事件 A/B + 540s 时序 + Focus C；S3 范围 A/B/C；
+  S4 不扩 C + 假设 NOT_SUPPORT；S5 C 盲区形成（事件未恢复）。
+不进 pytest（依赖外部 broker 与端口），供 CI / 人工复核。
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ import paho.mqtt.client as mqtt
 BACKEND = Path(__file__).resolve().parents[1]
 SIMULATOR = BACKEND.parent / "simulator"
 PY = BACKEND / ".venv" / "Scripts" / "python.exe"
-PORT = 8040
+PORT = 8050
 BASE = f"http://127.0.0.1:{PORT}"
 
 
@@ -74,100 +74,136 @@ def login() -> str:
     return b["accessToken"]
 
 
+def start_server(client_id: str, db_path: Path, env: dict):
+    return subprocess.Popen(
+        [str(PY), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(PORT)],
+        cwd=BACKEND, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    ), env
+
+
+def stop(server):
+    if server is not None and server.poll() is None:
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(server.pid)],
+            capture_output=True,
+        )
+        # 等待监听端口释放，避免下个场景连接到旧进程
+        deadline = time.time() + 8
+        while time.time() < deadline:
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{PORT}/api/health", timeout=1)
+                time.sleep(0.4)
+            except Exception:
+                return
+        time.sleep(0.5)
+
+
+def run_one(scenario: str, speed: int, assert_fn) -> tuple[bool, str]:
+    tmp = Path(tempfile.mkdtemp(prefix=f"tw_e2e_{scenario.lower()}_")) / "e2e.db"
+    env = os.environ | {
+        "DATABASE_URL": f"sqlite:///{tmp.as_posix()}",
+        "MQTT_ENABLED": "true",
+        "MQTT_CLIENT_ID": f"tw-e2e-{scenario}",
+    }
+    # 先建表 + 种子（无服务占用数据库），再启动唯一的 server
+    subprocess.run([str(PY), "scripts/init_db.py"], cwd=BACKEND, env=env, check=True, capture_output=True)
+    subprocess.run([str(PY), "scripts/seed_data.py"], cwd=BACKEND, env=env, check=True, capture_output=True)
+    server = None
+    try:
+        server, _ = start_server(f"tw-e2e-{scenario}", tmp, env)
+        wait_health()
+        time.sleep(1)
+        token = login()
+        run_scenario(scenario, speed)
+        time.sleep(2)
+        return assert_fn(token)
+    finally:
+        stop(server)
+
+
+def assert_s1(token):
+    _, ev = http("GET", "/api/events?status=ACTIVE", token)
+    ok = ev["total"] == 0
+    return ok, f"S1 active events={ev['total']}（期望 0）"
+
+
+def assert_s2(token):
+    _, ev = http("GET", "/api/events", token)
+    if ev["total"] != 1:
+        return False, f"S2 events={ev['total']}（期望 1）"
+    e = ev["items"][0]
+    if e["scopeReachIds"] != ["reach-a", "reach-b"]:
+        return False, f"S2 scope={e['scopeReachIds']}"
+    _, d = http("GET", f"/api/events/{e['eventId']}", token)
+    rels = d["temporalRelations"]
+    if [r["deltaSeconds"] for r in rels] != [540.0]:
+        return False, f"S2 relations={rels}"
+    return True, f"S2 {e['eventId']} scope=A/B rel=540s"
+
+
+def assert_s3(token):
+    _, ev = http("GET", "/api/events", token)
+    if ev["total"] != 1:
+        return False, f"S3 events={ev['total']}"
+    e = ev["items"][0]
+    if e["scopeReachIds"] != ["reach-a", "reach-b", "reach-c"]:
+        return False, f"S3 scope={e['scopeReachIds']}"
+    return True, f"S3 {e['eventId']} scope=A/B/C v{e['version']}"
+
+
+def assert_s4(token):
+    _, ev = http("GET", "/api/events", token)
+    e = ev["items"][0]
+    if "reach-c" in e["scopeReachIds"]:
+        return False, "S4 不应扩展到 C"
+    _, review = http("GET", f"/api/events/{e['eventId']}/review", token)
+    states = {h["state"] for h in review["hypotheses"]}
+    if "NOT_SUPPORT" not in states:
+        return False, f"S4 假设未降级: {states}"
+    return True, "S4 范围止于 A/B，传播假设 NOT_SUPPORT"
+
+
+def assert_s5(token):
+    _, ev = http("GET", "/api/events", token)
+    if ev["total"] != 1:
+        return False, f"S5 events={ev['total']}"
+    e = ev["items"][0]
+    if e["status"] == "RECOVERED":
+        return False, "S5 盲区期间事件不得 RECOVERED"
+    _, bs = http("GET", "/api/blind-spots?active=true", token)
+    if not any(b["reachId"] == "reach-c" for b in bs):
+        return False, f"S5 未形成 C 盲区: {[b['reachId'] for b in bs]}"
+    return True, f"S5 事件 {e['status']}，C 盲区已形成"
+
+
+SCENARIOS = [
+    ("S1", 10, assert_s1),
+    ("S2", 8, assert_s2),
+    ("S3", 8, assert_s3),
+    ("S4", 10, assert_s4),
+    ("S5", 10, assert_s5),
+]
+
+
 def main() -> int:
     if not broker_up():
         print("SKIP: Mosquitto 未在 127.0.0.1:1883 运行")
         return 0
-
-    tmp = Path(tempfile.mkdtemp(prefix="tw_e2e_")) / "e2e.db"
-
-    def make_env(client_id: str):
-        return os.environ | {
-            "DATABASE_URL": f"sqlite:///{tmp.as_posix()}",
-            "MQTT_ENABLED": "true",
-            "MQTT_CLIENT_ID": client_id,
-        }
-
-    def start_server(client_id: str):
-        return subprocess.Popen(
-            [str(PY), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(PORT)],
-            cwd=BACKEND, env=make_env(client_id),
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-        )
-
-    env = make_env("tw-e2e-s1")
-    server: subprocess.Popen | None = None
-    failures: list[str] = []
-    try:
-        # 先在临时库建表 + 种子，再启动服务（避免看门狗查空库）
-        subprocess.run([str(PY), "scripts/init_db.py"], cwd=BACKEND, env=env, check=True, capture_output=True)
-        subprocess.run([str(PY), "scripts/seed_data.py"], cwd=BACKEND, env=env, check=True, capture_output=True)
-
-        server = start_server("tw-e2e-s1")
-        wait_health()
-        token = login()
-
-        # ---- S1：零事件 ----
-        run_scenario("S1", 10)
-        time.sleep(1)
-        _, ev1 = http("GET", "/api/events?status=ACTIVE", token)
-        print(f"S1 active events: {ev1['total']}")
-        if ev1["total"] != 0:
-            failures.append(f"S1 应零事件，实际 {ev1['total']}")
-
-        # ---- S2：重置隔离后用新 client_id 重启，单事件 A/B ----
-        server.terminate(); server.wait(timeout=10); server = None
-        subprocess.run([str(PY), "scripts/reset_db.py", "--yes"], cwd=BACKEND, env=env, check=True, capture_output=True)
-        time.sleep(1)
-        server = start_server("tw-e2e-s2")
-        wait_health()
-        time.sleep(1)
-        token = login()
-        # 等待 MQTT 订阅稳定（避免同 client_id 重连窗口丢消息）
-        time.sleep(2)
-        run_scenario("S2", 8)
-        time.sleep(2)
-        _, ev2 = http("GET", "/api/events", token)
-        print(f"S2 events: {ev2['total']}")
-        # 诊断：消息是否完整接收
-        _, diag = http("GET", "/api/admin/diagnostics", token)
-        print(f"S2 processed messages: {diag['counts']['processedMessages']}, errors: {diag['counts']['ingestionErrors']}")
-        if ev2["total"] != 1:
-            failures.append(f"S2 应单事件，实际 {ev2['total']}")
-        else:
-            e = ev2["items"][0]
-            if e["scopeReachIds"] != ["reach-a", "reach-b"]:
-                failures.append(f"S2 范围错误: {e['scopeReachIds']}")
-            _, detail = http("GET", f"/api/events/{e['eventId']}", token)
-            rels = detail["temporalRelations"]
-            if len(rels) != 1 or rels[0]["deltaSeconds"] != 540:
-                failures.append(f"S2 时序关系错误: {rels}")
-            print(f"S2 {e['eventId']} scope={e['scopeReachIds']} v{e['version']} relations={[r['deltaSeconds'] for r in rels]}")
-
-    except Exception as exc:  # noqa: BLE001
-        failures.append(f"异常: {exc}")
-        if server.poll() is None:
-            print(server.stdout.read()[-2000:])
-    finally:
-        # Windows 下 terminate() 可能留下持有 MQTT 连接的子进程，用 taskkill 杀进程树
-        if server is not None and server.poll() is None:
-            subprocess.run(
-                ["taskkill", "/F", "/T", "/PID", str(server.pid)],
-                capture_output=True,
-            )
-        # 兜底：清理本脚本端口上的监听进程
-        subprocess.run(
-            'for /f "tokens=5" %a in (\'netstat -ano ^| findstr ":8040.*LISTENING"\') do taskkill /F /PID %a',
-            shell=True, capture_output=True,
-        )
-        time.sleep(1)
-
+    failures = []
+    for scenario, speed, check in SCENARIOS:
+        print(f"--- {scenario} ---")
+        try:
+            ok, msg = run_one(scenario, speed, check)
+        except Exception as exc:  # noqa: BLE001
+            ok, msg = False, f"异常: {exc}"
+        print(("PASS " if ok else "FAIL ") + msg)
+        if not ok:
+            failures.append(scenario)
+    print("=" * 40)
     if failures:
-        print("FAIL:")
-        for f in failures:
-            print(" -", f)
+        print(f"E2E FAIL: {failures}")
         return 1
-    print("E2E PASS: S1 零事件，S2 单事件 A/B + 540s 时序关系")
+    print("E2E PASS: S1–S5 全部符合预期")
     return 0
 
 

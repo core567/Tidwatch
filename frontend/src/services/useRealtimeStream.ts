@@ -47,9 +47,19 @@ export function useRealtimeStream(enabled: boolean) {
           case 'event.updated':
           case 'event.status-changed':
           case 'change.detected':
+          case 'focus.updated':
+          case 'focus.resolved':
+          case 'blindspot.created':
+          case 'blindspot.opened':
+          case 'blindspot.resolved':
+          case 'task.created':
+          case 'task.updated':
             void queryClient.invalidateQueries({ queryKey: ['events'] });
             void queryClient.invalidateQueries({
-              predicate: (q) => q.queryKey[0] === 'event',
+              predicate: (q) =>
+                q.queryKey[0] === 'event' || q.queryKey[0] === 'tasks' ||
+                q.queryKey[0] === 'review' || q.queryKey[0] === 'evidence' ||
+                q.queryKey[0] === 'hypotheses' || q.queryKey[0] === 'blindspots',
             });
             break;
           default:

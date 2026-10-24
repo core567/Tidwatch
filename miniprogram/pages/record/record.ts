@@ -1,7 +1,9 @@
-// pages/record/record.ts - 现场巡检记录与拍照上传（M3 对接真实接口）
+// pages/record/record.ts - 现场巡检记录、语音转写与拍照上传（M3/M4 对接真实接口）
 import { uploadPhoto, submitTaskResult } from '../../services/api';
+import { startVoiceRecognition, type VoiceResult } from '../../services/voice';
 
 type PhotoStatus = 'pending' | 'uploading' | 'uploaded' | 'failed';
+interface VoiceHandle { stop: () => void }
 
 interface PhotoItem {
   localPath: string;
@@ -25,14 +27,55 @@ Page({
     photos: [] as PhotoItem[],
     submitting: false,
     errorMsg: '',
+    voiceState: '' as '' | 'start' | 'stop' | 'error',
+    voiceSource: '' as '' | 'VOICE_PLUGIN' | 'MANUAL_FALLBACK',
+    voiceHint: '',
   },
+
+  _voice: null as VoiceHandle | null,
 
   onLoad(query: Record<string, string | undefined>) {
     this.setData({ taskId: query.taskId ?? '' });
   },
 
+  onVoiceStart(): void {
+    if (this.data.voiceState === 'start') return;
+    this.setData({ voiceState: 'start', voiceHint: '正在聆听…' });
+    this._voice = startVoiceRecognition({
+      onState: (state) => this.setData({ voiceState: state }),
+      onResult: (r: VoiceResult) => this._onVoiceResult(r),
+    });
+  },
+
+  onVoiceEnd(): void {
+    this._voice?.stop();
+    this._voice = null;
+    if (this.data.voiceState === 'start') {
+      this.setData({ voiceState: 'stop', voiceHint: '识别中…' });
+    }
+  },
+
+  _onVoiceResult(r: VoiceResult): void {
+    if (r.text) {
+      const sep = this.data.observationNote ? ' ' : '';
+      this.setData({
+        observationNote: this.data.observationNote + sep + r.text,
+        voiceSource: r.source,
+        voiceHint: r.source === 'VOICE_PLUGIN' ? '已通过语音转写追加' : '',
+        voiceState: 'stop',
+      });
+    } else {
+      // 插件不可用/无结果：降级手动输入，不伪造内容
+      this.setData({
+        voiceSource: 'MANUAL_FALLBACK',
+        voiceHint: r.fallbackReason || '请手动输入现场记录',
+        voiceState: 'error',
+      });
+    }
+  },
+
   onNoteInput(e: WechatMiniprogram.TextareaInput): void {
-    this.setData({ observationNote: e.detail.value });
+    this.setData({ observationNote: e.detail.value, voiceSource: 'MANUAL_FALLBACK' });
   },
   onConclusionChange(e: WechatMiniprogram.CustomEvent<{ value: string }>): void {
     this.setData({

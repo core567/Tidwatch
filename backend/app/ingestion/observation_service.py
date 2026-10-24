@@ -192,10 +192,16 @@ def process_observation_payload(
         )
     )
 
-    # 9) 更新断面在线状态；迟到数据不回滚“最后有效观测时间”（Current Fact 不被旧消息覆盖）
+    # 9) 更新断面在线状态。
+    # online_status 反映“链路是否存活”，用接收时刻（墙钟 UTC），
+    # 这样迟到数据（旧 observedAt）不会被看门狗误判为陈旧；
+    # last_seen_at 同时作为“最后有效观测时间”展示，取不回滚的最新观测时刻。
+    received_at = utc_now()
     reach.online_status = "ONLINE"
+    # 看门狗基于独立的链路时间列；这里 last_seen_at 保留业务最新观测（迟到不覆盖）
     if reach.last_seen_at is None or observed_at >= _aware(reach.last_seen_at):
         reach.last_seen_at = observed_at
+    reach.last_received_at = received_at
 
     db.commit()
 
