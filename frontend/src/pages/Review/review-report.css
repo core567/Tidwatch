@@ -1,0 +1,193 @@
+/* F5 正式复盘报告 */
+
+/* 屏幕态：报告根节点不占位（仅打印时由 print 规则显示） */
+.tw-report {
+  display: none;
+}
+
+/* ===== 打印 / 另存 PDF ===== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 14mm 16mm;
+  }
+
+  html, body {
+    background: #fff !important;
+  }
+
+  /* 隐藏应用框架（报告渲染时交互页已卸载，仅需隐藏外壳） */
+  .tw-sidebar,
+  .tw-topbar {
+    display: none !important;
+  }
+
+  /* 隐藏全局通知/浮层等非报告节点 */
+  body * {
+    visibility: hidden;
+  }
+  .tw-report,
+  .tw-report * {
+    visibility: visible;
+  }
+  .tw-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .tw-content {
+    padding: 0 !important;
+    overflow: visible !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .tw-report {
+    display: block !important;
+    color: #1d2b3a;
+    font-size: 11.5pt;
+    line-height: 1.6;
+  }
+
+  .tw-report-head {
+    text-align: center;
+    border-bottom: 2px solid var(--tw-primary-800);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+  .tw-report-brand {
+    font-size: 10pt;
+    letter-spacing: 1px;
+    color: var(--tw-text-secondary);
+  }
+  .tw-report-head h1 {
+    font-size: 20pt;
+    margin: 6px 0;
+    color: var(--tw-primary-800);
+  }
+  .tw-report-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9.5pt;
+    color: var(--tw-text-secondary);
+  }
+
+  .tw-report-section {
+    break-inside: avoid-page;
+    margin-bottom: 14px;
+  }
+  .tw-report-section h2 {
+    font-size: 13pt;
+    color: var(--tw-primary-800);
+    border-left: 4px solid var(--tw-accent);
+    padding-left: 8px;
+    margin: 0 0 8px;
+  }
+  .tw-report-no {
+    display: inline-block;
+    margin-right: 8px;
+    color: var(--tw-accent);
+  }
+  .tw-report-section h4 {
+    font-size: 11pt;
+    margin: 10px 0 4px;
+  }
+
+  .tw-kv-table,
+  .tw-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    margin: 4px 0;
+  }
+  .tw-data-table th,
+  .tw-data-table td,
+  .tw-kv-table td {
+    border: 1px solid #cdd6e0;
+    padding: 5px 8px;
+    vertical-align: top;
+    text-align: left;
+  }
+  .tw-data-table th {
+    background: #f2f6fb;
+  }
+  .tw-kv-k {
+    width: 130px;
+    background: #f7f9fc;
+    color: var(--tw-text-secondary);
+  }
+  tr.is-superseded {
+    color: var(--tw-text-tertiary);
+  }
+
+  .tw-report-summary {
+    background: #f4f8ff;
+    border: 1px solid #d5e2f4;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 0;
+  }
+  .tw-report-assess {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .tw-report-task {
+    break-inside: avoid;
+    margin-bottom: 10px;
+  }
+  .tw-report-list {
+    margin: 4px 0;
+    padding-left: 18px;
+  }
+  .tw-report-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .tw-report-timeline li {
+    border-left: 2px solid #d5e2f4;
+    padding: 0 0 8px 12px;
+    break-inside: avoid;
+  }
+  .tw-report-muted {
+    color: var(--tw-text-tertiary);
+    font-size: 9pt;
+  }
+  .tw-report-note {
+    font-size: 9.5pt;
+    color: var(--tw-watch);
+    margin: 6px 0 0;
+  }
+  .tw-report-missing {
+    display: block;
+    color: var(--tw-text-tertiary);
+    font-size: 10pt;
+  }
+  .tw-report-missing-inline {
+    color: var(--tw-text-tertiary);
+  }
+
+  .tw-report-foot {
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid #cdd6e0;
+    font-size: 9pt;
+    color: var(--tw-text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* 徽章/标签打印去底色，保留描边 */
+  .tw-report .badge,
+  .tw-report .tw-tag {
+    border: 1px solid #94a3b8;
+    background: #fff !important;
+    color: #1d2b3a !important;
+  }
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
@@ -6,6 +6,8 @@ import ObservationCompare from '@/components/ObservationCompare';
 import { Button, Card, EmptyState, PageHeader, Tag, Tabs } from '@/components/ui';
 import BusinessTimeline from '@/components/BusinessTimeline';
 import { EventStatusBadge, formatTime, reachName } from '@/components/EventBits';
+import { RECOVERY_FACTOR_CN } from '@/lib/recoveryFactorCn';
+import ReviewReport from './ReviewReport';
 import type {
   EventReviewDetail,
   RecoveryAssessment,
@@ -22,15 +24,33 @@ const TAB_ITEMS = [
 ];
 
 const CONCLUSION_CN: Record<string, string> = { NORMAL: '正常', ABNORMAL: '异常', UNCERTAIN: '无法确认' };
+const FACTOR_CN: Record<string, string> = Object.fromEntries(
+  Object.entries(RECOVERY_FACTOR_CN).map(([k, v]) => [k, v.name]),
+);
 
 export default function EventReviewPage() {
   const { eventId = '' } = useParams();
   const navigate = useNavigate();
   const [tab, setTab] = useState('overview');
+  const [printing, setPrinting] = useState(false);
 
   const eventQ = useQuery({ queryKey: ['event', eventId], queryFn: () => api.event(eventId) });
   const reviewQ = useQuery({ queryKey: ['review-detail', eventId], queryFn: () => api.eventReviewDetail(eventId) });
   const assessQ = useQuery({ queryKey: ['recovery', eventId], queryFn: () => api.recoveryAssessment(eventId) });
+
+  // 打印结束（含取消）后退出报告模式
+  useEffect(() => {
+    if (!printing) return;
+    const onAfter = () => setPrinting(false);
+    window.addEventListener('afterprint', onAfter);
+    return () => window.removeEventListener('afterprint', onAfter);
+  }, [printing]);
+
+  const startPrint = () => {
+    setPrinting(true);
+    // 等待报告 DOM 渲染后唤起打印
+    setTimeout(() => window.print(), 120);
+  };
 
   if (eventQ.isLoading || reviewQ.isLoading) return <div className="state-box">复盘数据加载中…</div>;
   if (eventQ.isError || reviewQ.isError)
@@ -44,6 +64,13 @@ export default function EventReviewPage() {
   const event = eventQ.data!;
   const review = reviewQ.data!;
   const assess = assessQ.data;
+  const nowStr = new Date().toLocaleString('zh-CN', { hour12: false });
+
+  if (printing) {
+    return (
+      <ReviewReport eventId={eventId} review={review} assessment={assess} now={nowStr} />
+    );
+  }
 
   return (
     <div className="tw-stack">
@@ -65,6 +92,7 @@ export default function EventReviewPage() {
             <Button size="sm" variant="ghost" onClick={() => navigate('/review')}>← 复盘列表</Button>
             <Button size="sm" variant="ghost" onClick={() => navigate(`/events/${eventId}/workbench`)}>研判工作台</Button>
             <Button size="sm" variant="ghost" onClick={() => navigate(`/reviews/${eventId}`)}>旧版研判单</Button>
+            <Button size="sm" onClick={startPrint}>🖨 打印 / 导出 PDF</Button>
           </>
         }
       />
@@ -119,7 +147,8 @@ function RecoveryBanner({ assess, loading }: { assess?: RecoveryAssessment; load
           <div key={f.code} className="tw-factor">
             <span className={`tw-factor-dot ${f.passed === true ? 'is-ok' : f.passed === false ? 'is-danger' : 'is-muted'}`} />
             <div>
-              <b>{f.code.replace(/_/g, ' ')}</b>
+              <b>{FACTOR_CN[f.code] ?? f.code}</b>
+              <span className="tw-factor-code">{f.code}</span>
               <span className={`tw-factor-state ${f.passed === true ? 'ok' : f.passed === false ? 'danger' : 'muted'}`}>
                 {f.passed === true ? '通过' : f.passed === false ? '不满足' : '信息不足'}
               </span>
