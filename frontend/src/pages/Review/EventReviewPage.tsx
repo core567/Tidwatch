@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
+import ObservationCompare from '@/components/ObservationCompare';
 import { Button, Card, EmptyState, PageHeader, Tag, Tabs } from '@/components/ui';
 import BusinessTimeline from '@/components/BusinessTimeline';
 import { EventStatusBadge, formatTime, reachName } from '@/components/EventBits';
@@ -72,7 +73,7 @@ export default function EventReviewPage() {
 
       <Tabs items={TAB_ITEMS} active={tab} onChange={setTab} />
 
-      {tab === 'overview' && <OverviewTab review={review} />}
+      {tab === 'overview' && <OverviewTab review={review} assessment={assess} eventId={eventId} />}
       {tab === 'timeline' && (
         <Card title="统一时间线" subtitle="事件迁移 / 任务派发 / 现场提交 / 复核 / 证据 / 盲区（business_events）">
           <BusinessTimeline eventId={eventId} />
@@ -134,43 +135,54 @@ function RecoveryBanner({ assess, loading }: { assess?: RecoveryAssessment; load
   );
 }
 
-function OverviewTab({ review }: { review: EventReviewDetail }) {
+function OverviewTab({
+  review,
+  assessment,
+  eventId,
+}: {
+  review: EventReviewDetail;
+  assessment?: RecoveryAssessment;
+  eventId: string;
+}) {
   return (
-    <div className="tw-rev-overview">
-      <Card title="事件概要">
-        <Row k="事件编号" v={review.eventId} />
-        <Row k="当前状态" v={<EventStatusBadge status={review.status} />} />
-        <Row k="优先级" v={review.priority} />
-        <Row k="涉及范围" v={review.scope.map(reachName).join(' → ') || '—'} />
-        <Row k="首发时间" v={review.firstSeenAt ? formatTime(review.firstSeenAt) : '—'} />
-        <Row k="最近更新" v={review.updatedAt ? formatTime(review.updatedAt) : '—'} />
-      </Card>
-      <Card title="范围演化（版本）" subtitle="范围收窄/扩展均留版本">
-        {review.scopeHistory.length === 0 ? (
-          <EmptyState title="无范围版本" />
-        ) : (
-          review.scopeHistory.map((s) => (
-            <div key={s.version} className="tw-scope-row">
-              <Tag tone="outline">v{s.version}</Tag>
-              <b>{s.reaches.map(reachName).join(' → ') || '—'}</b>
-              {s.reason && <span className="tw-tiny"> {s.reason}</span>}
-            </div>
-          ))
-        )}
-      </Card>
-      <Card title="现场处置概览">
-        {review.tasks.length === 0 ? (
-          <EmptyState title="暂无关联巡检任务" description="研判工作台派发任务后在此汇总。" />
-        ) : (
-          review.tasks.map((t) => (
-            <div key={t.id} className="tw-scope-row">
-              <Tag tone={t.status === 'APPROVED' ? 'ok' : t.status === 'CANCELLED' ? 'muted' : 'watch'}>{t.status}</Tag>
-              <span>{t.title}</span>
-              <span className="tw-tiny">{reachName(t.reachId)} · {t.submissions.length} 次提交 · {t.reviews.length} 次复核</span>
-            </div>
-          ))
-        )}
-      </Card>
+    <div className="tw-stack">
+      <ObservationCompare eventId={eventId} assessment={assessment} />
+      <div className="tw-rev-overview">
+        <Card title="事件概要">
+          <Row k="事件编号" v={review.eventId} />
+          <Row k="当前状态" v={<EventStatusBadge status={review.status} />} />
+          <Row k="优先级" v={review.priority} />
+          <Row k="涉及范围" v={review.scope.map(reachName).join(' → ') || '—'} />
+          <Row k="首发时间" v={review.firstSeenAt ? formatTime(review.firstSeenAt) : '—'} />
+          <Row k="最近更新" v={review.updatedAt ? formatTime(review.updatedAt) : '—'} />
+        </Card>
+        <Card title="范围演化（版本）" subtitle="范围收窄/扩展均留版本">
+          {review.scopeHistory.length === 0 ? (
+            <EmptyState title="无范围版本" />
+          ) : (
+            review.scopeHistory.map((s) => (
+              <div key={s.version} className="tw-scope-row">
+                <Tag tone="outline">v{s.version}</Tag>
+                <b>{s.reaches.map(reachName).join(' → ') || '—'}</b>
+                {s.reason && <span className="tw-tiny"> {s.reason}</span>}
+              </div>
+            ))
+          )}
+        </Card>
+        <Card title="现场处置概览">
+          {review.tasks.length === 0 ? (
+            <EmptyState title="暂无关联巡检任务" description="研判工作台派发任务后在此汇总。" />
+          ) : (
+            review.tasks.map((t) => (
+              <div key={t.id} className="tw-scope-row">
+                <Tag tone={t.status === 'APPROVED' ? 'ok' : t.status === 'CANCELLED' ? 'muted' : 'watch'}>{t.status}</Tag>
+                <span>{t.title}</span>
+                <span className="tw-tiny">{reachName(t.reachId)} · {t.submissions.length} 次提交 · {t.reviews.length} 次复核</span>
+              </div>
+            ))
+          )}
+        </Card>
+      </div>
     </div>
   );
 }
