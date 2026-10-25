@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -14,12 +15,17 @@ from app.core.config import settings
 from app.core.errors import AppError, NotFoundError
 from app.db.session import get_db
 from app.models.system import User
+from app.models.workflow import TaskReview
 from app.schemas.common import PageResult
 from app.schemas.task import (
     CreateTaskIn,
+    ReviewBrief,
     SubmitTaskIn,
+    SubmissionOut,
     TaskActionIn,
     TaskOut,
+    TaskReviewOut,
+    UpdateDraftIn,
 )
 from app.services import task_service
 
@@ -36,7 +42,24 @@ def _out(t) -> TaskOut:
         attachmentIds=json.loads(t.attachment_ids or "[]"),
         observedAt=t.observed_at, completedAt=t.completed_at,
         createdAt=t.created_at,
+        draft=(t.status == "DRAFT"),
     )
+
+
+def _out_detail(db, t) -> TaskOut:
+    sub = task_service.latest_submission(db, t.task_id)
+    review = db.execute(
+        select(TaskReview).where(TaskReview.task_id == t.task_id)
+        .order_by(TaskReview.reviewed_at.desc()).limit(1)
+    ).scalar_one_or_none()
+    base = _out(t).model_copy(deep=True)
+    base.latest_version = sub.version if sub else 0
+    if review:
+        base.latest_review = ReviewBrief(
+            decision=review.decision, comment=review.comment,
+            reviewer=review.reviewer, reviewed_at=review.reviewed_at,
+        )
+    return base
 
 
 @router.get("", response_model=PageResult[TaskOut])
@@ -45,18 +68,20 @@ def list_tasks(
     assignee: str | None = None,
     eventId: str | None = None,
     mine: bool = False,
+    includeDrafts: bool = False,
     page: int = 1,
     pageSize: int = 50,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    # 演示模式免登录：mine 也返回全部任务（公网启用鉴权后再按用户/角色过滤）
-    if mine:
-        rows = task_service.list_tasks(db, status=status, event_id=eventId)
-    else:
-        rows = task_service.list_tasks(
-            db, status=status, assignee=assignee, event_id=eventId
-        )
+    # 小程序/现场端默认不含草稿；PC 管理端传 includeDrafts=true 才看 DRAFT
+    rows = task_service.list_tasks(
+        db,
+        status=status,
+        assignee=assignee if not mine else (user.user_id if mine else None),
+        event_id=eventId,
+        include_drafts=includeDrafts,
+    )
     total = len(rows)
     chunk = rows[(page - 1) * pageSize: page * pageSize]
     return PageResult[TaskOut](
@@ -74,11 +99,28 @@ def create_task(
         db, event_id=body.event_id, focus_id=body.focus_id,
         reach_id=body.reach_id, action_type=body.action_type, title=body.title,
         priority=body.priority, due_at=body.due_at, reason=body.reason,
-        assignee=body.assignee, created_by=_admin.user_id,
+        assignee=body.assignee, created_by=_admin.user_id, draft=body.draft,
     )
     db.commit()
-    _notify_task(task, "task.created")
-    return _out(task)
+    if not body.draft:
+        _notify_task(task, "task.created")
+    return _out_detail(db, task)
+
+
+@router.patch("/{task_id}", response_model=TaskOut)
+def update_draft(
+    task_id: str,
+    body: UpdateDraftIn,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    task = task_service.update_draft(
+        db, task_id, actor=_admin.user_id,
+        title=body.title, priority=body.priority, reason=body.reason,
+        reach_id=body.reach_id, due_at=body.due_at,
+    )
+    db.commit()
+    return _out_detail(db, task)
 
 
 @router.get("/{task_id}", response_model=TaskOut)
@@ -87,7 +129,7 @@ def get_task(
     db: Session = Depends(get_db),
     _user: User = Depends(get_current_user),
 ):
-    return _out(task_service.get_task(db, task_id))
+    return _out_detail(db, task_service.get_task(db, task_id))
 
 
 @router.get("/{task_id}/timeline")
@@ -112,11 +154,12 @@ def task_action(
     user: User = Depends(get_current_user),
 ):
     task = task_service.act_task(
-        db, task_id, body.action, actor=user.user_id, assignee=user.user_id
+        db, task_id, body.action, actor=user.user_id, assignee=user.user_id,
+        comment=body.comment,
     )
     db.commit()
     _notify_task(task, "task.updated")
-    return _out(task)
+    return _out_detail(db, task)
 
 
 @router.post("/{task_id}/results", response_model=TaskOut)
@@ -130,10 +173,49 @@ def submit_result(
         db, task_id, observation_note=body.observation_note,
         conclusion=body.conclusion, attachment_ids=body.attachment_ids,
         observed_at=body.observed_at, actor=user.user_id,
+        measurements=body.measurements,
     )
     db.commit()
     _notify_task(task, "task.updated")
-    return _out(task)
+    return _out_detail(db, task)
+
+
+@router.get("/{task_id}/submissions", response_model=list[SubmissionOut])
+def list_submissions(
+    task_id: str,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    task_service.get_task(db, task_id)
+    return [
+        SubmissionOut(
+            submissionId=s.submission_id, taskId=s.task_id, version=s.version,
+            observationNote=s.observation_note, conclusion=s.conclusion,
+            measurements=json.loads(s.measurements_json or "[]"),
+            observedAt=s.observed_at,
+            attachmentIds=json.loads(s.attachment_ids_json or "[]"),
+            submittedBy=s.submitted_by, submittedAt=s.submitted_at,
+            supersededAt=s.superseded_at,
+        )
+        for s in task_service.list_submissions(db, task_id)
+    ]
+
+
+@router.get("/{task_id}/reviews", response_model=list[TaskReviewOut])
+def list_reviews(
+    task_id: str,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    task_service.get_task(db, task_id)
+    return [
+        TaskReviewOut(
+            reviewId=r.review_id, taskId=r.task_id, submissionId=r.submission_id,
+            version=r.version, decision=r.decision, comment=r.comment,
+            reviewer=r.reviewer, reviewedAt=r.reviewed_at,
+        )
+        for r in task_service.list_reviews(db, task_id)
+    ]
 
 
 def _notify_task(task, message_type: str = "task.updated") -> None:

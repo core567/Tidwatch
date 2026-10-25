@@ -140,13 +140,16 @@ def clean_event_tables(client):
     from app.models.event import ChangeEvent, EventScope, EventStatusTransition, TemporalRelation
     from app.models.evidence import Evidence, Hypothesis
     from app.models.focus import BlindSpot, ObservationFocus
-    from app.models.workflow import Assessment, EventReview, InspectionTask, RunTrace
+    from app.models.workflow import (
+        Assessment, EventReview, InspectionTask, RunTrace, TaskReview, TaskSubmission,
+    )
     from app.models.observation import Attachment, Observation
     from app.models.event import ActiveEvent
     from app.models.audit import BusinessEvent
 
+    # 子表（含指向 inspection_tasks 的硬外键）先于父表删除
     tables = (
-        BusinessEvent,
+        TaskSubmission, TaskReview, BusinessEvent,
         TemporalRelation, ChangeEvent, EventStatusTransition, EventScope,
         Evidence, Hypothesis, Assessment, BlindSpot, ObservationFocus,
         RunTrace, EventReview, InspectionTask, Attachment, Observation, ActiveEvent,

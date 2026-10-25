@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, utc_now
@@ -98,3 +98,50 @@ class EventReview(Base, TimestampMixin):
     next_steps: Mapped[str] = mapped_column(Text, default="")
     evidence_snapshot_json: Mapped[str] = mapped_column(Text, default="{}")
     created_by: Mapped[str] = mapped_column(String(64), default="SYSTEM")
+
+
+class TaskSubmission(Base):
+    """现场提交版本（追加式，不更新不删除）。每次回填新增一行。"""
+
+    __tablename__ = "task_submissions"
+    __table_args__ = (
+        UniqueConstraint("task_id", "version", name="uq_task_submission_version"),
+    )
+
+    submission_id: Mapped[str] = mapped_column(String(48), primary_key=True)
+    task_id: Mapped[str] = mapped_column(
+        ForeignKey("inspection_tasks.task_id"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer)
+    observation_note: Mapped[str] = mapped_column(Text)
+    conclusion: Mapped[str] = mapped_column(String(16))
+    measurements_json: Mapped[str] = mapped_column(Text, default="[]")
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    attachment_ids_json: Mapped[str] = mapped_column(Text, default="[]")
+    submitted_by: Mapped[str] = mapped_column(String(64), default="SYSTEM")
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+    # 被退回后该版本归档（不再是最新），历史行保留不删
+    superseded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class TaskReview(Base):
+    """PC 复核记录（追加式）：批准或退回及原因。"""
+
+    __tablename__ = "task_reviews"
+
+    review_id: Mapped[str] = mapped_column(String(48), primary_key=True)
+    task_id: Mapped[str] = mapped_column(
+        ForeignKey("inspection_tasks.task_id"), index=True
+    )
+    submission_id: Mapped[str] = mapped_column(String(48), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    decision: Mapped[str] = mapped_column(String(16))  # APPROVED / REJECTED
+    comment: Mapped[str] = mapped_column(Text, default="")
+    reviewer: Mapped[str] = mapped_column(String(64), default="SYSTEM")
+    reviewed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )

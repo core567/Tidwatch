@@ -32,6 +32,8 @@ from app.models.workflow import (
     EventReview,
     InspectionTask,
     RunTrace,
+    TaskReview,
+    TaskSubmission,
 )
 
 __all__ = [
@@ -58,6 +60,8 @@ __all__ = [
     "ProcessedMessage",
     "IngestionError",
     "InspectionTask",
+    "TaskSubmission",
+    "TaskReview",
     "Assessment",
     "RunTrace",
     "EventReview",
