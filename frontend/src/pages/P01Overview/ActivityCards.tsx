@@ -161,10 +161,12 @@ export function InspectionActivityCard({ tasks, loading }: { tasks: InspectionTa
 function taskStatusLabel(status: InspectionTask['status']): string {
   return (
     {
+      DRAFT: '草稿',
       PENDING: '待接收',
       ACCEPTED: '已接收',
       IN_PROGRESS: '巡检中',
       SUBMITTED: '待复核',
+      APPROVED: '已完成',
       CANCELLED: '已取消',
     }[status] ?? status
   );

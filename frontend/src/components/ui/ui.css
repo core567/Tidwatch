@@ -807,3 +807,14 @@
   z-index: 0;
 }
 .tw-pipeline-link.is-done { background: #1e6fe0; }
+
+/* ---------- 任务版本/复核卡片 ---------- */
+.tw-sub-card {
+  border: 1px solid var(--tw-border);
+  border-radius: var(--tw-radius-sm);
+  padding: 10px 12px;
+  margin-top: 8px;
+  background: #fbfcfe;
+}
+.tw-row-click { cursor: pointer; transition: background-color 0.12s ease; }
+.tw-row-click:hover { background: var(--tw-sidebar-hover-bg); }

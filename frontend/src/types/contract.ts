@@ -230,7 +230,40 @@ export interface EventFrequency {
 }
 
 export type InspectionTaskStatus =
-  | 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'CANCELLED';
+  | 'DRAFT' | 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS'
+  | 'SUBMITTED' | 'APPROVED' | 'CANCELLED';
+
+export interface TaskReviewBrief {
+  decision: 'APPROVED' | 'REJECTED';
+  comment: string;
+  reviewer: string;
+  reviewedAt: string;
+}
+
+export interface TaskSubmission {
+  submissionId: string;
+  taskId: string;
+  version: number;
+  observationNote: string;
+  conclusion: 'NORMAL' | 'ABNORMAL' | 'UNCERTAIN';
+  measurements: unknown[];
+  observedAt: string;
+  attachmentIds: string[];
+  submittedBy: string;
+  submittedAt: string;
+  supersededAt: string | null;
+}
+
+export interface TaskReviewRecord {
+  reviewId: string;
+  taskId: string;
+  submissionId: string;
+  version: number;
+  decision: 'APPROVED' | 'REJECTED';
+  comment: string;
+  reviewer: string;
+  reviewedAt: string;
+}
 
 export interface InspectionTask {
   taskId: string;
@@ -250,6 +283,9 @@ export interface InspectionTask {
   observedAt: string | null;
   completedAt: string | null;
   createdAt: string;
+  draft?: boolean;
+  latestVersion?: number;
+  latestReview?: TaskReviewBrief | null;
 }
 
 export interface Evidence {

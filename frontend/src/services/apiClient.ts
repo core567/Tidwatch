@@ -41,7 +41,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body?: any;
   signal?: AbortSignal;
@@ -174,8 +174,44 @@ export const api = {
       { method: 'POST', body: { polarity, evidenceIds } },
     ),
   // 巡检任务（PC 管理端）
-  tasks: (params: { status?: string; eventId?: string; mine?: boolean } = {}) =>
+  tasks: (params: {
+    status?: string;
+    eventId?: string;
+    mine?: boolean;
+    includeDrafts?: boolean;
+    page?: number;
+    pageSize?: number;
+  } = {}) =>
     apiPage<import('@/types/contract').InspectionTask>('/inspection-tasks', params),
+  task: (taskId: string) =>
+    request<import('@/types/contract').InspectionTask>(
+      `/inspection-tasks/${encodeURIComponent(taskId)}`,
+    ),
+  taskSubmissions: (taskId: string) =>
+    request<import('@/types/contract').TaskSubmission[]>(
+      `/inspection-tasks/${encodeURIComponent(taskId)}/submissions`,
+    ),
+  taskReviews: (taskId: string) =>
+    request<import('@/types/contract').TaskReviewRecord[]>(
+      `/inspection-tasks/${encodeURIComponent(taskId)}/reviews`,
+    ),
+  taskAction: (
+    taskId: string,
+    action: 'ACCEPT' | 'START' | 'CANCEL' | 'DISPATCH' | 'APPROVE' | 'REJECT',
+    opts: { comment?: string } = {},
+  ) =>
+    request<import('@/types/contract').InspectionTask>(
+      `/inspection-tasks/${encodeURIComponent(taskId)}/actions`,
+      { method: 'POST', body: { action, comment: opts.comment ?? null } },
+    ),
+  updateDraft: (
+    taskId: string,
+    body: { title?: string; priority?: string; reason?: string; reachId?: string },
+  ) =>
+    request<import('@/types/contract').InspectionTask>(
+      `/inspection-tasks/${encodeURIComponent(taskId)}`,
+      { method: 'PATCH', body },
+    ),
   createTask: (body: {
     eventId?: string;
     focusId?: string;
@@ -184,6 +220,7 @@ export const api = {
     priority?: string;
     reason?: string;
     assignee?: string;
+    draft?: boolean;
   }) =>
     request<import('@/types/contract').InspectionTask>('/inspection-tasks', { method: 'POST', body }),
   taskAttachments: (taskId: string) =>

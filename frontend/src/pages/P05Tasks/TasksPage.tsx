@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '@/services/apiClient';
 import { reachName } from '@/components/EventBits';
 import { TaskPhotos } from '@/components/TaskPhotos';
+import TaskDetailDrawer from '@/components/TaskDetailDrawer';
 import {
   Button,
   Card,
@@ -19,17 +20,21 @@ import type { InspectionTask } from '@/types/contract';
 
 const FILTERS = [
   { value: '', label: '全部' },
+  { value: 'DRAFT', label: '草稿' },
   { value: 'PENDING', label: '待接收' },
   { value: 'IN_PROGRESS', label: '进行中' },
-  { value: 'SUBMITTED', label: '已回填' },
+  { value: 'SUBMITTED', label: '待复核' },
+  { value: 'APPROVED', label: '已完成' },
   { value: 'CANCELLED', label: '已取消' },
 ];
 
 const STATUS: Record<string, { text: string; tone: 'ok' | 'watch' | 'muted' }> = {
+  DRAFT: { text: '草稿', tone: 'muted' },
   PENDING: { text: '待接收', tone: 'watch' },
   ACCEPTED: { text: '已接收', tone: 'watch' },
   IN_PROGRESS: { text: '进行中', tone: 'watch' },
-  SUBMITTED: { text: '已回填', tone: 'ok' },
+  SUBMITTED: { text: '待复核', tone: 'watch' },
+  APPROVED: { text: '已完成', tone: 'ok' },
   CANCELLED: { text: '已取消', tone: 'muted' },
 };
 const CONCLUSION = { NORMAL: '正常', ABNORMAL: '异常', UNCERTAIN: '无法确认' };
@@ -39,10 +44,12 @@ export default function TasksPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
   const tasksQ = useQuery({
     queryKey: ['tasks', status],
-    queryFn: () => api.tasks({ status: status || undefined }),
+    // PC 管理端包含草稿
+    queryFn: () => api.tasks({ status: status || undefined, includeDrafts: true }),
     refetchInterval: 10000,
   });
 
@@ -105,7 +112,7 @@ export default function TasksPage() {
             </thead>
             <tbody>
               {tasks.map((t) => (
-                <tr key={t.taskId}>
+                <tr key={t.taskId} className="tw-row-click" onClick={() => setOpenTaskId(t.taskId)}>
                   <Td>
                     <div style={{ fontWeight: 600, color: 'var(--tw-primary-800)' }}>{t.title}</div>
                     <div className="tw-tiny">
@@ -117,7 +124,10 @@ export default function TasksPage() {
                     {t.eventId ? (
                       <button
                         type="button"
-                        onClick={() => navigate(`/events/${t.eventId}/workbench`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/events/${t.eventId}/workbench`);
+                        }}
                         style={{
                           border: 'none',
                           background: 'none',
@@ -157,7 +167,7 @@ export default function TasksPage() {
                       '—'
                     )}
                   </Td>
-                  <Td>
+                  <Td onClick={(e) => e.stopPropagation()}>
                     <TaskPhotos taskId={t.taskId} count={t.attachmentIds.length} />
                   </Td>
                   <Td className="tw-tiny" style={{ maxWidth: 240 }}>
@@ -179,6 +189,9 @@ export default function TasksPage() {
           }}
         />
       )}
+      {openTaskId && (
+        <TaskDetailDrawer taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
+      )}
     </div>
   );
 }
@@ -188,14 +201,18 @@ function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [title, setTitle] = useState('');
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  async function submit() {
-    if (title.trim().length < 2) {
+  async function submit(draft: boolean) {
+    if (!draft && title.trim().length < 2) {
       setError('任务标题至少 2 个字');
       return;
     }
-    setBusy(true);
+    if (draft && title.trim().length < 2) {
+      setError('草稿标题至少 2 个字');
+      return;
+    }
+    setBusy(draft ? 'draft' : 'dispatch');
     setError('');
     try {
       await api.createTask({
@@ -203,11 +220,12 @@ function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreate
         title: title.trim(),
         reason: reason.trim(),
         priority: 'NORMAL',
+        draft,
       });
       onCreated();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : (e as Error).message);
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -225,7 +243,7 @@ function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreate
       }}
     >
       <div className="card" onClick={(e) => e.stopPropagation()} style={{ width: 420, padding: 20 }}>
-        <h3 style={{ margin: '0 0 12px' }}>派发巡检任务</h3>
+        <h3 style={{ margin: '0 0 12px' }}>新建巡检任务</h3>
         <label className="muted" style={{ fontSize: 12 }}>
           监测断面
         </label>
@@ -255,13 +273,16 @@ function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreate
         {error && (
           <div style={{ color: 'var(--tw-danger)', fontSize: 12.5, margin: '8px 0' }}>{error}</div>
         )}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
-          <Button variant="ghost" onClick={onClose}>
-            取消
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', marginTop: 12 }}>
+          <Button variant="ghost" disabled={busy !== null} onClick={() => submit(true)}>
+            {busy === 'draft' ? '保存中…' : '存草稿'}
           </Button>
-          <Button disabled={busy} onClick={submit}>
-            {busy ? '派发中…' : '派发'}
-          </Button>
+          <div className="tw-row" style={{ gap: 8 }}>
+            <Button variant="ghost" onClick={onClose}>取消</Button>
+            <Button disabled={busy !== null} onClick={() => submit(false)}>
+              {busy === 'dispatch' ? '派发中…' : '直接派发'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
