@@ -210,6 +210,21 @@ export interface EventReview {
   disclaimer: string;
 }
 
+/** F3 复盘详情使用的完整 review payload（任务内嵌版本/复核）。 */
+export interface ReviewBlindSpot {
+  reachId: string;
+  resolved: boolean;
+  reason: string;
+  impact?: string | null;
+}
+export interface EventReviewDetail extends Omit<EventReview, 'tasks'> {
+  tasks: ReviewTaskRecord[];
+  taskSubmissions: ReviewSubmission[];
+  taskReviews: TaskReviewRecord[];
+  blindSpots?: ReviewBlindSpot[];
+  focuses?: unknown[];
+}
+
 export interface MonthlyStats {
   totalRecords: number;
   totalBatches: number;
@@ -256,13 +271,64 @@ export interface TaskSubmission {
 
 export interface TaskReviewRecord {
   reviewId: string;
-  taskId: string;
+  taskId?: string;
   submissionId: string;
   version: number;
   decision: 'APPROVED' | 'REJECTED';
   comment: string;
   reviewer: string;
   reviewedAt: string;
+}
+
+/** review payload 中任务内嵌的提交版本（含所属任务）。 */
+export type ReviewSubmission = TaskSubmission & { taskId?: string };
+export interface ReviewTaskRecord {
+  id: string;
+  reachId: string;
+  title: string;
+  status: InspectionTaskStatus;
+  conclusion: 'NORMAL' | 'ABNORMAL' | 'UNCERTAIN' | null;
+  note: string | null;
+  submissions: TaskSubmission[];
+  reviews: TaskReviewRecord[];
+}
+
+export interface RecoveryFactor {
+  code: string;
+  passed: boolean | null;
+  weight: string;
+  detail: string;
+  sources: string[];
+}
+export interface RecoveryWindow {
+  reachId: string;
+  metric: string;
+  phase: 'BASELINE' | 'ANOMALY' | 'POST';
+  start: string | null;
+  end: string | null;
+  sampleCount: number;
+  median: number | null;
+  mean: number | null;
+  p05: number | null;
+  p95: number | null;
+  unit: string;
+  sourceType: string;
+  badQuality: number;
+  exceedRatio: number | null;
+  threshold: number | number[] | null;
+  anomalyPeak: number | null;
+}
+export interface RecoveryAssessment {
+  eventId: string;
+  result: 'RECOVERED_SUPPORTED' | 'NEEDS_OBSERVATION' | 'INSUFFICIENT_EVIDENCE';
+  label: string;
+  evaluatedAt: string;
+  ruleVersion: string;
+  currentStatus: EventStatus;
+  anchor: { at: string | null; source: string | null; note: string };
+  factors: RecoveryFactor[];
+  windows: RecoveryWindow[];
+  disclaimers: string[];
 }
 
 export interface InspectionTask {

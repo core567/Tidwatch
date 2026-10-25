@@ -1,0 +1,127 @@
+/* F3 单事件复盘详情 */
+.tw-rev-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--tw-space-4);
+  align-items: start;
+}
+
+/* 恢复评估横幅 */
+.tw-recover-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.tw-recover-cell {
+  border: 1px solid var(--tw-border);
+  border-radius: var(--tw-radius-sm);
+  padding: 10px 12px;
+  background: #fbfcfe;
+}
+.tw-recover-k {
+  font-size: 12px;
+  color: var(--tw-text-secondary);
+  margin-bottom: 5px;
+}
+.tw-recover-conclusion {
+  font-weight: 700;
+  color: var(--tw-primary-800);
+}
+.tw-factor-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px 16px;
+}
+.tw-factor {
+  display: flex;
+  gap: 9px;
+  font-size: 12.5px;
+}
+.tw-factor-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-top: 5px;
+}
+.tw-factor-dot.is-ok { background: var(--tw-ok); }
+.tw-factor-dot.is-danger { background: var(--tw-danger); }
+.tw-factor-dot.is-muted { background: var(--tw-text-tertiary); }
+.tw-factor-state {
+  margin-left: 6px;
+  font-size: 11.5px;
+}
+.tw-factor-state.ok { color: var(--tw-ok); }
+.tw-factor-state.danger { color: var(--tw-danger); }
+.tw-factor-state.muted { color: var(--tw-text-tertiary); }
+.tw-recover-warn {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--tw-watch);
+}
+
+/* 范围/处置行 */
+.tw-scope-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--tw-border);
+  font-size: 13px;
+}
+.tw-scope-row:last-child { border-bottom: none; }
+
+/* 现场提交版本 */
+.tw-submission {
+  border: 1px solid var(--tw-border);
+  border-radius: var(--tw-radius-sm);
+  padding: 10px 12px;
+  margin-top: 10px;
+  background: #fff;
+}
+.tw-submission.is-superseded {
+  background: #f6f8fa;
+  opacity: 0.92;
+}
+.tw-submission-body {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--tw-border);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.tw-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tw-photo-chip {
+  font-size: 12px;
+  color: var(--tw-accent);
+  border: 1px solid var(--tw-border);
+  border-radius: 6px;
+  padding: 4px 9px;
+  background: #fff;
+}
+.tw-review-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f4f7fb;
+}
+
+/* 证据行 */
+.tw-ev-row {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--tw-border);
+  font-size: 13px;
+}
+.tw-ev-row:last-child { border-bottom: none; }

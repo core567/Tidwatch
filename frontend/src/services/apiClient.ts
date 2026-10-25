@@ -129,6 +129,10 @@ export const api = {
     }),
   eventReview: (eventId: string) =>
     request<import('@/types/contract').EventReview>(`/events/${encodeURIComponent(eventId)}/review`),
+  eventReviewDetail: (eventId: string) =>
+    request<import('@/types/contract').EventReviewDetail>(
+      `/events/${encodeURIComponent(eventId)}/review`,
+    ),
   eventTimeline: (eventId: string) =>
     request<{ items: import('@/types/contract').TimelineItem[] }>(
       `/events/${encodeURIComponent(eventId)}/timeline`,
@@ -140,6 +144,10 @@ export const api = {
       ruleVersion: string;
       items: import('@/types/contract').Recommendation[];
     }>(`/events/${encodeURIComponent(eventId)}/recommendations`),
+  recoveryAssessment: (eventId: string) =>
+    request<import('@/types/contract').RecoveryAssessment>(
+      `/events/${encodeURIComponent(eventId)}/recovery-assessment`,
+    ),
   taskTimeline: (taskId: string) =>
     request<{ items: import('@/types/contract').TimelineItem[] }>(
       `/inspection-tasks/${encodeURIComponent(taskId)}/timeline`,

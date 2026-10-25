@@ -9,6 +9,7 @@ import TasksPage from './pages/P05Tasks/TasksPage';
 import EvidencePage from './pages/P06Evidence/EvidencePage';
 import ReviewsPage from './pages/P08Reviews/ReviewsPage';
 import ReviewListPage from './pages/Review/ReviewListPage';
+import EventReviewPage from './pages/Review/EventReviewPage';
 import ReportsPage from './pages/P09Reports/ReportsPage';
 import MobilePage from './pages/P10Mobile/MobilePage';
 import FieldVoicePage from './pages/P11FieldVoice/FieldVoicePage';
@@ -22,11 +23,6 @@ const queryClient = new QueryClient({
 function DisposalEventRedirect() {
   const { eventId } = useParams();
   return <Navigate to={`/events/${eventId}/workbench`} replace />;
-}
-
-function ReviewEventRedirect() {
-  const { eventId } = useParams();
-  return <Navigate to={`/reviews/${eventId}`} replace />;
 }
 
 /**
@@ -62,9 +58,9 @@ export default function App() {
             <Route path="/tasks" element={<TasksPage />} />
 
             {/* 05 事件复盘与报告（阶段 F 上线事件复盘列表；暂落月报/频次页） */}
-            {/* 05 事件复盘与报告：/review 复盘列表（F2）；/review/:id 详情 F3 暂落旧研判单 */}
+            {/* 05 事件复盘：/review 列表（F2）、/review/:id 详情（F3） */}
             <Route path="/review" element={<ReviewListPage />} />
-            <Route path="/review/:eventId" element={<ReviewEventRedirect />} />
+            <Route path="/review/:eventId" element={<EventReviewPage />} />
             <Route path="/reviews/:eventId" element={<ReviewsPage />} />
             <Route path="/reviews" element={<Navigate to="/events" replace />} />
             <Route path="/reports" element={<ReportsPage />} />
