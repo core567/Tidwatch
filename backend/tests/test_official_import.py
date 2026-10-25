@@ -136,16 +136,19 @@ def test_overproof_parsed_as_list(client):
 # ---------- API 层 ----------
 
 def test_api_flow_and_permissions(client, token, analyst_token):
-    # 非管理员不能上传
+    # 演示模式免鉴权：任意访问者均可上传预览（公网部署须恢复管理员鉴权）
     r = client.post(
         "/api/import/official-history",
         headers={"Authorization": f"Bearer {analyst_token}"},
         files={"file": ("m.csv", VALID_CSV.encode("utf-8"), "text/csv")},
     )
-    assert r.status_code == 403
+    assert r.status_code == 200
 
-    # 未登录 401
-    assert client.post("/api/import/official-history").status_code == 401
+    # 未携带 token 同样可用（演示模式）
+    assert client.post(
+        "/api/import/official-history",
+        files={"file": ("m2.csv", VALID_CSV.encode("utf-8"), "text/csv")},
+    ).status_code == 200
 
     # 管理员上传 → 预览
     r = client.post(

@@ -1,6 +1,5 @@
 // pages/events/events.ts - 异常事件列表（只读，M3 对接）
 import { listEvents, type EventListQuery } from '../../services/api';
-import { isLoggedIn } from '../../utils/auth';
 import { formatDateTime } from '../../utils/util';
 import { logger } from '../../utils/logger';
 
@@ -52,10 +51,6 @@ Page({
   },
 
   onLoad() {
-    if (!isLoggedIn()) {
-      wx.reLaunch({ url: '/pages/login/login' });
-      return;
-    }
     this.loadEvents();
   },
 

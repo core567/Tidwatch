@@ -1,8 +1,10 @@
 <view class="container">
-  <view class="tw-card profile-card">
-    <view class="profile-name">{{user.displayName || user.username || '未登录'}}</view>
-    <view class="tw-muted">账号：{{user.username || '—'}}</view>
-    <view class="tw-muted">角色：{{roleText}}</view>
+  <view class="tw-card">
+    <view class="profile-name">TideWatch 移动巡检端</view>
+    <view class="tw-muted">本地演示模式 · 免登录</view>
+    <view class="tw-muted" style="margin-top: 8rpx;">
+      数据含 MQTT 模拟与官方来源标注；任务、事件、照片与 PC 端共用同一后端。
+    </view>
   </view>
 
   <view class="tw-card ws-card">
@@ -10,7 +12,7 @@
       <text>实时通道状态</text>
       <text class="tw-badge ws-badge-{{wsState}}">{{wsStateText}}</text>
     </view>
-    <view class="tw-muted">M3 后端就绪后自动建立 WebSocket 连接（25s 心跳、断线自动重连）。</view>
+    <view class="tw-muted">WebSocket 自动重连、断线后状态补偿（25s 心跳）。</view>
   </view>
 
   <view class="tw-card ws-card">
@@ -33,6 +35,4 @@
       离线/无数据不等同于现场正常。
     </view>
   </view>
-
-  <button class="tw-btn-primary logout-btn" bindtap="onLogout">退出登录</button>
 </view>

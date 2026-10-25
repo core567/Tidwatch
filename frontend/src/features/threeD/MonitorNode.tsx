@@ -72,7 +72,7 @@ export default function MonitorNode({ anchor, onlineStatus, abnormal, onClick }:
       )}
 
       <mesh
-        position={[0, 0.9, 0]}
+        position={[0, 0.75, 0]}
         material={mat}
         castShadow
         onClick={(e) => {
@@ -82,22 +82,22 @@ export default function MonitorNode({ anchor, onlineStatus, abnormal, onClick }:
         onPointerOver={() => (document.body.style.cursor = 'pointer')}
         onPointerOut={() => (document.body.style.cursor = 'default')}
       >
-        <cylinderGeometry args={[selected ? 0.3 : 0.22, selected ? 0.38 : 0.3, 1.8, 18]} />
+        <cylinderGeometry args={[selected ? 0.26 : 0.19, selected ? 0.34 : 0.26, 1.5, 20]} />
       </mesh>
-      <mesh position={[0, 2, 0]} material={mat}>
-        <sphereGeometry args={[abnormal ? 0.5 : 0.42, 20, 20]} />
-      </mesh>
-
-      <mesh ref={ringRef} position={[0, 0.09, 0]} rotation={[-Math.PI / 2, 0, 0]} material={ringMat}>
-        <ringGeometry args={[0.75, 1.2, 36]} />
+      <mesh position={[0, 1.72, 0]} material={mat} castShadow>
+        <sphereGeometry args={[abnormal ? 0.45 : 0.37, 22, 22]} />
       </mesh>
 
-      <mesh position={[0, 3.2, 0]}>
-        <cylinderGeometry args={[abnormal ? 0.09 : 0.06, abnormal ? 0.09 : 0.06, 3.2, 10]} />
-        <meshBasicMaterial color={baseColor} transparent opacity={abnormal ? 0.4 : 0.22} />
+      <mesh ref={ringRef} position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]} material={ringMat}>
+        <ringGeometry args={[0.72, 1.08, 40]} />
       </mesh>
 
-      <Html position={[0, 2.9, 0]} center distanceFactor={18} zIndexRange={[20, 0]}>
+      <mesh position={[0, 3.1, 0]}>
+        <cylinderGeometry args={[abnormal ? 0.07 : 0.045, abnormal ? 0.07 : 0.045, 3.1, 10]} />
+        <meshBasicMaterial color={baseColor} transparent opacity={abnormal ? 0.32 : 0.16} />
+      </mesh>
+
+      <Html position={[0, 2.7, 0]} center distanceFactor={17} zIndexRange={[20, 0]}>
         <div
           onClick={() => onClick(anchor.reachId)}
           style={{
@@ -110,6 +110,7 @@ export default function MonitorNode({ anchor, onlineStatus, abnormal, onClick }:
             border: `1px solid ${baseColor}`,
             cursor: 'pointer',
             userSelect: 'none',
+            boxShadow: '0 2px 8px rgba(8,31,56,.25)',
           }}
         >
           {anchor.name} · {abnormal ? '异常' : TEXT[onlineStatus] ?? '未知'}

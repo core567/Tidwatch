@@ -73,6 +73,121 @@ export function buildRibbonGeometry(
   return geo;
 }
 
+/** 水面横剖面：中央微凹、两岸微抬，叠加沿程细微波纹（纯视觉，非水动力）。 */
+function waterProfile(u: number, t: number): number {
+  const centerDip = -0.045 * (1 - u * u);
+  const ripple = 0.018 * Math.sin(t * 42 + u * 2.6);
+  return centerDip + ripple;
+}
+
+/** 带横剖面起伏的水面网格（横向 crossSegments 段）。 */
+export function buildWaterGeometry(
+  curve: CatmullRomCurve3,
+  width: number,
+  segments = RIBBON_SEGMENTS,
+  crossSegments = 6,
+): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const cols = crossSegments + 1;
+
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const center = curve.getPointAt(t);
+    const tangent = curve.getTangentAt(t);
+    const side = new Vector3(-tangent.z, 0, tangent.x).normalize();
+    for (let j = 0; j <= crossSegments; j++) {
+      const u = (j / crossSegments) * 2 - 1;
+      const p = center.clone().addScaledVector(side, (u * width) / 2);
+      positions.push(p.x, waterProfile(u, t), p.z);
+      uvs.push((u + 1) / 2, t * 24);
+    }
+    if (i < segments) {
+      for (let j = 0; j < crossSegments; j++) {
+        const a = i * cols + j;
+        indices.push(a, a + 1, a + cols, a + 1, a + cols + 1, a + cols);
+      }
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/** 确定性伪噪声：同一坐标恒得同一值，保证场景刷新不抖动。 */
+function bankNoise(t: number, d: number, seed: number): number {
+  return (
+    Math.sin(t * 31.7 + d * 9.3 + seed) * 0.5 +
+    Math.sin(t * 13.1 - d * 5.7 + seed * 2.3) * 0.3 +
+    Math.sin(t * 57.3 + d * 17.9 + seed * 0.7) * 0.2
+  );
+}
+
+/**
+ * 单侧河岸地形：从 innerWidth/2 向外扩展到 outerWidth/2，
+ * 高度随离水距离抬升并叠加确定性起伏，远端淡出到雾中。
+ */
+export function buildBankGeometry(
+  curve: CatmullRomCurve3,
+  innerWidth: number,
+  outerWidth: number,
+  sideSign: 1 | -1,
+  segments = RIBBON_SEGMENTS,
+  crossSegments = 10,
+  seed = 1,
+): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const cols = crossSegments + 1;
+  const innerHalf = innerWidth / 2;
+  const outerHalf = outerWidth / 2;
+  const near = new THREE.Color('#a9bf9d');
+  const far = new THREE.Color('#7d9475');
+
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const center = curve.getPointAt(t);
+    const tangent = curve.getTangentAt(t);
+    const side = new Vector3(-tangent.z, 0, tangent.x).normalize().multiplyScalar(sideSign);
+    for (let j = 0; j <= crossSegments; j++) {
+      const k = j / crossSegments;
+      const dist = innerHalf + (outerHalf - innerHalf) * k;
+      const p = center.clone().addScaledVector(side, dist);
+      const rise = 1.15 * Math.pow(k, 1.25) + bankNoise(t, k, seed) * 0.55 * k;
+      positions.push(p.x, rise - 0.02, p.z);
+      uvs.push(k, t * 24);
+      const c = near.clone().lerp(far, Math.min(1, k * 1.15));
+      colors.push(c.r, c.g, c.b);
+    }
+    if (i < segments) {
+      for (let j = 0; j < crossSegments; j++) {
+        const a = i * cols + j;
+        // 两侧三角形绕序相反，保证法线朝上
+        if (sideSign > 0) {
+          indices.push(a, a + 1, a + cols, a + 1, a + cols + 1, a + cols);
+        } else {
+          indices.push(a, a + cols, a + 1, a + 1, a + cols, a + cols + 1);
+        }
+      }
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
 export const OVERVIEW_CAMERA = {
   position: new Vector3(0, 26, 30),
   target: new Vector3(0, 0, 0),

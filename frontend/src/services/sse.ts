@@ -26,14 +26,15 @@ export class SseClient {
   }
 
   private open(): void {
-    const token = getToken();
-    if (!token) return;
     this.options.onStateChange?.('connecting');
 
-    // EventSource 原生会在重连时自动带 Last-Event-ID；首连用 query 补放
-    const url = `/api/stream?token=${encodeURIComponent(token)}${
-      this.lastEventId ? `&resumeFrom=${encodeURIComponent(this.lastEventId)}` : ''
-    }`;
+    // 演示模式免登录：直连 SSE（后端不再校验 token）；如本地残留 token 则带上
+    const token = getToken();
+    const params = new URLSearchParams();
+    if (token) params.set('token', token);
+    if (this.lastEventId) params.set('resumeFrom', this.lastEventId);
+    const qs = params.toString();
+    const url = `/api/stream${qs ? `?${qs}` : ''}`;
     this.es = new EventSource(url);
 
     this.es.onopen = () => {

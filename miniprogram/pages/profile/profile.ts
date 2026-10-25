@@ -1,18 +1,10 @@
 // pages/profile/profile.ts
-import { getCurrentUser, logout, isLoggedIn } from '../../utils/auth';
+// 演示模式免登录：展示运行模式、实时通道与语音插件状态
 import { wsClient } from '../../utils/ws';
 import { isVoicePluginAvailable } from '../../services/voice';
 
-const ROLE_TEXT: Record<string, string> = {
-  admin: '系统管理员',
-  analyst: '监测分析人员',
-  inspector: '巡检人员',
-};
-
 Page({
   data: {
-    user: {} as Partial<User>,
-    roleText: '—',
     wsState: 'disconnected' as 'disconnected' | 'connecting' | 'open',
     wsStateText: '未连接',
     voiceAvailable: false,
@@ -20,24 +12,9 @@ Page({
 
   privateUnsub: null as null | (() => void),
 
-  onLoad() {
-    if (!isLoggedIn()) {
-      wx.reLaunch({ url: '/pages/login/login' });
-      return;
-    }
-  },
-
   onShow() {
-    const user = getCurrentUser();
-    if (!user) {
-      wx.reLaunch({ url: '/pages/login/login' });
-      return;
-    }
-    this.setData({
-      user,
-      roleText: ROLE_TEXT[user.role] ?? user.role,
-      voiceAvailable: isVoicePluginAvailable(),
-    });
+    wsClient.connect();
+    this.setData({ voiceAvailable: isVoicePluginAvailable() });
     this.privateUnsub?.();
     this.privateUnsub = wsClient.onStateChange((s) => {
       this.setData({
@@ -50,18 +27,5 @@ Page({
 
   onUnload() {
     this.privateUnsub?.();
-  },
-
-  onLogout() {
-    wx.showModal({
-      title: '退出登录',
-      content: '确定退出当前账号？',
-      success: (res) => {
-        if (res.confirm) {
-          wsClient.logout();
-          logout();
-        }
-      },
-    });
   },
 });

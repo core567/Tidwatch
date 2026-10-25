@@ -9,12 +9,11 @@ from starlette.websockets import WebSocketDisconnect
 from app.realtime.hub import hub
 
 
-def test_ws_unauthorized_closed(client):
-    # 无 token / 坏 token：服务端握手后以 1008（policy violation）关闭
-    with client.websocket_connect("/api/ws?token=garbage") as ws:
-        with pytest.raises(WebSocketDisconnect) as exc:
-            ws.receive_text()
-        assert exc.value.code == 1008
+def test_ws_open_without_token_in_demo_mode(client):
+    # 演示模式：无 token / 坏 token 均可建立连接
+    with client.websocket_connect("/api/ws") as ws:
+        first = json.loads(ws.receive_text())
+        assert first["messageType"] == "ping"
 
 
 def test_ws_hello_and_broadcast(client, token):
@@ -32,10 +31,10 @@ def test_ws_hello_and_broadcast(client, token):
         assert msg["messageId"]
 
 
-def test_sse_requires_token(client):
+def test_sse_open_without_token_in_demo_mode(client):
     with client.stream("GET", "/api/stream") as resp:
-        # 未授权：AppError 经异常处理返回 401（SSE 建连前的普通响应）
-        assert resp.status_code == 401
+        # 演示模式：匿名即可建立 SSE
+        assert resp.status_code == 200
 
 
 def test_sse_hello_frame(client, token):

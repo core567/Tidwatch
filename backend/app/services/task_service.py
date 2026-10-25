@@ -143,6 +143,13 @@ def submit_result(
     task.completed_at = now
     task.status = "SUBMITTED"
 
+    # 关联附件到本任务结果，便于按任务回显照片
+    if attachment_ids:
+        from app.models.observation import Attachment as AttModel
+        for att in db.query(AttModel).filter(AttModel.attachment_id.in_(attachment_ids)).all():
+            att.related_type = "task_result"
+            att.related_id = task.task_id
+
     evidence_id = None
     if task.event_id:
         polarity = {

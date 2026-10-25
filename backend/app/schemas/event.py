@@ -32,6 +32,16 @@ EventAction = Literal[
 ]
 
 
+class EventTrigger(CamelModel):
+    """事件的首个触发变化（只读展示用）。"""
+
+    reach_id: str
+    metric: str
+    magnitude: float
+    direction: str  # UP / DOWN / LEVEL
+    rule_id: str
+
+
 class EventListItem(CamelModel):
     event_id: str
     title: str
@@ -39,6 +49,7 @@ class EventListItem(CamelModel):
     status: EventStatus
     priority: Literal["LOW", "NORMAL", "HIGH"]
     scope_reach_ids: list[str] = Field(default_factory=list)
+    trigger: EventTrigger | None = None
     first_seen_at: datetime
     updated_at: datetime
     version: int
@@ -62,6 +73,7 @@ class EventDetail(CamelModel):
     status: EventStatus
     priority: Literal["LOW", "NORMAL", "HIGH"]
     scope_reach_ids: list[str]
+    trigger: EventTrigger | None = None
     first_seen_at: datetime
     updated_at: datetime
     version: int

@@ -9,7 +9,7 @@
 // - 登出时 manualClose，不再重连。
 
 import { ENV } from '../config/env';
-import { getToken, clearSession } from './auth';
+import { getToken } from './auth';
 import { logger } from './logger';
 
 type ConnectionState = 'disconnected' | 'connecting' | 'open';
@@ -49,18 +49,16 @@ class WsClient {
 
   connect(): void {
     if (this.state === 'open' || this.state === 'connecting') return;
-    const token = getToken();
-    if (!token) {
-      logger.warn('ws', 'no token, skip connect');
-      return;
-    }
+    // 演示模式免登录：无 token 也直连（后端不校验）
     this.manualClosed = false;
     this.setState('connecting');
 
+    const token = getToken();
     const resumeFrom = wx.getStorageSync(RESUME_KEY) || '';
-    const url =
-      `${ENV.WS_URL}?token=${encodeURIComponent(token)}` +
-      (resumeFrom ? `&resumeFrom=${encodeURIComponent(resumeFrom)}` : '');
+    const params: string[] = [];
+    if (token) params.push(`token=${encodeURIComponent(token)}`);
+    if (resumeFrom) params.push(`resumeFrom=${encodeURIComponent(resumeFrom)}`);
+    const url = ENV.WS_URL + (params.length ? `?${params.join('&')}` : '');
 
     let task: WechatMiniprogram.SocketTask;
     try {
@@ -121,11 +119,6 @@ class WsClient {
 
   private scheduleReconnect(): void {
     if (this.manualClosed) return;
-    if (!getToken()) {
-      // 登录态已失效，不重连
-      clearSession();
-      return;
-    }
     const delay = Math.min(ENV.WS_RECONNECT_MAX_MS, 1000 * Math.pow(2, this.attempts));
     this.attempts += 1;
     logger.info('ws', `reconnect in ${delay}ms (attempt ${this.attempts})`);

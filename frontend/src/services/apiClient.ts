@@ -44,19 +44,16 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body?: any;
-  anonymous?: boolean;
   signal?: AbortSignal;
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const token = options.anonymous ? null : getToken();
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       method: options.method ?? 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: options.body ? JSON.stringify(options.body) : undefined,
       signal: options.signal,
@@ -73,9 +70,6 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const data = await res.json().catch(() => null);
   if (res.ok) return data as T;
 
-  if (res.status === 401) {
-    clearToken();
-  }
   const body: ApiErrorBody = data ?? {
     code: `HTTP_${res.status}`,
     message: `请求失败（${res.status}）`,
@@ -95,12 +89,11 @@ export interface ObservationQuery {
 }
 
 export const api = {
-  health: () => request<HealthResponse>('/health', { anonymous: true }),
+  health: () => request<HealthResponse>('/health'),
   me: () => request<LoginResponse['user']>('/auth/me'),
   login: (username: string, password: string) =>
     request<LoginResponse>('/auth/login', {
       method: 'POST',
-      anonymous: true,
       body: { username, password },
     }),
   reaches: () => request<Reach[]>('/reaches'),
@@ -172,6 +165,12 @@ export const api = {
     assignee?: string;
   }) =>
     request<import('@/types/contract').InspectionTask>('/inspection-tasks', { method: 'POST', body }),
+  taskAttachments: (taskId: string) =>
+    request<{
+      items: { attachmentId: string; filename: string; mimeType: string; contentUrl: string }[];
+    }>(`/inspection-tasks/${encodeURIComponent(taskId)}/attachments`),
+  attachmentUrl: (attachmentId: string, download = false) =>
+    `/api/inspection-tasks/uploads/${encodeURIComponent(attachmentId)}/content${download ? '?download=true' : ''}`,
   assessments: (eventId: string) =>
     request<import('@/types/contract').Assessment[]>(
       `/events/${encodeURIComponent(eventId)}/assessments`,
@@ -203,6 +202,19 @@ export const api = {
         mlState: string; mlScore: number | null; agree: boolean | null; note: string;
       }[];
     }>('/ml/comparison'),
+
+  // 官方自动监测实时水质（独立于 MQTT 模拟）
+  officialAuto: (reachId?: string) =>
+    request<import('@/types/contract').OfficialAutoLatest[]>(
+      `/official/auto${reachId ? `?reachId=${encodeURIComponent(reachId)}` : ''}`,
+    ),
+  officialAutoStatus: () =>
+    request<import('@/types/contract').OfficialAutoStatus>('/official/auto/status'),
+  refreshOfficialAuto: (force = true) =>
+    request<import('@/types/contract').OfficialAutoSyncResult>(
+      `/official/auto/refresh?force=${force}`,
+      { method: 'POST' },
+    ),
 
   // 通用分页查询占位，M1 起按领域补充
   page: <T>(path: string, query: Record<string, string | number | undefined> = {}) => {

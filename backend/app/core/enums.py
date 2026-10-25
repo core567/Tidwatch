@@ -6,6 +6,7 @@ import enum
 
 class SourceType(str, enum.Enum):
     OFFICIAL_PUBLIC = "OFFICIAL_PUBLIC"
+    OFFICIAL_AUTO = "OFFICIAL_AUTO"
     SIMULATED = "SIMULATED"
     EXTERNAL = "EXTERNAL"
     RULE_OUTPUT = "RULE_OUTPUT"

@@ -1,7 +1,6 @@
 {
   "pages": [
     "pages/tasks/tasks",
-    "pages/login/login",
     "pages/events/events",
     "pages/event-detail/event-detail",
     "pages/reaches/reaches",

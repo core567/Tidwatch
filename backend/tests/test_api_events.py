@@ -75,5 +75,6 @@ def test_event_manual_action_and_illegal_conflict(client, token):
     assert resp.json()["code"] == "STATE_CONFLICT"
 
 
-def test_events_require_auth(client):
-    assert client.get("/api/events").status_code == 401
+def test_events_open_in_demo_mode(client):
+    # 演示模式免登录
+    assert client.get("/api/events").status_code == 200

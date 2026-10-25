@@ -1,19 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { SseClient, type ConnectionState } from '@/services/sse';
-import { getToken } from '@/services/apiClient';
 
 /**
  * 全局 SSE：observation/reach 消息到达时让相关查询失效重拉。
- * 重连后额外整体失效一次（补放 + 快照双保险，GRP 8.4）。
+ * 演示模式免登录：默认恒连接；重连后额外整体失效一次（补放 + 快照双保险）。
  */
-export function useRealtimeStream(enabled: boolean) {
+export function useRealtimeStream(enabled: boolean = true) {
   const queryClient = useQueryClient();
   const [state, setState] = useState<ConnectionState>('disconnected');
   const clientRef = useRef<SseClient | null>(null);
 
   useEffect(() => {
-    if (!enabled || !getToken()) return;
+    if (!enabled) return;
     let resnapshot = false;
     const client = new SseClient({
       onStateChange: (s) => {

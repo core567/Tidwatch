@@ -257,7 +257,7 @@ class EventProcessor:
             ).scalars():
                 focus.status = "RESOLVED"
                 focus.resolved_at = observed_at
-            self._auto_focus(db, event, scope, observed_at)
+            self._auto_focus(db, event, scope, observed_at, notifier)
             self._relate_to_previous(db, event, change, observed_at)
 
         # 再评估：新事件初始化假设+v1；后续断面扩展生成新版本
@@ -369,7 +369,7 @@ class EventProcessor:
             evidence_state="OBSERVED_SEQUENCE",
         ))
 
-    def _auto_focus(self, db, event, scope, observed_at) -> None:
+    def _auto_focus(self, db, event, scope, observed_at, notifier=None) -> None:
         """A/B 已变化时，对下游未变化断面建立观察重点。"""
         focus_reach = None
         if "reach-a" in scope and "reach-b" in scope and "reach-c" not in scope:
@@ -397,7 +397,7 @@ class EventProcessor:
             db.flush()
             # 同步派发巡检任务（默认分配 inspector）
             from app.services import task_service
-            task_service.create_task(
+            task = task_service.create_task(
                 db,
                 event_id=event.event_id,
                 focus_id=focus.focus_id,
@@ -408,6 +408,13 @@ class EventProcessor:
                 reason=focus.reason,
                 assignee="inspector",
             )
+            if notifier:
+                notifier(
+                    "task.created",
+                    {"taskId": task.task_id, "eventId": event.event_id,
+                     "reachId": focus_reach, "status": task.status},
+                    None,
+                )
 
     # ---------- 恢复 ----------
 

@@ -129,6 +129,14 @@ declare interface AttachmentMeta {
 }
 
 /** 小程序 WS /api/ws 与 PC SSE 共用的消息信封（GRP 8.3 扩展） */
+declare interface StreamTaskPayload {
+  taskId?: string;
+  eventId?: string;
+  reachId?: string;
+  status?: string;
+  assignee?: string | null;
+}
+
 declare interface StreamMessage<T = unknown> {
   messageId: string;
   messageType:
@@ -138,7 +146,9 @@ declare interface StreamMessage<T = unknown> {
     | 'event.updated'
     | 'event.status-changed'
     | 'focus.updated'
+    | 'focus.resolved'
     | 'blindspot.created'
+    | 'blindspot.opened'
     | 'blindspot.resolved'
     | 'task.created'
     | 'task.updated'

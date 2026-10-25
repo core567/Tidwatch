@@ -1,6 +1,4 @@
-// pages/event-detail/event-detail.ts - M0 占位；M3 对接 getEventDetail 后渲染时间线/范围/证据
-import { isLoggedIn } from '../../utils/auth';
-
+// pages/event-detail/event-detail.ts - 事件时间线/范围/证据
 Page({
   data: {
     eventId: '',
@@ -10,10 +8,6 @@ Page({
   },
 
   onLoad(query: Record<string, string | undefined>) {
-    if (!isLoggedIn()) {
-      wx.reLaunch({ url: '/pages/login/login' });
-      return;
-    }
     const id = query.eventId ?? '';
     if (!id) {
       this.setData({ uiState: 'error', errorMsg: '缺少事件编号' });

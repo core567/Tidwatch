@@ -1,27 +1,24 @@
 // app.ts - TideWatch 移动巡检端全局入口
-// M0 脚手架：仅处理登录态与全局数据；业务对接在 M3。
-import { isLoggedIn } from './utils/auth';
+// V1.0 演示模式免登录：启动直达任务首页，并建立全局唯一 WS 连接。
+import { wsClient } from './utils/ws';
 import { logger } from './utils/logger';
 
 App({
   globalData: {
-    // 后端连接状态由 ws.ts 维护，这里只暴露最近一次状态供页面读取
     wsConnected: false,
   },
 
   onLaunch() {
-    logger.info('app', 'TideWatch miniprogram launched');
-    // 未登录时重定向到登录页（tabBar 页除外的页面由各自 onLoad 二次校验）
-    if (!isLoggedIn()) {
-      wx.reLaunch({ url: '/pages/login/login' });
-    }
+    logger.info('app', 'TideWatch miniprogram launched (demo, no login)');
+    wsClient.connect();
   },
 
   onShow() {
-    // M3：应用回到前台时检查登录态与 WS 连接
+    // 回前台：确保连接存在（WS 内部去重，不建第二条）
+    wsClient.connect();
   },
 
   onHide() {
-    // M3：进入后台时由 ws 心跳逻辑自然降级
+    // 进入后台由 WS 心跳/微信保活机制自然处理，不断连
   },
 });

@@ -1,6 +1,5 @@
 // pages/reaches/reaches.ts - 监测点列表（只读，M3 对接）
 import { listReaches } from '../../services/api';
-import { isLoggedIn } from '../../utils/auth';
 import { formatRelative } from '../../utils/util';
 import { logger } from '../../utils/logger';
 
@@ -32,10 +31,6 @@ Page({
   },
 
   onLoad() {
-    if (!isLoggedIn()) {
-      wx.reLaunch({ url: '/pages/login/login' });
-      return;
-    }
     this.loadReaches();
   },
 

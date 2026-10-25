@@ -43,11 +43,11 @@ def test_login_validation_error_structure(client):
     assert resp.json()["code"] == "VALIDATION_FAILED"
 
 
-def test_me_restores_session(client, token):
-    # 有 token：返回当前用户
+def test_me_demo_user_in_demo_mode(client, token):
+    # 演示模式：/auth/me 恒返回演示用户，不校验 token
     resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
-    assert resp.json()["username"] == "admin"
-    # 无 token / 坏 token：401
-    assert client.get("/api/auth/me").status_code == 401
-    assert client.get("/api/auth/me", headers={"Authorization": "Bearer garbage"}).status_code == 401
+    assert resp.json()["username"] in ("admin", "demo")
+    # 无 token / 坏 token 也可访问（演示模式）
+    assert client.get("/api/auth/me").status_code == 200
+    assert client.get("/api/auth/me", headers={"Authorization": "Bearer garbage"}).status_code == 200

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '@/services/apiClient';
-import { useAuthStore } from '@/store/auth';
 
 interface ScenarioMeta {
   id: string;
@@ -18,8 +17,6 @@ const SCENARIOS: ScenarioMeta[] = [
 ];
 
 export function ScenarioConsole() {
-  const authenticated = useAuthStore((s) => s.authenticated);
-  const role = useAuthStore((s) => s.user?.role);
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -27,11 +24,12 @@ export function ScenarioConsole() {
   const statusQ = useQuery({
     queryKey: ['scenario-status'],
     queryFn: api.scenarioStatus,
-    enabled: authenticated,
+
     refetchInterval: 2000,
   });
   const status = statusQ.data;
-  const isAdmin = role === 'admin';
+  // 演示模式免登录：场景控制台对所有访问者开放
+  const isAdmin = true;
 
   async function start(s: ScenarioMeta) {
     setError('');

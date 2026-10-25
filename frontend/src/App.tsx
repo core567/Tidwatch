@@ -1,9 +1,6 @@
-import { useEffect } from 'react';
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuthStore } from './store/auth';
 import AppLayout from './app/layout/AppLayout';
-import LoginPage from './pages/Login/LoginPage';
 import OverviewPage from './pages/P01Overview/OverviewPage';
 import ReachDetailPage from './pages/P02ReachDetail/ReachDetailPage';
 import EventsPage from './pages/P03Events/EventsPage';
@@ -22,18 +19,11 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
-  const restore = useAuthStore((s) => s.restore);
-
-  // 整页刷新后用 localStorage 中的 token 恢复登录态
-  useEffect(() => {
-    void restore();
-  }, [restore]);
-
+  // V1.0 本地演示模式：免登录，打开即进入综合监测总览
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
           <Route element={<AppLayout />}>
             <Route path="/" element={<OverviewPage />} />
             <Route path="/reaches/:reachId" element={<ReachDetailPage />} />

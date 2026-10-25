@@ -2,6 +2,9 @@
 
 Python 3.12 + FastAPI + SQLite。REST API + SSE/WS 实时推送 + MQTT 接入（M1）。
 
+> 本地演示模式：REST/SSE/WS 均**免鉴权**（`deps.py` 返回固定演示用户）。
+> 公网部署必须重新启用 JWT 校验与接入控制。
+
 ## 环境准备
 
 ```bash
@@ -19,7 +22,7 @@ py -3.12 -m venv .venv
 ## 初始化数据库与种子数据
 
 ```bash
-.venv/Scripts/python.exe scripts/init_db.py    # 建表（24 张）
+.venv/Scripts/python.exe scripts/init_db.py    # 建表（28 张）
 .venv/Scripts/python.exe scripts/seed_data.py  # 幂等种子：账号/监测点/指标/规则
 ```
 
@@ -39,10 +42,12 @@ py -3.12 -m venv .venv
 
 - 健康检查：http://127.0.0.1:8000/api/health
 - 接口文档（开发期）：http://127.0.0.1:8000/api/docs
-- SSE：`GET /api/stream?token=<JWT>`（PC Web）
-- WebSocket：`/api/ws?token=<JWT>[&resumeFrom=<messageId>]`（小程序）
+- SSE：`GET /api/stream`（PC Web，本地演示免 token；带 token 仍兼容）
+- WebSocket：`/api/ws[?resumeFrom=<messageId>]`（小程序，本地演示免 token）
+- 官方实时水质：`GET /api/official/auto?reachId=`、`GET /api/official/auto/status`、
+  `POST /api/official/auto/refresh?force=true`（默认关闭，P12 手动拉取）
 
-## 种子账号（仅限开发演示，正式部署必须修改）
+## 种子账号（保留用户表；本地演示模式不校验登录）
 
 | 账号 | 密码 | 角色 |
 |---|---|---|
@@ -55,7 +60,7 @@ py -3.12 -m venv .venv
 1. 启动本服务；
 2. 微信开发者工具模拟器：`miniprogram/config/env.ts` 用 `127.0.0.1:8000`；
    真机：改为电脑局域网 IP（同 WiFi），并在工具中勾选“不校验合法域名/TLS”；
-3. 小程序登录页输入 inspector / Inspector#2026。
+3. 本地演示模式免登录，打开即进入任务首页。
 
 ## 测试
 
@@ -70,3 +75,7 @@ Pydantic 契约（camelCase/严格校验）、health/login/SSE/WS。
 
 复制 `.env.example` 为 `.env` 修改；`.env` 不入库。JWT 生产密钥请用
 `python -c "import secrets;print(secrets.token_hex(32))"` 重新生成。
+
+官方自动站实时快照：`OFFICIAL_AUTO_ENABLED`（默认 false）、
+`OFFICIAL_AUTO_CACHE_MINUTES=30`、`OFFICIAL_AUTO_STALE_MINUTES=1500`、
+`OFFICIAL_AUTO_REQUEST_INTERVAL_SECONDS=1.5`（多站节流，避免触发平台反爬）。

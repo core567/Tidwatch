@@ -31,6 +31,21 @@
       </view>
     </view>
 
+    <view class="tw-card" wx:if="{{submittedPhotos.length > 0}}">
+      <view class="tw-card-title">巡检照片（{{submittedPhotos.length}}）</view>
+      <view class="photo-grid">
+        <image
+          wx:for="{{submittedPhotos}}"
+          wx:key="attachmentId"
+          src="{{item.tempPath}}"
+          mode="aspectFill"
+          class="photo-img"
+          data-src="{{item.tempPath}}"
+          bindtap="previewImage"
+        />
+      </view>
+    </view>
+
     <view class="actions">
       <button
         wx:if="{{task.status === 'PENDING'}}"

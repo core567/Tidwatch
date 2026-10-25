@@ -1,22 +1,19 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
-import { useAuthStore } from '@/store/auth';
 import { EventStatusBadge, reachName } from '@/components/EventBits';
 import SourceTag from '@/components/SourceTag';
 
 export default function ReviewsPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const authenticated = useAuthStore((s) => s.authenticated);
 
   const reviewQ = useQuery({
     queryKey: ['review', eventId],
     queryFn: () => api.eventReview(eventId!),
-    enabled: authenticated && !!eventId,
+    enabled: !!eventId,
   });
 
-  if (!authenticated) return <div className="card state-box">请先登录</div>;
   if (reviewQ.isLoading) return <div className="state-box">生成研判单中…</div>;
   if (reviewQ.isError)
     return (

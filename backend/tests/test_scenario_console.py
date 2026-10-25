@@ -52,18 +52,15 @@ def test_cannot_start_two_concurrent(monkeypatch):
         monkeypatch.setattr(scenario_runner, "_current", None)
 
 
-def test_admin_only_endpoint(client, token, analyst_token):
-    # analyst 无权启动
+def test_scenario_endpoint_open_in_demo_mode(client, token, analyst_token):
+    # 演示模式免鉴权：analyst 也能访问状态；非法场景仍被参数校验拒绝（不触发子进程）
     r = client.post(
         "/api/admin/scenarios/start",
         headers={"Authorization": f"Bearer {analyst_token}"},
-        json={"scenario": "S1", "speed": 10},
+        json={"scenario": "S9", "speed": 10},
     )
-    assert r.status_code == 403
-    # admin 可查状态
-    r2 = client.get(
-        "/api/admin/scenarios/status",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    assert r.status_code == 422
+    # 任意访问者可查状态
+    r2 = client.get("/api/admin/scenarios/status")
     assert r2.status_code == 200
     assert "running" in r2.json()

@@ -1,30 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
-import { useAuthStore } from '@/store/auth';
 import { reachName } from '@/components/EventBits';
+import { Card, PageHeader, Table, Td, Th, Tag } from '@/components/ui';
 
 const CLASS_CN: Record<string, string> = {
   'Ⅰ': 'Ⅰ类（优）', 'Ⅱ': 'Ⅱ类（良）', 'Ⅲ': 'Ⅲ类', 'Ⅳ': 'Ⅳ类', 'Ⅴ': 'Ⅴ类',
 };
 
 export default function ReportsPage() {
-  const authenticated = useAuthStore((s) => s.authenticated);
   const monthlyQ = useQuery({
-    queryKey: ['monthly'], queryFn: api.monthlyStats, enabled: authenticated,
+    queryKey: ['monthly'], queryFn: api.monthlyStats,
   });
   const freqQ = useQuery({
-    queryKey: ['event-freq'], queryFn: api.eventFrequency, enabled: authenticated,
+    queryKey: ['event-freq'], queryFn: api.eventFrequency,
   });
 
-  if (!authenticated) return <div className="card state-box">请先登录</div>;
-
   return (
-    <div>
-      <h2 style={{ margin: '0 0 16px', color: 'var(--tw-primary-800)' }}>P09 历史分析与报告</h2>
+    <div className="tw-stack">
+      <PageHeader
+        code="P09"
+        title="历史分析与报告"
+        badges={<Tag tone="outline">月报仅作背景，不参与实时事件检测</Tag>}
+        description="官方月报按月度水质类别统计；异常事件频次来自本地事件库，两者口径分开。"
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-        <section className="card">
-          <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>官方月报数据（2026-07 汉江）</h3>
+      <div className="tw-grid tw-grid-2">
+        <Card title="官方月报数据（2026-07 汉江）" subtitle="月度水质类别，非连续传感器值">
           {monthlyQ.isLoading && <div className="muted">加载中…</div>}
           {monthlyQ.data && (
             <>
@@ -35,10 +36,9 @@ export default function ReportsPage() {
               <Bars title="按断面" data={monthlyQ.data.byReach} fmt={reachName} color="var(--tw-ok)" />
             </>
           )}
-        </section>
+        </Card>
 
-        <section className="card">
-          <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>异常事件频次</h3>
+        <Card title="异常事件频次" subtitle="来自活动事件库（含已结束）">
           {freqQ.isLoading && <div className="muted">加载中…</div>}
           {freqQ.data && (
             <>
@@ -50,41 +50,40 @@ export default function ReportsPage() {
               <Bars title="涉及断面次数" data={freqQ.data.eventsPerReach} fmt={reachName} color="var(--tw-danger)" />
             </>
           )}
-        </section>
+        </Card>
       </div>
 
-      <section className="card">
-        <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>导入批次</h3>
+      <Card title="导入批次" padded={false}>
         {monthlyQ.isLoading ? (
-          <div className="muted">加载中…</div>
+          <div className="muted" style={{ padding: 16 }}>加载中…</div>
         ) : (monthlyQ.data?.batches.length ?? 0) === 0 ? (
-          <div className="muted" style={{ fontSize: 13 }}>
+          <div className="muted" style={{ fontSize: 13, padding: 16 }}>
             暂无月报数据。官方月报仅支持在系统管理（P12）通过 CSV/Excel 预览→确认导入。
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <Table>
             <thead>
-              <tr style={{ textAlign: 'left', color: 'var(--tw-text-secondary)' }}>
+              <tr>
                 <Th>期间</Th><Th>发布机构</Th><Th>状态</Th><Th>记录数</Th><Th>原文</Th>
               </tr>
             </thead>
             <tbody>
               {monthlyQ.data!.batches.map((b) => (
-                <tr key={b.batchId} style={{ borderTop: '1px solid var(--tw-border)' }}>
+                <tr key={b.batchId}>
                   <Td>{b.period}</Td>
                   <Td>{b.agency ?? '—'}</Td>
-                  <Td><span className={`badge ${b.status === 'CONFIRMED' ? 'badge-ok' : 'badge-watch'}`}>{b.status}</span></Td>
+                  <Td><Tag tone={b.status === 'CONFIRMED' ? 'ok' : 'watch'}>{b.status}</Tag></Td>
                   <Td>{b.rowCount}</Td>
                   <Td>{b.sourceUrl ? <a href={b.sourceUrl} target="_blank" rel="noreferrer">链接</a> : '—'}</Td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
-        <p className="muted" style={{ fontSize: 12, marginTop: 12 }}>
+        <div className="muted" style={{ fontSize: 12, padding: '0 16px 14px' }}>
           月报数据为月度水质类别（非连续传感器值），不参与异常事件检测；统计仅作背景与达标分析。
-        </p>
-      </section>
+        </div>
+      </Card>
     </div>
   );
 }
@@ -114,11 +113,4 @@ function Bars({
       ))}
     </div>
   );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return <th style={{ padding: '8px 10px', fontWeight: 500, fontSize: 12.5 }}>{children}</th>;
-}
-function Td({ children }: { children: React.ReactNode }) {
-  return <td style={{ padding: '9px 10px' }}>{children}</td>;
 }

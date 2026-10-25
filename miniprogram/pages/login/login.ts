@@ -1,5 +1,6 @@
 // pages/login/login.ts
 import { login } from '../../services/api';
+import { wsClient } from '../../utils/ws';
 
 Page({
   data: {
@@ -26,6 +27,7 @@ Page({
     this.setData({ submitting: true, errorMsg: '' });
     try {
       await login(username, password);
+      wsClient.connect(); // 登录成功后建立全局唯一 WS 连接
       wx.showToast({ title: '登录成功', icon: 'success' });
       wx.reLaunch({ url: '/pages/tasks/tasks' });
     } catch (e) {

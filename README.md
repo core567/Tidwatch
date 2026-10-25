@@ -4,14 +4,16 @@
 核心不是数据大屏，而是把 **观测 → 变化识别 → 活动事件 → 时序关系 → 证据/假设 →
 观察重点 → 巡检 → 后续证据再评估 → 事件复盘** 串成可追溯、可复核、可复盘的工作流。
 
-> 数据原则：**公开历史资料（月度水质类别）+ 明确标识的 MQTT 模拟连续数据 + 可追溯事件证据**。
-> 模拟数据在全站、接口与导出物中显式标记；未核实官方实时接口前不声称实时接入；
+> 数据原则：**官方公开历史资料（月度水质类别）+ 官方自动站当前快照（低频手动拉取）+
+> 明确标识的 MQTT 模拟连续数据 + 可追溯事件证据**。
+> 模拟数据在全站、接口与导出物中显式标记；官方实时快照只展示当前值，不插值为连续趋势；
 > 真实站点坐标/上下游未核实前使用逻辑节点 A/B/C 并标注「示意拓扑」。
 
 ## 总体架构
 
 ```
 官方月报(HTML/CSV) ──► 导入模块(预览→校验→确认) ─┐
+官方自动站当前快照 ──► 手动拉取(默认关/30min缓存) ─┤
                                               ├─► FastAPI(Python 3.12)
 MQTTX / 场景模拟器(S1–S5,固定seed) ─► Mosquitto ─► paho 订阅 ┘  规则引擎 / 8态事件状态机
                                                                 证据 / 再评估 / 盲区 / 任务
@@ -23,7 +25,8 @@ MQTTX / 场景模拟器(S1–S5,固定seed) ─► Mosquitto ─► paho 订阅 
                             PC Web (React+Vite+R3F)      微信小程序（原生 TS）
 ```
 
-- PC Web 与小程序**均不直连 MQTT Broker**；双端共用同一后端、数据库、JWT 鉴权与事件模型。
+- PC Web 与小程序**均不直连 MQTT Broker**；双端共用同一后端、数据库与事件模型。
+  本地演示模式免登录；公网部署须重新启用 JWT 鉴权与接入控制。
 - 核心研判（异常检测、事件状态、任务流转）全部为**可单测的确定性规则**；
   LLM/RAG 为 M3 之后的可选增强，只做证据解释/报告辅助，不生成证据、不控制状态机。
 
@@ -74,8 +77,9 @@ npm run dev          # http://localhost:5173
 
 - 后端健康检查 http://127.0.0.1:8000/api/health → `{"status":"ok",...}`
 - 接口文档 http://127.0.0.1:8000/api/docs
-- PC：http://localhost:5173 ，登录 admin/analyst/inspector（密码见 [backend/README.md](backend/README.md)）
-- 小程序：inspector 账号登录（真机需同 WiFi + 局域网 IP + 勾选“不校验合法域名/TLS”）
+- PC：http://localhost:5173 ，本地演示模式**免登录**，打开直达 P01 综合监测总览
+- 小程序：本地演示模式**免登录**，打开直达任务首页（真机需同 WiFi + 局域网 IP + 勾选“不校验合法域名/TLS”）
+- 官方实时快照默认不自动抓取：在 P12「官方实时水质数据」手动拉取（见下文）
 
 重置演示数据：`backend/.venv/Scripts/python.exe scripts/reset_db.py --yes`
 
@@ -119,6 +123,20 @@ cd simulator
 - 真实 broker 端到端回归：`backend/.venv/Scripts/python.exe scripts/e2e_scenarios.py`
 - 故障矩阵（需 broker）：`pytest tests/test_failure_matrix.py`
 - 语音能力：见 [docs/voice-field-input.md](docs/voice-field-input.md)
+
+## 官方自动监测实时数据（OFFICIAL_AUTO）
+
+- **来源**：国家地表水自动监测实时数据发布系统（中国环境监测总站），
+  `POST https://szzdjc.cnemc.cn:8070/GJZ/Ajax/Publish.ashx`。
+- **实测口径（2026-10-25）**：全站 980 行均为当日 `00:00` 快照，平台无公开历史序列接口；
+  本系统只保存当前快照，不插值、不伪造连续趋势。
+- **站点映射**（示意关联，上下游对应待核）：`reach-a ↔ 余家湖`、`reach-b ↔ 转斗`、`reach-c ↔ 新沟闸`。
+- **接口**：`GET /api/official/auto?reachId=`、`GET /api/official/auto/status`、
+  `POST /api/official/auto/refresh?force=true`。
+- **使用约束**：默认关闭（`OFFICIAL_AUTO_ENABLED=false`），仅在 P12 手动拉取；
+  同一站点 30 分钟缓存、多站查询节流；数据缺失显示「暂无数据」，超过 25 小时标记过期；
+  采集失败写入死信并降级，不影响 MQTT 模拟链路与事件机。
+- 官方实时水质与 MQTT 模拟观测分表存储（`official_auto_records` vs `observations`），禁止互相污染。
 
 ## 边界声明
 

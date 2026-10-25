@@ -37,8 +37,8 @@ def _insert(reach: str, metric: str, value: float, unit: str, minute: int,
     return oid
 
 
-def test_reaches_require_token(client):
-    assert client.get("/api/reaches").status_code == 401
+def test_reaches_open_in_demo_mode(client):
+    assert client.get("/api/reaches").status_code == 200
 
 
 def test_list_reaches(client, token):

@@ -50,11 +50,9 @@ def list_tasks(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    # mine：匹配当前用户 id 或其角色（自动派发按角色 assignee=inspector）
+    # 演示模式免登录：mine 也返回全部任务（公网启用鉴权后再按用户/角色过滤）
     if mine:
         rows = task_service.list_tasks(db, status=status, event_id=eventId)
-        candidates = {user.user_id, user.role}
-        rows = [t for t in rows if (t.assignee is None and status in (None, "PENDING")) or t.assignee in candidates]
     else:
         rows = task_service.list_tasks(
             db, status=status, assignee=assignee, event_id=eventId
@@ -79,6 +77,7 @@ def create_task(
         assignee=body.assignee, created_by=_admin.user_id,
     )
     db.commit()
+    _notify_task(task, "task.created")
     return _out(task)
 
 
@@ -102,6 +101,7 @@ def task_action(
         db, task_id, body.action, actor=user.user_id, assignee=user.user_id
     )
     db.commit()
+    _notify_task(task, "task.updated")
     return _out(task)
 
 
@@ -118,7 +118,22 @@ def submit_result(
         observed_at=body.observed_at, actor=user.user_id,
     )
     db.commit()
+    _notify_task(task, "task.updated")
     return _out(task)
+
+
+def _notify_task(task, message_type: str = "task.updated") -> None:
+    """任务状态变化时经实时 Hub 推送（SSE 与 WS 共用）。"""
+    from app.realtime.hub import hub
+
+    hub.publish_threadsafe(
+        message_type,
+        {
+            "taskId": task.task_id, "eventId": task.event_id,
+            "reachId": task.reach_id, "status": task.status,
+            "assignee": task.assignee,
+        },
+    )
 
 
 @router.post("/uploads")
@@ -164,4 +179,69 @@ def attachment_meta(
     return {
         "attachmentId": att.attachment_id, "filename": att.filename,
         "mimeType": att.mime_type, "sizeBytes": att.size_bytes,
+    }
+
+
+import re as _re
+
+_ATTACHMENT_ID_RE = _re.compile(r"^att-[0-9a-f]{16,32}$")
+_SAFE_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
+_SAFE_MIME = {"image/jpeg", "image/png", "image/webp"}
+
+
+@router.get("/uploads/{attachment_id}/content")
+def attachment_content(
+    attachment_id: str,
+    download: bool = False,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    """安全读取附件图片（内联预览或下载）。需登录，ID 与路径双重校验。"""
+    from fastapi.responses import FileResponse
+    from app.models.observation import Attachment
+
+    if not _ATTACHMENT_ID_RE.match(attachment_id):
+        raise NotFoundError("附件", attachment_id)
+    att = db.get(Attachment, attachment_id)
+    if att is None:
+        raise NotFoundError("附件", attachment_id)
+
+    upload_dir = Path(settings.upload_dir).resolve()
+    # stored_path 仅为服务端生成的文件名；取 basename 并校验解析后仍在 upload 目录内
+    stored_name = Path(att.stored_path).name
+    file_path = (upload_dir / stored_name).resolve()
+    if upload_dir not in file_path.parents or file_path.suffix.lower() not in _SAFE_IMAGE_EXT:
+        raise AppError("ATTACHMENT_UNSAFE", "附件路径非法", 400)
+    if not file_path.is_file():
+        raise NotFoundError("附件文件", attachment_id)
+
+    mime = att.mime_type if att.mime_type in _SAFE_MIME else "application/octet-stream"
+    headers: dict[str, str] = {}
+    if download:
+        headers["Content-Disposition"] = f'attachment; filename="{attachment_id}{file_path.suffix}"'
+    return FileResponse(file_path, media_type=mime, headers=headers)
+
+
+@router.get("/{task_id}/attachments")
+def task_attachments(
+    task_id: str,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    """返回任务回填的附件元数据 + 内容 URL（图片需经同一鉴权读取）。"""
+    from app.models.observation import Attachment as AttModel
+    task = task_service.get_task(db, task_id)
+    ids = json.loads(task.attachment_ids or "[]")
+    rows = db.query(AttModel).filter(AttModel.attachment_id.in_(ids)).all()
+    by_id = {a.attachment_id: a for a in rows}
+    return {
+        "items": [
+            {
+                "attachmentId": aid,
+                "filename": (by_id[aid].filename if aid in by_id else aid),
+                "mimeType": (by_id[aid].mime_type if aid in by_id else "image/jpeg"),
+                "contentUrl": f"/api/inspection-tasks/uploads/{aid}/content",
+            }
+            for aid in ids if aid in by_id
+        ]
     }

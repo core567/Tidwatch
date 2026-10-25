@@ -14,6 +14,8 @@ from app.models.observation import (
     Attachment,
     ImportBatch,
     Observation,
+    OfficialAutoFetch,
+    OfficialAutoRecord,
     OfficialMonthlyRecord,
 )
 from app.models.reach import MetricDictionary, Reach
@@ -40,6 +42,8 @@ __all__ = [
     "Observation",
     "ImportBatch",
     "OfficialMonthlyRecord",
+    "OfficialAutoRecord",
+    "OfficialAutoFetch",
     "Attachment",
     "ChangeEvent",
     "ActiveEvent",

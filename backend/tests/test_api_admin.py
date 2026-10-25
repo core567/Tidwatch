@@ -1,9 +1,10 @@
-"""/api/admin/diagnostics 诊断接口测试。"""
+"""/api/admin/diagnostics 诊断接口测试（V1.0 演示模式免登录）。"""
 from __future__ import annotations
 
 
-def test_diagnostics_requires_auth(client):
-    assert client.get("/api/admin/diagnostics").status_code == 401
+def test_diagnostics_open_in_demo_mode(client):
+    # 演示模式：无需 token 即可访问
+    assert client.get("/api/admin/diagnostics").status_code == 200
 
 
 def test_diagnostics_shape(client, token):
@@ -27,15 +28,12 @@ def test_diagnostics_shape(client, token):
     assert b["mqtt"]["topicPrefix"] == "tidewatch/v1"
 
 
-def test_ingestion_errors_admin_only(client, token, analyst_token):
-    # analyst 不是管理员，死信明细 403
-    assert client.get(
-        "/api/admin/ingestion-errors",
-        headers={"Authorization": f"Bearer {analyst_token}"},
-    ).status_code == 403
+def test_ingestion_errors_open_in_demo_mode(client, token, analyst_token):
+    # 演示模式：任意访问者均可读取死信明细（公网部署须重新加管理员鉴权）
+    assert client.get("/api/admin/ingestion-errors").status_code == 200
     resp = client.get(
         "/api/admin/ingestion-errors",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {analyst_token}"},
     )
     assert resp.status_code == 200
     assert set(resp.json().keys()) == {"items", "page", "pageSize", "total"}

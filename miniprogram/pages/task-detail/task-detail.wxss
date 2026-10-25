@@ -36,3 +36,17 @@
   font-size: 22rpx;
   line-height: 1.6;
 }
+
+/* 已回填巡检照片 */
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 12rpx;
+}
+.photo-grid .photo-img {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 10rpx;
+  background: #f0f4f8;
+}

@@ -65,7 +65,8 @@ def broker_up() -> bool:
 def run_scenario(scenario: str, speed: int):
     subprocess.run(
         [str(PY), "run_scenario.py", "--scenario", scenario, "--speed", str(speed)],
-        cwd=SIMULATOR, check=True, capture_output=True, text=True, timeout=120,
+        cwd=SIMULATOR, check=True, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=120,
     )
 
 
@@ -77,7 +78,8 @@ def login() -> str:
 def start_server(client_id: str, db_path: Path, env: dict):
     return subprocess.Popen(
         [str(PY), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(PORT)],
-        cwd=BACKEND, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        cwd=BACKEND, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, encoding="utf-8", errors="replace",
     ), env
 
 

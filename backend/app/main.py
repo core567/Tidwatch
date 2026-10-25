@@ -18,6 +18,7 @@ from app.api import (
     routes_health,
     routes_import,
     routes_ml,
+    routes_official_auto,
     routes_reaches,
     routes_reports,
     routes_research,
@@ -131,6 +132,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_tasks.router)
     app.include_router(routes_reports.router)
     app.include_router(routes_ml.router)
+    app.include_router(routes_official_auto.router)
     app.include_router(routes_scenario_console.router)
     app.include_router(routes_import.router)
     app.include_router(routes_admin.router)

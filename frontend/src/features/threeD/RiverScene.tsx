@@ -37,13 +37,25 @@ export default function RiverScene({ reaches, abnormalReachIds, onSelectNode }: 
         far: 200,
       }}
       onCreated={({ gl, scene }) => {
-        gl.setClearColor('#dfeaf4');
-        scene.fog = new THREE.Fog('#dfeaf4', 55, 110);
+        gl.setClearColor('#d7e4ee');
+        scene.fog = new THREE.Fog('#d7e4ee', 44, 96);
       }}
       style={{ width: '100%', height: '100%' }}
     >
-      <hemisphereLight args={['#cfe8ff', '#8a9a7a', 0.9]} />
-      <directionalLight position={[12, 24, 10]} intensity={1.1} castShadow />
+      <ambientLight intensity={0.55} color="#e8f2ff" />
+      <hemisphereLight args={['#dcecff', '#7d8f74', 0.85]} />
+      <directionalLight
+        position={[-16, 26, 14]}
+        intensity={1.35}
+        color="#fff6e8"
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-left={-40}
+        shadow-camera-right={40}
+        shadow-camera-top={40}
+        shadow-camera-bottom={-40}
+      />
 
       <RiverCorridor />
       {NODE_ANCHORS.map((anchor) => (
@@ -56,9 +68,9 @@ export default function RiverScene({ reaches, abnormalReachIds, onSelectNode }: 
         />
       ))}
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]} receiveShadow>
-        <planeGeometry args={[90, 60]} />
-        <meshStandardMaterial color="#e7efe6" roughness={1} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.35, 0]} receiveShadow>
+        <planeGeometry args={[120, 90]} />
+        <meshStandardMaterial color="#d9e3d4" roughness={1} />
       </mesh>
 
       <OrbitControls

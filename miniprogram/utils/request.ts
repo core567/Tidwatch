@@ -1,12 +1,10 @@
 // utils/request.ts - wx.request 统一封装
+// V1.0 演示模式免登录：不附带 JWT、不跳登录页。
 // - baseURL 集中在 config/env
-// - 自动附带 JWT
 // - 统一解析 GRP 错误结构 { code, message, details, requestId }
-// - 401 清理登录态并跳登录页
 // - GET 幂等请求支持一次自动重试（网络抖动）
 
 import { ENV } from '../config/env';
-import { getToken, clearSession } from './auth';
 import { logger } from './logger';
 
 export class RequestError extends Error {
@@ -36,7 +34,6 @@ interface RequestOptions {
 }
 
 function doRequest<T>(path: string, options: RequestOptions): Promise<T> {
-  const token = options.anonymous ? null : getToken();
   return new Promise<T>((resolve, reject) => {
     wx.request({
       url: `${ENV.API_BASE_URL}${path}`,
@@ -45,7 +42,6 @@ function doRequest<T>(path: string, options: RequestOptions): Promise<T> {
       timeout: ENV.REQUEST_TIMEOUT_MS,
       header: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       success: (res) => {
         const status = res.statusCode;
@@ -53,12 +49,6 @@ function doRequest<T>(path: string, options: RequestOptions): Promise<T> {
         if (status >= 200 && status < 300) {
           resolve(body as unknown as T);
           return;
-        }
-        if (status === 401) {
-          // 登录失效：清状态并跳登录，避免静默继续
-          logger.warn('request', `401 for ${path}, redirect to login`);
-          clearSession();
-          wx.reLaunch({ url: '/pages/login/login' });
         }
         const errBody: ApiErrorBody = {
           code: (body.code as string) || `HTTP_${status}`,

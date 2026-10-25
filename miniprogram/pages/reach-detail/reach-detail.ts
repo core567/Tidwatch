@@ -1,6 +1,5 @@
 // pages/reach-detail/reach-detail.ts - M0 展示监测点元数据；指标在 M1 对接观测接口
 import { getReach } from '../../services/api';
-import { isLoggedIn } from '../../utils/auth';
 import { formatDateTime } from '../../utils/util';
 
 const ROLE_TEXT: Record<string, string> = {
@@ -32,10 +31,6 @@ Page({
   },
 
   onLoad(query: Record<string, string | undefined>) {
-    if (!isLoggedIn()) {
-      wx.reLaunch({ url: '/pages/login/login' });
-      return;
-    }
     const id = query.reachId ?? '';
     this.setData({ reachId: id });
     if (!id) {

@@ -25,6 +25,7 @@ from app.schemas.event import (
     EventDetail,
     EventListItem,
     EventStatusTransitionOut,
+    EventTrigger,
     TemporalRelationOut,
 )
 from app.services.event_service import processor
@@ -47,6 +48,23 @@ def _latest_scope(db: Session, event_id: str) -> list[str]:
 
 
 def _to_list_item(db: Session, e: ActiveEvent) -> EventListItem:
+    first_change = db.execute(
+        select(ChangeEvent)
+        .where(ChangeEvent.event_id == e.event_id)
+        .order_by(ChangeEvent.window_start.asc(), ChangeEvent.change_id.asc())
+        .limit(1)
+    ).scalar_one_or_none()
+    trigger = (
+        EventTrigger(
+            reach_id=first_change.reach_id,
+            metric=first_change.metric,
+            magnitude=first_change.magnitude,
+            direction=first_change.direction,
+            rule_id=first_change.rule_id,
+        )
+        if first_change is not None
+        else None
+    )
     return EventListItem(
         event_id=e.event_id,
         title=e.title,
@@ -54,6 +72,7 @@ def _to_list_item(db: Session, e: ActiveEvent) -> EventListItem:
         status=e.status,  # type: ignore[arg-type]
         priority=e.priority,  # type: ignore[arg-type]
         scope_reach_ids=_latest_scope(db, e.event_id),
+        trigger=trigger,
         first_seen_at=e.first_seen_at,
         updated_at=e.updated_at,
         version=e.version,

@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.core.errors import AppError
 from app.db.session import get_db
 from app.ingestion import official_importer as imp
 from app.models.observation import ImportBatch, OfficialMonthlyRecord
@@ -24,9 +23,8 @@ from app.schemas.importer import (
 router = APIRouter(prefix="/api", tags=["official-history"])
 
 
+# 本地演示免鉴权：直接复用 get_current_user（恒为演示用户）
 def require_admin(user: User = Depends(get_current_user)) -> User:
-    if user.role != "admin":
-        raise AppError("FORBIDDEN", "该操作需要管理员权限", 403)
     return user
 
 

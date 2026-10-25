@@ -9,7 +9,7 @@
     "enhance": true,
     "postcss": true,
     "minified": true,
-    "urlCheck": true,
+    "urlCheck": false,
     "useCompilerPlugins": [
       "typescript"
     ],

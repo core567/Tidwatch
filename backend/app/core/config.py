@@ -36,6 +36,21 @@ class Settings(BaseSettings):
 
     rule_version: str = "demo-rules-v1"
 
+    # 官方自动监测实时水质（默认关闭；P12 手动拉取；带缓存，避免高频抓取）
+    official_auto_enabled: bool = False
+    official_auto_url: str = "https://szzdjc.cnemc.cn:8070/GJZ/Ajax/Publish.ashx"
+    official_auto_referer: str = (
+        "https://szzdjc.cnemc.cn:8070/GJZ/Business/Publish/RealDatas.html"
+    )
+    official_auto_cache_minutes: int = 30
+    # 实测官方每日常态仅发布一条 00:00 快照（2026-10-25 全站 980 行均为 00:00），
+    # 因此过期阈值按天计：超过 25 小时未更新视为过期，避免白天全场误报 STALE。
+    official_auto_stale_minutes: int = 1500
+    official_auto_timeout_seconds: int = 20
+    # 连续查询多个断面时的节流，避免触发平台反爬
+    official_auto_request_interval_seconds: float = 1.5
+    official_auto_retry_delay_seconds: float = 2.0
+
     upload_dir: str = str(DATA_DIR / "uploads")
     max_upload_mb: int = 8
 

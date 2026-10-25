@@ -2,6 +2,7 @@
 
 export type SourceType =
   | 'OFFICIAL_PUBLIC'
+  | 'OFFICIAL_AUTO'
   | 'SIMULATED'
   | 'EXTERNAL'
   | 'RULE_OUTPUT'
@@ -80,6 +81,14 @@ export interface Observation {
   ruleVersion: string;
 }
 
+export interface EventTrigger {
+  reachId: string;
+  metric: string;
+  magnitude: number;
+  direction: 'UP' | 'DOWN' | 'LEVEL';
+  ruleId: string;
+}
+
 export interface ActiveEvent {
   eventId: string;
   title: string;
@@ -87,6 +96,7 @@ export interface ActiveEvent {
   status: EventStatus;
   priority: 'LOW' | 'NORMAL' | 'HIGH';
   scopeReachIds: string[];
+  trigger?: EventTrigger | null;
   firstSeenAt: string;
   updatedAt: string;
   version: number;
@@ -292,4 +302,75 @@ export interface HealthResponse {
   status: 'ok' | 'degraded';
   version: string;
   database: 'ok' | 'error';
+}
+
+// ---------- 官方自动监测实时水质（OFFICIAL_AUTO，独立于 MQTT 模拟） ----------
+
+export type OfficialDataState = 'LIVE' | 'STALE' | 'NO_DATA';
+
+export interface OfficialAutoRecord {
+  stationName: string;
+  reachId: string | null;
+  mappingStatus: 'UNVERIFIED' | 'VERIFIED' | string;
+  province: string | null;
+  basin: string | null;
+  observedAt: string;
+  fetchedAt: string;
+  waterClass: string | null;
+  waterTemp: number | null;
+  ph: number | null;
+  dissolvedOxygen: number | null;
+  conductivity: number | null;
+  turbidity: number | null;
+  codMn: number | null;
+  ammoniaN: number | null;
+  totalPhosphorus: number | null;
+  totalNitrogen: number | null;
+  chlorophyllA: number | null;
+  algaeDensity: number | null;
+  dataState: 'LIVE' | 'STALE';
+  ageMinutes: number | null;
+  sourceLabel: string;
+  sourceUrl: string | null;
+}
+
+export interface OfficialAutoLatest {
+  reachId: string;
+  stationName: string;
+  mappingNote: string | null;
+  dataState: OfficialDataState;
+  records: OfficialAutoRecord[];
+}
+
+export interface OfficialAutoFetchInfo {
+  fetchId: string;
+  fetchedAt: string;
+  ok: boolean;
+  stationCount: number;
+  recordCount: number;
+  durationMs: number | null;
+  message: string | null;
+}
+
+export interface OfficialAutoStatus {
+  enabled: boolean;
+  cacheMinutes: number;
+  staleMinutes: number;
+  sourceLabel: string;
+  sourceUrl: string;
+  stations: { stationName: string; reachId: string; note: string }[];
+  lastFetch: OfficialAutoFetchInfo | null;
+}
+
+export interface OfficialAutoSyncResult {
+  ok: boolean;
+  skipped: boolean;
+  reason: string | null;
+  fetchedAt: string | null;
+  nextAllowedAt: string | null;
+  stationsOk: number;
+  stationsTotal: number;
+  recordsInserted: number;
+  recordsSkipped: number;
+  errors: string[];
 }

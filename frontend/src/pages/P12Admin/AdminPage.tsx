@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, type Diagnostics, type IngestionErrorItem } from '@/services/apiClient';
-import { useAuthStore } from '@/store/auth';
 import { useRealtimeStream } from '@/services/useRealtimeStream';
 import { ScenarioConsole } from '@/components/ScenarioConsole';
+import OfficialAutoPanel from '@/components/OfficialAutoPanel';
+import { PageHeader } from '@/components/ui';
 
 const REASON_TEXT: Record<string, string> = {
   INVALID_JSON: '非法 JSON',
@@ -16,8 +17,7 @@ const REASON_TEXT: Record<string, string> = {
 };
 
 export default function AdminPage() {
-  const authenticated = useAuthStore((s) => s.authenticated);
-  const streamState = useRealtimeStream(authenticated);
+  const streamState = useRealtimeStream();
   const [showAllErrors, setShowAllErrors] = useState(false);
 
   const healthQ = useQuery({
@@ -28,11 +28,9 @@ export default function AdminPage() {
   const diagQ = useQuery({
     queryKey: ['diagnostics'],
     queryFn: api.diagnostics,
-    enabled: authenticated,
     refetchInterval: 10000,
   });
 
-  if (!authenticated) return <div className="card state-box">请先登录（管理员账号可查看全部诊断）</div>;
 
   if (healthQ.isLoading) return <div className="state-box">检测中…</div>;
   if (healthQ.isError)
@@ -51,7 +49,11 @@ export default function AdminPage() {
 
   return (
     <div>
-      <h2 style={{ margin: '0 0 16px', color: 'var(--tw-primary-800)' }}>P12 系统管理与运行诊断</h2>
+      <PageHeader
+        code="P12"
+        title="系统管理与运行诊断"
+        description="服务健康、数据链路、官方实时数据拉取与场景控制。本地演示模式免登录。"
+      />
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 10 }}>服务</div>
@@ -140,6 +142,10 @@ export default function AdminPage() {
           </div>
         </>
       )}
+
+      <div style={{ marginTop: 16 }}>
+        <OfficialAutoPanel />
+      </div>
 
       <ScenarioConsole />
     </div>

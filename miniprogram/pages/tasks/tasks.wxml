@@ -2,6 +2,7 @@
   <!-- 实时连接状态（文字+颜色，不仅靠颜色） -->
   <view class="ws-bar ws-{{wsState}}">
     实时通道：{{wsStateText}}
+    <text wx:if="{{newTaskBadge > 0}}" class="new-badge">{{newTaskBadge}}</text>
   </view>
 
   <block wx:if="{{uiState === 'loading'}}">

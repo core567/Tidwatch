@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
-import { useAuthStore } from '@/store/auth';
 import { useRealtimeStream } from '@/services/useRealtimeStream';
+import { Button, PageHeader, Tag } from '@/components/ui';
 import { OnlineBadge } from '@/components/StatusBits';
 import RiverScene from '@/features/threeD/RiverScene';
 import NodeDetailPanel from '@/features/threeD/NodeDetailPanel';
@@ -11,27 +10,21 @@ import { useCameraStore } from '@/features/threeD/cameraStore';
 import type { ActiveEvent } from '@/types/contract';
 
 /**
- * P07 3D 河流数字空间。
- * M1：河廊全景 + A/B/C + 旋转/缩放/平移 + 实时状态。
- * M2：点击节点/列表 → 同一持续场景内相机平滑飞行 → 详情面板；异常节点红色脉冲。
+ * P07 3D 河流数字空间：示意河谷 + A/B/C 节点 + 相机飞行 + 异常脉冲。
+ * 节点面板聚合官方实时水质、模拟趋势与关联事件，并可跳转 P02/P04。
  */
 export default function River3DPage() {
-  const navigate = useNavigate();
-  const authenticated = useAuthStore((s) => s.authenticated);
-  const streamState = useRealtimeStream(authenticated);
+  const streamState = useRealtimeStream();
   const { view, flyTo } = useCameraStore();
 
   const reachesQ = useQuery({
     queryKey: ['reaches'],
     queryFn: api.reaches,
-    enabled: authenticated,
     refetchInterval: 15000,
   });
-  // 活动事件用于异常节点高亮
   const eventsQ = useQuery({
     queryKey: ['events', 'ACTIVE'],
     queryFn: () => api.events({ status: 'ACTIVE', pageSize: 100 }),
-    enabled: authenticated,
     refetchInterval: 8000,
   });
 
@@ -45,30 +38,35 @@ export default function River3DPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 92px)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0, color: 'var(--tw-primary-800)', fontSize: 18 }}>P07 3D 河流数字空间</h2>
-        <span className="badge badge-offline">示意拓扑 · 非导航地图</span>
-        <span className="source-tag source-tag-simulated">模拟数据</span>
-        <span className={`badge ${streamState === 'open' ? 'badge-ok' : 'badge-offline'}`}>
-          实时：{streamState === 'open' ? '已连接' : '未连接'}
-        </span>
-        {view !== 'overview' && (
-          <button className="btn-primary" style={{ padding: '4px 12px', fontSize: 12 }} onClick={() => flyTo('overview')}>
-            ← 返回全景
-          </button>
-        )}
-        <span className="muted" style={{ fontSize: 12, marginLeft: 'auto' }}>
-          点击节点飞行 · 拖拽旋转 · 滚轮缩放 · 右键平移
-        </span>
-      </div>
+      <PageHeader
+        code="P07"
+        title="3D 河流数字空间"
+        badges={
+          <>
+            <Tag tone="outline">示意拓扑 · 非导航地图</Tag>
+            <Tag tone={streamState === 'open' ? 'ok' : 'muted'}>
+              实时 {streamState === 'open' ? '已连接' : '未连接'}
+            </Tag>
+            {abnormalReachIds.length > 0 && (
+              <Tag tone="danger">{abnormalReachIds.length} 个断面存在活动事件</Tag>
+            )}
+          </>
+        }
+        description="河谷地形与水面为视觉示意（确定性噪声），不代表真实高程或水动力；节点异常高亮来自 MQTT 模拟事件。"
+        actions={
+          <>
+            {view !== 'overview' && (
+              <Button variant="ghost" onClick={() => flyTo('overview')}>
+                ← 返回全景
+              </Button>
+            )}
+            <span className="tw-tiny">点击节点飞行 · 拖拽旋转 · 滚轮缩放</span>
+          </>
+        }
+      />
 
       <div className="card" style={{ flex: 1, padding: 0, position: 'relative', overflow: 'hidden' }}>
-        {!authenticated ? (
-          <div className="state-box">
-            <div>请先登录查看 3D 实时场景</div>
-            <button className="btn-primary" onClick={() => navigate('/login')}>前往登录</button>
-          </div>
-        ) : reachesQ.isLoading ? (
+        {reachesQ.isLoading ? (
           <div className="state-box">3D 场景加载中…</div>
         ) : (
           <>
@@ -84,7 +82,7 @@ export default function River3DPage() {
                 position: 'absolute',
                 left: 14,
                 top: 14,
-                background: 'rgba(255,255,255,.92)',
+                background: 'rgba(255,255,255,.94)',
                 borderRadius: 8,
                 padding: '10px 12px',
                 boxShadow: 'var(--tw-shadow)',
@@ -94,6 +92,9 @@ export default function River3DPage() {
                 fontSize: 13,
               }}
             >
+              <div className="tw-tiny" style={{ marginBottom: 2 }}>
+                逻辑断面（上游 → 下游）
+              </div>
               {reaches
                 .slice()
                 .sort((a, b) => a.topoOrder - b.topoOrder)
@@ -117,13 +118,12 @@ export default function River3DPage() {
                       }}
                     >
                       <span style={{ minWidth: 52, textAlign: 'left' }}>{r.name}</span>
-                      {abnormal ? <span className="badge badge-danger">异常</span> : <OnlineBadge status={r.onlineStatus} />}
+                      {abnormal ? <Tag tone="danger">异常</Tag> : <OnlineBadge status={r.onlineStatus} />}
                     </button>
                   );
                 })}
             </div>
 
-            {/* 节点详情面板（M2） */}
             {selectedReach && (
               <NodeDetailPanel reach={selectedReach} onClose={() => flyTo('overview')} />
             )}
@@ -135,7 +135,7 @@ export default function River3DPage() {
                 bottom: 12,
                 fontSize: 11,
                 color: 'var(--tw-text-secondary)',
-                background: 'rgba(255,255,255,.8)',
+                background: 'rgba(255,255,255,.85)',
                 padding: '3px 8px',
                 borderRadius: 4,
               }}

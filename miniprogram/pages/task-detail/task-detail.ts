@@ -1,5 +1,8 @@
 // pages/task-detail/task-detail.ts
 import { getTask, actTask } from '../../services/api';
+import { getToken } from '../../utils/auth';
+import { wsClient } from '../../utils/ws';
+import { ENV } from '../../config/env';
 import { formatDateTime } from '../../utils/util';
 
 const ACTION_NAMES: Record<string, string> = {
@@ -20,6 +23,7 @@ Page({
     task: null as InspectionTask | null,
     actionText: '',
     dueAtText: '—',
+    submittedPhotos: [] as { attachmentId: string; tempPath: string }[],
   },
 
   onLoad(query: Record<string, string | undefined>) {
@@ -32,6 +36,29 @@ Page({
     this.load();
   },
 
+  privateUnsub: null as null | (() => void),
+
+  onUnload() {
+    this.privateUnsub?.();
+  },
+
+  onShow() {
+    // 确保 WS 已连接；收到本任务的更新时静默重拉
+    wsClient.connect();
+    if (this.data.taskId) {
+      this.privateUnsub?.();
+      this.privateUnsub = wsClient.onMessage((raw) => {
+        const msg = raw as StreamMessage<StreamTaskPayload>;
+        if (
+          (msg.messageType === 'task.updated' && msg.payload?.taskId === this.data.taskId) ||
+          (msg.messageType === 'task.created' && msg.payload?.taskId === this.data.taskId)
+        ) {
+          this.load();
+        }
+      });
+    }
+  },
+
   async load(): Promise<void> {
     this.setData({ uiState: 'loading', errorMsg: '' });
     try {
@@ -42,9 +69,44 @@ Page({
         dueAtText: formatDateTime(task.dueAt),
         uiState: 'success',
       });
+      // 已回填任务：鉴权下载照片到本地临时路径用于回显
+      if ((task.attachmentIds?.length ?? 0) > 0) {
+        this.loadSubmittedPhotos(task.attachmentIds);
+      }
     } catch (e) {
       this.setData({ uiState: 'error', errorMsg: e instanceof Error ? e.message : '未知错误' });
     }
+  },
+
+  async loadSubmittedPhotos(ids: string[]): Promise<void> {
+    const token = getToken();
+    const photos: { attachmentId: string; tempPath: string }[] = [];
+    for (const attachmentId of ids) {
+      try {
+        const res: WechatMiniprogram.DownloadFileSuccessCallbackResult = await new Promise(
+          (resolve, reject) => {
+            wx.downloadFile({
+              url: `${ENV.API_BASE_URL}/inspection-tasks/uploads/${attachmentId}/content`,
+              header: token ? { Authorization: `Bearer ${token}` } : {},
+              success: resolve,
+              fail: reject,
+            });
+          },
+        );
+        if (res.statusCode === 200) {
+          photos.push({ attachmentId, tempPath: res.tempFilePath });
+        }
+      } catch {
+        // 单张失败不阻塞详情页
+      }
+    }
+    this.setData({ submittedPhotos: photos });
+  },
+
+  previewImage(e: WechatMiniprogram.TouchEvent): void {
+    const src = (e.currentTarget.dataset as { src: string }).src;
+    const urls = this.data.submittedPhotos.map((p) => p.tempPath);
+    wx.previewImage({ current: src, urls });
   },
 
   async onAccept(): Promise<void> {
