@@ -8,6 +8,7 @@ import WorkbenchPage from './pages/P04Workbench/WorkbenchPage';
 import TasksPage from './pages/P05Tasks/TasksPage';
 import EvidencePage from './pages/P06Evidence/EvidencePage';
 import ReviewsPage from './pages/P08Reviews/ReviewsPage';
+import ReviewListPage from './pages/Review/ReviewListPage';
 import ReportsPage from './pages/P09Reports/ReportsPage';
 import MobilePage from './pages/P10Mobile/MobilePage';
 import FieldVoicePage from './pages/P11FieldVoice/FieldVoicePage';
@@ -61,7 +62,8 @@ export default function App() {
             <Route path="/tasks" element={<TasksPage />} />
 
             {/* 05 事件复盘与报告（阶段 F 上线事件复盘列表；暂落月报/频次页） */}
-            <Route path="/review" element={<Navigate to="/reports" replace />} />
+            {/* 05 事件复盘与报告：/review 复盘列表（F2）；/review/:id 详情 F3 暂落旧研判单 */}
+            <Route path="/review" element={<ReviewListPage />} />
             <Route path="/review/:eventId" element={<ReviewEventRedirect />} />
             <Route path="/reviews/:eventId" element={<ReviewsPage />} />
             <Route path="/reviews" element={<Navigate to="/events" replace />} />
