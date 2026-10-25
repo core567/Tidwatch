@@ -65,16 +65,20 @@ export default function MonitorNode({ anchor, onlineStatus, abnormal, onClick }:
     <group position={anchor.position}>
       {/* 选中/异常时的地面高亮盘 */}
       {(selected || abnormal) && (
-        <mesh position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[1.7, 40]} />
+        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[1.9, 40]} />
           <meshBasicMaterial color={abnormal ? '#d84c4c' : '#1e6fe0'} transparent opacity={0.12} />
         </mesh>
       )}
 
-      <mesh
-        position={[0, 0.75, 0]}
-        material={mat}
-        castShadow
+      {/* 混凝土基座台 */}
+      <mesh position={[0, 0.12, 0]} receiveShadow castShadow>
+        <cylinderGeometry args={[0.52, 0.66, 0.24, 24]} />
+        <meshStandardMaterial color="#c7d0d8" roughness={0.9} metalness={0.05} />
+      </mesh>
+
+      {/* 监测桩体 */}
+      <mesh position={[0, 0.95, 0]} material={mat} castShadow
         onClick={(e) => {
           e.stopPropagation();
           onClick(anchor.reachId);
@@ -82,35 +86,47 @@ export default function MonitorNode({ anchor, onlineStatus, abnormal, onClick }:
         onPointerOver={() => (document.body.style.cursor = 'pointer')}
         onPointerOut={() => (document.body.style.cursor = 'default')}
       >
-        <cylinderGeometry args={[selected ? 0.26 : 0.19, selected ? 0.34 : 0.26, 1.5, 20]} />
-      </mesh>
-      <mesh position={[0, 1.72, 0]} material={mat} castShadow>
-        <sphereGeometry args={[abnormal ? 0.45 : 0.37, 22, 22]} />
+        <cylinderGeometry args={[selected ? 0.13 : 0.1, selected ? 0.17 : 0.13, 1.5, 20]} />
       </mesh>
 
-      <mesh ref={ringRef} position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]} material={ringMat}>
-        <ringGeometry args={[0.72, 1.08, 40]} />
+      {/* 桩顶状态球 */}
+      <mesh position={[0, 1.85, 0]} material={mat} castShadow>
+        <sphereGeometry args={[abnormal ? 0.34 : 0.28, 24, 24]} />
+      </mesh>
+      {/* 状态球内芯高光 */}
+      <mesh position={[0.09, 1.94, 0.09]}>
+        <sphereGeometry args={[abnormal ? 0.1 : 0.085, 12, 12]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.55} />
       </mesh>
 
-      <mesh position={[0, 3.1, 0]}>
-        <cylinderGeometry args={[abnormal ? 0.07 : 0.045, abnormal ? 0.07 : 0.045, 3.1, 10]} />
-        <meshBasicMaterial color={baseColor} transparent opacity={abnormal ? 0.32 : 0.16} />
+      {/* 地面脉冲环（异常扩散 / 选中呼吸） */}
+      <mesh ref={ringRef} position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} material={ringMat}>
+        <ringGeometry args={[0.85, 1.25, 44]} />
       </mesh>
 
-      <Html position={[0, 2.7, 0]} center distanceFactor={17} zIndexRange={[20, 0]}>
+      {/* 仅异常时保留告警光柱 */}
+      {abnormal && (
+        <mesh position={[0, 3.3, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 3.0, 10]} />
+          <meshBasicMaterial color={baseColor} transparent opacity={0.28} />
+        </mesh>
+      )}
+
+      <Html position={[0, 2.55, 0]} center distanceFactor={17} zIndexRange={[20, 0]}>
         <div
           onClick={() => onClick(anchor.reachId)}
           style={{
             whiteSpace: 'nowrap',
-            background: selected ? 'rgba(30,111,224,.95)' : 'rgba(11,42,74,.88)',
-            color: '#fff',
+            background: selected ? 'rgba(30,111,224,.96)' : 'rgba(255,255,255,.95)',
+            color: selected ? '#fff' : '#183650',
             fontSize: 12,
-            padding: '3px 9px',
-            borderRadius: 6,
-            border: `1px solid ${baseColor}`,
+            fontWeight: 600,
+            padding: '4px 10px',
+            borderRadius: 7,
+            border: `1px solid ${abnormal ? '#d84c4c' : 'rgba(37,99,166,.28)'}`,
             cursor: 'pointer',
             userSelect: 'none',
-            boxShadow: '0 2px 8px rgba(8,31,56,.25)',
+            boxShadow: '0 2px 10px rgba(8,31,56,.18)',
           }}
         >
           {anchor.name} · {abnormal ? '异常' : TEXT[onlineStatus] ?? '未知'}

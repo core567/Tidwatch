@@ -127,6 +127,41 @@ export interface EventDetail extends ActiveEvent {
   transitions: StatusTransition[];
   temporalRelations: TemporalRelation[];
   changeCount: number;
+  allowedActions: EventAction[];
+}
+
+/** 统一业务时间线条目（business_events）。 */
+export interface TimelineItem {
+  eventId: string;
+  bizType: 'EVENT' | 'TASK' | 'SUBMISSION' | 'REVIEW' | 'ASSESSMENT' |
+    'EVIDENCE' | 'BLINDSPOT' | 'ATTACHMENT' | 'RECOVERY';
+  actionType: string;
+  eventRef: string | null;
+  taskRef: string | null;
+  submissionRef: string | null;
+  reviewRef: string | null;
+  actor: string;
+  actorRole: string | null;
+  fromStatus: string | null;
+  toStatus: string | null;
+  description: string | null;
+  evidenceRefs: unknown[];
+  occurredAt: string;
+  source: 'live' | 'backfill';
+}
+
+/** 规则处置建议（非 AI）。 */
+export interface Recommendation {
+  code: string;
+  category: 'EVENT_ACTION' | 'TASK' | 'REVIEW' | 'BLINDSPOT' | 'EVIDENCE' | 'CLOSE';
+  title: string;
+  reason: string;
+  priority: 'LOW' | 'NORMAL' | 'HIGH';
+  taskId?: string | null;
+  reachIds?: string[];
+  scopeReachIds?: string[];
+  eventAction?: EventAction | null;
+  suggestedTask?: { actionType: string; reachId: string } | null;
 }
 
 export interface ReviewHypothesis {

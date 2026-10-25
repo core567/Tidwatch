@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import RiverCorridor from './RiverCorridor';
 import MonitorNode from './MonitorNode';
 import CameraRig from './CameraRig';
-import { NODE_ANCHORS, OVERVIEW_CAMERA } from './riverGeometry';
+import { NODE_ANCHORS, OVERVIEW_CAMERA, buildValleyGeometry } from './riverGeometry';
 import type { Reach } from '@/types/contract';
 
 interface Props {
@@ -25,6 +25,9 @@ function statusOf(reaches: Reach[], reachId: string): Reach['onlineStatus'] | 'U
  */
 export default function RiverScene({ reaches, abnormalReachIds, onSelectNode }: Props) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
+  const valleyGeo = useMemo(() => buildValleyGeometry(), []);
+
+  useEffect(() => () => valleyGeo.dispose(), [valleyGeo]);
 
   return (
     <Canvas
@@ -34,27 +37,27 @@ export default function RiverScene({ reaches, abnormalReachIds, onSelectNode }: 
         position: [OVERVIEW_CAMERA.position.x, OVERVIEW_CAMERA.position.y, OVERVIEW_CAMERA.position.z],
         fov: OVERVIEW_CAMERA.fov,
         near: 0.1,
-        far: 200,
+        far: 260,
       }}
       onCreated={({ gl, scene }) => {
-        gl.setClearColor('#d7e4ee');
-        scene.fog = new THREE.Fog('#d7e4ee', 44, 96);
+        gl.setClearColor('#dfe9f1');
+        scene.fog = new THREE.Fog('#dfe9f1', 60, 150);
       }}
       style={{ width: '100%', height: '100%' }}
     >
-      <ambientLight intensity={0.55} color="#e8f2ff" />
-      <hemisphereLight args={['#dcecff', '#7d8f74', 0.85]} />
+      <ambientLight intensity={0.6} color="#eaf3ff" />
+      <hemisphereLight args={['#dcecff', '#8aa07e', 0.9]} />
       <directionalLight
-        position={[-16, 26, 14]}
-        intensity={1.35}
-        color="#fff6e8"
+        position={[-18, 30, 16]}
+        intensity={1.4}
+        color="#fff7ec"
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-left={-40}
-        shadow-camera-right={40}
-        shadow-camera-top={40}
-        shadow-camera-bottom={-40}
+        shadow-camera-left={-46}
+        shadow-camera-right={46}
+        shadow-camera-top={46}
+        shadow-camera-bottom={-46}
       />
 
       <RiverCorridor />
@@ -68,9 +71,9 @@ export default function RiverScene({ reaches, abnormalReachIds, onSelectNode }: 
         />
       ))}
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.35, 0]} receiveShadow>
-        <planeGeometry args={[120, 90]} />
-        <meshStandardMaterial color="#d9e3d4" roughness={1} />
+      {/* 缓起伏河谷谷地（确定性，视觉示意，非真实高程） */}
+      <mesh geometry={valleyGeo} receiveShadow>
+        <meshStandardMaterial vertexColors roughness={1} metalness={0} />
       </mesh>
 
       <OrbitControls
@@ -80,7 +83,7 @@ export default function RiverScene({ reaches, abnormalReachIds, onSelectNode }: 
         enableDamping
         dampingFactor={0.08}
         minDistance={8}
-        maxDistance={70}
+        maxDistance={95}
         maxPolarAngle={Math.PI / 2.15}
       />
       <CameraRig controls={controlsRef} />

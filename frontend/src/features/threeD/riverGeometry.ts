@@ -193,3 +193,66 @@ export const OVERVIEW_CAMERA = {
   target: new Vector3(0, 0, 0),
   fov: 45,
 };
+
+/**
+ * 河谷谷地地形：大范围缓起伏地表，河道走向处下沉形成河谷，
+ * 向外逐渐抬升为丘陵，营造空间纵深。确定性噪声，刷新不抖动。
+ * 视觉示意，不代表真实高程。
+ */
+export function buildValleyGeometry(
+  size = 150,
+  segments = 96,
+  halfWidth = 11,
+): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const indices: number[] = [];
+  const cols = segments + 1;
+
+  const valleyFloor = new THREE.Color('#cdd8c4');
+  const meadow = new THREE.Color('#9fb48d');
+  const far = new THREE.Color('#82977a');
+
+  for (let iz = 0; iz <= segments; iz++) {
+    for (let ix = 0; ix <= segments; ix++) {
+      const x = (ix / segments - 0.5) * size;
+      const z = (iz / segments - 0.5) * size;
+      // 到河道曲线的近似横向距离：沿曲线采样取最近
+      let minD = Infinity;
+      for (let k = 0; k <= 80; k++) {
+        const c = RIVER_CURVE.getPointAt(k / 80);
+        const d = Math.hypot(x - c.x, z - c.z);
+        if (d < minD) minD = d;
+      }
+      // 河谷：近处低，远处抬升
+      const v = Math.max(0, minD - halfWidth);
+      const ridge = 0.018 * v * v;
+      const n =
+        Math.sin(x * 0.18 + z * 0.11) * 0.18 +
+        Math.sin(x * 0.07 - z * 0.13) * 0.28;
+      const y = -0.35 + ridge + n * (0.4 + Math.min(1, v / 30));
+      positions.push(x, y, z);
+
+      // 近河谷为滩涂草甸，远为低饱和丘陵
+      const k = Math.min(1, minD / (size * 0.5));
+      const c =
+        minD < halfWidth
+          ? valleyFloor.clone().lerp(meadow, 0.3)
+          : meadow.clone().lerp(far, k);
+      colors.push(c.r, c.g, c.b);
+    }
+    if (iz < segments) {
+      for (let ix = 0; ix < segments; ix++) {
+        const a = iz * cols + ix;
+        indices.push(a, a + cols, a + 1, a + 1, a + cols, a + cols + 1);
+      }
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}

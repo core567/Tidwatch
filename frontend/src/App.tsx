@@ -7,12 +7,12 @@ import EventsPage from './pages/P03Events/EventsPage';
 import WorkbenchPage from './pages/P04Workbench/WorkbenchPage';
 import TasksPage from './pages/P05Tasks/TasksPage';
 import EvidencePage from './pages/P06Evidence/EvidencePage';
-import River3DPage from './pages/P07River3D/River3DPage';
 import ReviewsPage from './pages/P08Reviews/ReviewsPage';
 import ReportsPage from './pages/P09Reports/ReportsPage';
 import MobilePage from './pages/P10Mobile/MobilePage';
 import FieldVoicePage from './pages/P11FieldVoice/FieldVoicePage';
 import AdminPage from './pages/P12Admin/AdminPage';
+import MonitorPage from './pages/Monitor/MonitorPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -39,8 +39,9 @@ export default function App() {
       <Router>
         <Routes>
           <Route element={<AppLayout />}>
-            {/* 01 智慧监测总览 */}
+            {/* 01 智慧监测总览：卡片式总览为首页；3D 数字空间在 /monitor（独立开发） */}
             <Route path="/" element={<OverviewPage />} />
+            <Route path="/monitor" element={<MonitorPage />} />
 
             {/* 02 水环境分析（阶段 G 上线真实页面） */}
             <Route path="/analysis" element={<Navigate to="/reaches/reach-c" replace />} />
@@ -52,7 +53,8 @@ export default function App() {
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/:eventId/workbench" element={<WorkbenchPage />} />
             <Route path="/evidence" element={<EvidencePage />} />
-            <Route path="/river-3d" element={<River3DPage />} />
+            {/* 3D 数字空间：新旧入口统一到 MonitorPage；旧 P07 文件保留待验收后清理 */}
+            <Route path="/river-3d" element={<MonitorPage />} />
 
             {/* 04 巡检协同中心（阶段 E 上线） */}
             <Route path="/inspection" element={<Navigate to="/tasks" replace />} />

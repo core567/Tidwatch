@@ -123,6 +123,21 @@ export const api = {
     }),
   eventReview: (eventId: string) =>
     request<import('@/types/contract').EventReview>(`/events/${encodeURIComponent(eventId)}/review`),
+  eventTimeline: (eventId: string) =>
+    request<{ items: import('@/types/contract').TimelineItem[] }>(
+      `/events/${encodeURIComponent(eventId)}/timeline`,
+    ),
+  eventRecommendations: (eventId: string) =>
+    request<{
+      eventId: string;
+      source: string;
+      ruleVersion: string;
+      items: import('@/types/contract').Recommendation[];
+    }>(`/events/${encodeURIComponent(eventId)}/recommendations`),
+  taskTimeline: (taskId: string) =>
+    request<{ items: import('@/types/contract').TimelineItem[] }>(
+      `/inspection-tasks/${encodeURIComponent(taskId)}/timeline`,
+    ),
   monthlyStats: () => request<import('@/types/contract').MonthlyStats>('/reports/monthly'),
   eventFrequency: () => request<import('@/types/contract').EventFrequency>('/reports/event-frequency'),
   // 证据 / 假设
