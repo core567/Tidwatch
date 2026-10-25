@@ -81,6 +81,39 @@ class EventDetail(CamelModel):
     transitions: list[EventStatusTransitionOut] = Field(default_factory=list)
     temporal_relations: list[TemporalRelationOut] = Field(default_factory=list)
     change_count: int = 0
+    # 当前状态下状态机允许的人工动作（只读，前端据此动态渲染按钮）
+    allowed_actions: list[str] = Field(default_factory=list)
+
+
+class TimelineItemOut(CamelModel):
+    event_id: str
+    biz_type: str
+    action_type: str
+    event_ref: str | None = None
+    task_ref: str | None = None
+    submission_ref: str | None = None
+    review_ref: str | None = None
+    actor: str = "SYSTEM"
+    actor_role: str | None = None
+    from_status: str | None = None
+    to_status: str | None = None
+    description: str | None = None
+    evidence_refs: list = Field(default_factory=list)
+    occurred_at: datetime
+    source: str = "live"
+
+
+class RecommendationOut(CamelModel):
+    code: str
+    category: str
+    title: str
+    reason: str
+    priority: str = "NORMAL"
+    task_id: str | None = None
+    reach_ids: list[str] = Field(default_factory=list)
+    scope_reach_ids: list[str] = Field(default_factory=list)
+    event_action: str | None = None
+    suggested_task: dict | None = None
 
 
 class EventActionRequest(CamelModel):

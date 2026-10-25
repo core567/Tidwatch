@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
-import { useRealtimeStream } from '@/services/useRealtimeStream';
+import { useStreamState } from '@/store/stream';
 import {
   Button,
   Card,
@@ -41,7 +41,7 @@ const DIRECTION: Record<string, string> = { UP: '↑', DOWN: '↓', LEVEL: '→'
 
 export default function EventsPage() {
   const navigate = useNavigate();
-  const stream = useRealtimeStream();
+  const stream = useStreamState();
   const [status, setStatus] = useState('ACTIVE');
 
   const eventsQ = useQuery({
@@ -77,12 +77,17 @@ export default function EventsPage() {
         }
         description="事件由规则识别持续变化后生成；点击任意事件进入研判工作台查看时间线、证据与任务。"
         actions={
-          <Segmented
-            ariaLabel="筛选事件状态"
-            value={status}
-            onChange={setStatus}
-            options={FILTERS.map((f) => ({ value: f.value, label: f.label }))}
-          />
+          <>
+            <Button size="sm" variant="ghost" onClick={() => navigate('/')}>
+              ← 返回监测总览
+            </Button>
+            <Segmented
+              ariaLabel="筛选事件状态"
+              value={status}
+              onChange={setStatus}
+              options={FILTERS.map((f) => ({ value: f.value, label: f.label }))}
+            />
+          </>
         }
       />
 

@@ -47,6 +47,27 @@
   --tw-font-lg: 16px;
   --tw-font-xl: 22px;
 
+  /* 全局框架（六页布局） */
+  --tw-sidebar-w: 216px;
+  --tw-sidebar-w-collapsed: 64px;
+  --tw-topbar-h: 64px;
+
+  /* 侧栏浅色体系（雾灰银白 + 科技蓝） */
+  --tw-sidebar-bg: #f0f3f6;
+  --tw-sidebar-divider: #d9e2eb;
+  --tw-sidebar-text: #183650;
+  --tw-sidebar-text-secondary: #5d7488;
+  --tw-sidebar-icon: #70879b;
+  --tw-sidebar-hover-bg: #eaf1f8;
+  --tw-sidebar-active-bg: #dfebf8;
+  --tw-sidebar-active-text: #2563a6;
+
+  /* 悬浮层 */
+  --tw-shadow-float: 0 8px 28px rgba(11, 42, 74, 0.16);
+  --tw-z-drawer: 400;
+  --tw-z-topbar: 300;
+  --tw-z-toast: 500;
+
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   color: var(--tw-text);

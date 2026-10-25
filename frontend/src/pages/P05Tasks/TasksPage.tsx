@@ -57,6 +57,9 @@ export default function TasksPage() {
         description="任务由事件研判派发或人工创建；现场回填的照片可在 PC 端直接查看，结论不作为模型输出。"
         actions={
           <>
+            <Button size="sm" variant="ghost" onClick={() => navigate('/')}>
+              ← 返回监测总览
+            </Button>
             <Segmented
               ariaLabel="筛选任务状态"
               value={status}

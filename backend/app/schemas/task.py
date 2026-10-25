@@ -53,3 +53,6 @@ class SubmitTaskIn(CamelModel):
     conclusion: Conclusion
     attachment_ids: list[str] = Field(default_factory=list)
     observed_at: datetime | None = None
+    # 小程序现场端可表达“建议再评估”，但是否再评估由后端按规则决定；
+    # 接收该字段仅为兼容现场端提交，不作为触发依据（提交后后端本就自行再评估）。
+    request_reevaluate: bool | None = None

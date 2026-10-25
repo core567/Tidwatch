@@ -59,6 +59,12 @@ def create_task(
     db.flush()
     _trace(db, task.task_id, event_id, created_by, "task.created",
            [reach_id], [task.task_id], reason)
+    from app.services import timeline_service
+    timeline_service.record(
+        db, biz_type=timeline_service.BIZ_TASK, action_type="task.created",
+        event_ref=event_id, task_ref=task.task_id, actor=created_by,
+        to_status="PENDING", description=title,
+    )
     return task
 
 
@@ -113,6 +119,14 @@ def act_task(db: Session, task_id: str, action: str, *, actor: str,
         raise AppError("BAD_TASK_ACTION", f"未知任务动作: {action}", 422)
     _trace(db, task.task_id, task.event_id, actor, f"task.{action.lower()}",
            [], [task.task_id], None)
+    from app.services import timeline_service
+    canon = {"ACCEPT": "task.accepted", "START": "task.started", "CANCEL": "task.cancelled"}
+    timeline_service.record(
+        db, biz_type=timeline_service.BIZ_TASK,
+        action_type=canon[action],
+        event_ref=task.event_id, task_ref=task.task_id, actor=actor,
+        to_status=task.status,
+    )
     db.flush()
     return task
 
@@ -188,6 +202,15 @@ def submit_result(
         output_refs=json.dumps([evidence_id] if evidence_id else []),
         rule_version="manual", detail=observation_note[:300],
     ))
+    from app.services import timeline_service
+    timeline_service.record(
+        db, biz_type=timeline_service.BIZ_TASK, action_type="task.submitted",
+        event_ref=task.event_id, task_ref=task.task_id, actor=actor,
+        to_status="SUBMITTED",
+        description=f"现场回填（{conclusion}）：{observation_note}"[:500],
+        evidence_refs=[*(attachment_ids or []), *( [evidence_id] if evidence_id else [])],
+        occurred_at=task.observed_at or now,
+    )
     db.flush()
     return task
 

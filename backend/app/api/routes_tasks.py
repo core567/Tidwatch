@@ -5,7 +5,7 @@ import json
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -90,6 +90,20 @@ def get_task(
     return _out(task_service.get_task(db, task_id))
 
 
+@router.get("/{task_id}/timeline")
+def task_timeline(
+    task_id: str,
+    types: str | None = Query(default=None, description="逗号分隔的 biz_type 过滤"),
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    """任务统一时间线（只读 business_events，含其所属事件的业务动作）。"""
+    task_service.get_task(db, task_id)  # 不存在则 404
+    type_list = [t.strip().upper() for t in (types.split(",") if types else []) if t.strip()] or None
+    from app.services import timeline_service
+    return {"items": timeline_service.list_for_task(db, task_id, type_list)}
+
+
 @router.post("/{task_id}/actions", response_model=TaskOut)
 def task_action(
     task_id: str,
@@ -162,6 +176,13 @@ async def upload_attachment(
         stored_path=f"{att_id}{suffix}", mime_type=file.content_type or "image/jpeg",
         size_bytes=len(content), uploaded_by=_user.user_id,
     ))
+    from app.services import timeline_service
+    from app.models.audit import BIZ_ATTACHMENT
+    timeline_service.record(
+        db, biz_type=BIZ_ATTACHMENT,
+        action_type="attachment.uploaded", actor=_user.user_id,
+        description=file.filename, evidence_refs=[att_id],
+    )
     db.commit()
     return {"attachmentId": att_id, "filename": file.filename, "sizeBytes": len(content)}
 

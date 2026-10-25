@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.errors import NotFoundError
 from app.db.session import get_db
 from app.models.event import (
@@ -18,8 +19,14 @@ from app.models.event import (
     EventStatusTransition,
     TemporalRelation,
 )
+from app.models.evidence import Evidence
+from app.models.focus import BlindSpot
 from app.models.system import User
+from app.models.workflow import InspectionTask
+from app.rules.recommendations import build_recommendations
+from app.rules.state_machine import allowed_actions as allowed_actions_fn
 from app.schemas.common import PageResult
+from app.services import timeline_service
 from app.schemas.event import (
     EventActionRequest,
     EventDetail,
@@ -153,7 +160,61 @@ def get_event(
             for r in rels
         ],
         change_count=len(changes),
+        allowed_actions=allowed_actions_fn(e.status),
     )
+
+
+@router.get("/{event_id}/timeline")
+def event_timeline(
+    event_id: str,
+    types: str | None = Query(default=None, description="逗号分隔的 biz_type 过滤"),
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    """统一业务时间线（只读 business_events），可按 biz_type 过滤。"""
+    if db.get(ActiveEvent, event_id) is None:
+        raise NotFoundError("活动事件", event_id)
+    type_list = [t.strip().upper() for t in (types.split(",") if types else []) if t.strip()] or None
+    return {"items": timeline_service.list_for_event(db, event_id, type_list)}
+
+
+@router.get("/{event_id}/recommendations")
+def event_recommendations(
+    event_id: str,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    """规则生成的处置建议（非 AI）；只给建议，不改变状态。"""
+    e = db.get(ActiveEvent, event_id)
+    if e is None:
+        raise NotFoundError("活动事件", event_id)
+    scope = _latest_scope(db, event_id)
+
+    tasks = db.execute(
+        select(InspectionTask).where(InspectionTask.event_id == event_id)
+    ).scalars().all()
+    task_dicts = [{"taskId": t.task_id, "status": t.status} for t in tasks]
+
+    open_blind = [
+        b.reach_id for b in db.execute(
+            select(BlindSpot).where(BlindSpot.end_at.is_(None))
+        ).scalars().all()
+    ]
+    has_manual = db.execute(
+        select(Evidence.evidence_id).where(
+            Evidence.event_id == event_id, Evidence.type == "MANUAL"
+        ).limit(1)
+    ).scalar_one_or_none() is not None
+
+    items = build_recommendations(
+        status=e.status,
+        scope_reach_ids=scope,
+        tasks=task_dicts,
+        open_blindspot_reaches=open_blind,
+        has_manual_evidence=has_manual,
+    )
+    return {"eventId": event_id, "source": "RULE", "ruleVersion": settings.rule_version,
+            "items": items}
 
 
 @router.post("/{event_id}/actions", response_model=EventListItem)

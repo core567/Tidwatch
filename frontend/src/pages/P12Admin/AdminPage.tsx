@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, type Diagnostics, type IngestionErrorItem } from '@/services/apiClient';
-import { useRealtimeStream } from '@/services/useRealtimeStream';
+import { useStreamState } from '@/store/stream';
 import { ScenarioConsole } from '@/components/ScenarioConsole';
 import OfficialAutoPanel from '@/components/OfficialAutoPanel';
 import { PageHeader } from '@/components/ui';
@@ -17,7 +17,7 @@ const REASON_TEXT: Record<string, string> = {
 };
 
 export default function AdminPage() {
-  const streamState = useRealtimeStream();
+  const streamState = useStreamState();
   const [showAllErrors, setShowAllErrors] = useState(false);
 
   const healthQ = useQuery({

@@ -143,8 +143,10 @@ def clean_event_tables(client):
     from app.models.workflow import Assessment, EventReview, InspectionTask, RunTrace
     from app.models.observation import Attachment, Observation
     from app.models.event import ActiveEvent
+    from app.models.audit import BusinessEvent
 
     tables = (
+        BusinessEvent,
         TemporalRelation, ChangeEvent, EventStatusTransition, EventScope,
         Evidence, Hypothesis, Assessment, BlindSpot, ObservationFocus,
         RunTrace, EventReview, InspectionTask, Attachment, Observation, ActiveEvent,

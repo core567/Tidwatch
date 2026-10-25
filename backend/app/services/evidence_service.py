@@ -74,6 +74,16 @@ def add_evidence(
         rule_version="manual",
         detail=f"{type}/{polarity}: {note or ''}",
     ))
+    from app.services import timeline_service
+    timeline_service.record(
+        db,
+        biz_type=timeline_service.BIZ_EVIDENCE,
+        action_type="evidence.added",
+        event_ref=event_id,
+        actor=created_by,
+        description=f"人工证据（{type}/{polarity}）：{note or ''}"[:500],
+        evidence_refs=[evidence.evidence_id],
+    )
     return evidence
 
 

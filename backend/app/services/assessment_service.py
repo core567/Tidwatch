@@ -82,6 +82,16 @@ def create_assessment(
         rule_version=settings.rule_version,
         detail=f"v{version}: {reason or '再评估'}",
     ))
+    from app.services import timeline_service
+    timeline_service.record(
+        db,
+        biz_type=timeline_service.BIZ_ASSESSMENT,
+        action_type="assessment.created",
+        event_ref=event_id,
+        actor=actor,
+        description=f"再评估 v{version}：{reason or '范围与假设复核'}",
+        evidence_refs=[a.id],
+    )
     return a
 
 

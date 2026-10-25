@@ -106,3 +106,43 @@ def test_cannot_submit_without_start(ctx):
             db, task.task_id, observation_note="x", conclusion="NORMAL",
             actor="u-inspector",
         )
+
+
+def test_miniprogram_submit_payload_with_request_reevaluate_accepted(client, token):
+    """小程序现场端提交会带 requestReevaluate（仅表达建议）；
+    后端必须接收该字段而不是 422，是否再评估由后端规则决定。"""
+    h = {"Authorization": f"Bearer {token}"}
+    r = client.post(
+        "/api/inspection-tasks",
+        json={"reachId": "reach-a", "title": "小程序兼容提交", "actionType": "MANUAL_CHECK"},
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    tid = r.json()["taskId"]
+    assert client.post(f"/api/inspection-tasks/{tid}/actions", json={"action": "ACCEPT"}, headers=h).status_code == 200
+    assert client.post(f"/api/inspection-tasks/{tid}/actions", json={"action": "START"}, headers=h).status_code == 200
+
+    r = client.post(
+        f"/api/inspection-tasks/{tid}/results",
+        json={
+            "observationNote": "现场水位回落至正常区间",
+            "conclusion": "ABNORMAL",
+            "observedAt": "2026-10-25T10:00:00",
+            "attachmentIds": [],
+            "requestReevaluate": True,
+        },
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "SUBMITTED"
+
+    # 真正未知的额外字段仍应被拒绝（严格契约不放松）
+    r2 = client.post("/api/inspection-tasks", json={"reachId": "reach-a", "title": "未知字段对照"}, headers=h)
+    t2 = r2.json()["taskId"]
+    client.post(f"/api/inspection-tasks/{t2}/actions", json={"action": "START"}, headers=h)
+    bad = client.post(
+        f"/api/inspection-tasks/{t2}/results",
+        json={"observationNote": "x", "conclusion": "NORMAL", "bogus": 1},
+        headers=h,
+    )
+    assert bad.status_code == 422

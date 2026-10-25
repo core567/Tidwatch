@@ -1,5 +1,6 @@
 """聚合导入全部 ORM 模型，供 Base.metadata 与 Alembic 使用。"""
 from app.models.base import Base, TimestampMixin, utc_now
+from app.models.audit import BusinessEvent
 from app.models.evidence import Evidence, Hypothesis
 from app.models.event import (
     ActiveEvent,

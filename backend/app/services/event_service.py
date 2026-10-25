@@ -534,6 +534,19 @@ class EventProcessor:
             actor=actor,
             rule_version=settings.rule_version,
         ))
+        from app.services import timeline_service
+        timeline_service.record(
+            db,
+            biz_type=timeline_service.BIZ_EVENT,
+            action_type="event.status-changed",
+            event_ref=event.event_id,
+            actor=actor,
+            from_status=(from_status if isinstance(from_status, str) or from_status is None
+                         else from_status.value),
+            to_status=to_status if isinstance(to_status, str) else to_status.value,
+            description=reason or f"{trigger} 状态迁移",
+            occurred_at=at,
+        )
 
     def _write_scope(self, db, event: ActiveEvent, reaches, reason):
         db.add(EventScope(

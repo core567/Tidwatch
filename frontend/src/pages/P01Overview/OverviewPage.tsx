@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
-import { useRealtimeStream } from '@/services/useRealtimeStream';
+import { useStreamState } from '@/store/stream';
 import {
   Button,
   Card,
@@ -12,9 +12,11 @@ import {
   Stat,
   Tag,
 } from '@/components/ui';
-import { EventStatusBadge, formatTime, reachName, shortTime } from '@/components/EventBits';
+import { formatTime, shortTime } from '@/components/EventBits';
 import { OnlineBadge, RelativeTime } from '@/components/StatusBits';
 import SourceTag from '@/components/SourceTag';
+import WaterTrendCard from './WaterTrendCard';
+import { EventProgressCard, InspectionActivityCard } from './ActivityCards';
 import {
   OFFICIAL_METRICS,
   formatOfficialValue,
@@ -34,7 +36,7 @@ const TASK_OPEN: InspectionTask['status'][] = ['PENDING', 'ACCEPTED', 'IN_PROGRE
 
 export default function OverviewPage() {
   const navigate = useNavigate();
-  const streamState = useRealtimeStream();
+  const streamState = useStreamState();
 
   const reachesQ = useQuery({
     queryKey: ['reaches'],
@@ -138,168 +140,26 @@ export default function OverviewPage() {
         />
       </div>
 
-      <div
-        className="tw-grid"
-        style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(300px, 1fr)' }}
-      >
-        <div className="tw-stack">
-          <div className="tw-grid tw-grid-3">
-            {reaches.map((r) => (
-              <ReachCard
-                key={r.reachId}
-                reach={r}
-                official={official.find((o) => o.reachId === r.reachId)}
-                onOpen={() => navigate(`/reaches/${r.reachId}`)}
-              />
-            ))}
-          </div>
+      <div className="tw-grid tw-grid-3">
+        {reaches.map((r) => (
+          <ReachCard
+            key={r.reachId}
+            reach={r}
+            official={official.find((o) => o.reachId === r.reachId)}
+            onOpen={() => navigate(`/reaches/${r.reachId}`)}
+          />
+        ))}
+      </div>
 
-          <Card title="快捷入口" subtitle="从总览进入核心业务链路">
-            <div className="tw-grid tw-grid-2">
-              {[
-                {
-                  title: '3D 河流数字空间',
-                  desc: '查看断面空间关系与实时事件高亮',
-                  to: '/river-3d',
-                },
-                { title: '异常事件中心', desc: '按状态机筛选并进入研判工作台', to: '/events' },
-                { title: '巡检与观察任务', desc: '派发、执行、回填现场结论', to: '/tasks' },
-                { title: '历史分析与报告', desc: '官方月报类别与事件频次统计', to: '/reports' },
-              ].map((item) => (
-                <div key={item.to} className="tw-row-between">
-                  <div>
-                    <div style={{ fontWeight: 600, color: 'var(--tw-primary-800)' }}>
-                      {item.title}
-                    </div>
-                    <div className="tw-tiny">{item.desc}</div>
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={() => navigate(item.to)}>
-                    进入
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
+      <WaterTrendCard />
 
-        <div className="tw-stack">
-          <Card
-            title="活动事件"
-            subtitle={`共 ${eventsQ.data?.total ?? 0} 起未闭环`}
-            actions={
-              <Button size="sm" variant="ghost" onClick={() => navigate('/events')}>
-                全部
-              </Button>
-            }
-            padded={false}
-          >
-            {events.length === 0 ? (
-              <EmptyState
-                title="当前无活动事件"
-                description="MQTT 模拟链路触发异常后会在此出现。"
-              />
-            ) : (
-              <div>
-                {events.map((e) => (
-                  <button
-                    key={e.eventId}
-                    type="button"
-                    onClick={() => navigate(`/events/${e.eventId}/workbench`)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      border: 'none',
-                      borderBottom: '1px solid #eef2f7',
-                      background: 'transparent',
-                      padding: '10px 20px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div className="tw-row-between">
-                      <span style={{ fontWeight: 600, color: 'var(--tw-primary-800)' }}>
-                        {e.title}
-                      </span>
-                      <EventStatusBadge status={e.status} />
-                    </div>
-                    <div className="tw-row tw-tiny" style={{ marginTop: 4 }}>
-                      <span>{e.scopeReachIds.map(reachName).join(' / ')}</span>
-                      <span>·</span>
-                      <span>{shortTime(e.firstSeenAt)}</span>
-                      {e.priority === 'HIGH' && <Tag tone="danger">高优先</Tag>}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          <Card
-            title="待办任务"
-            subtitle={`共 ${openTasks.length} 项`}
-            actions={
-              <Button size="sm" variant="ghost" onClick={() => navigate('/tasks')}>
-                全部
-              </Button>
-            }
-            padded={false}
-          >
-            {openTasks.length === 0 ? (
-              <EmptyState
-                title="暂无待办任务"
-                description="从事件工作台或任务页可派发现场核查。"
-              />
-            ) : (
-              <div>
-                {openTasks.slice(0, 6).map((t) => (
-                  <button
-                    key={t.taskId}
-                    type="button"
-                    onClick={() => navigate('/tasks')}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      border: 'none',
-                      borderBottom: '1px solid #eef2f7',
-                      background: 'transparent',
-                      padding: '10px 20px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div className="tw-row-between">
-                      <span style={{ fontWeight: 600, color: 'var(--tw-primary-800)' }}>
-                        {t.title}
-                      </span>
-                      <Tag
-                        tone={
-                          t.priority === 'HIGH'
-                            ? 'danger'
-                            : t.priority === 'LOW'
-                              ? 'muted'
-                              : 'watch'
-                        }
-                      >
-                        {taskStatusText(t.status)}
-                      </Tag>
-                    </div>
-                    <div className="tw-row tw-tiny" style={{ marginTop: 4 }}>
-                      <span>{reachName(t.reachId)}</span>
-                      <span>·</span>
-                      <span>{taskActionText(t.actionType)}</span>
-                      {t.dueAt && (
-                        <>
-                          <span>·</span>
-                          <span>截止 {shortTime(t.dueAt)}</span>
-                        </>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </Card>
-        </div>
+      <div className="tw-home-bottom">
+        <EventProgressCard
+          events={events}
+          tasks={tasksQ.data?.items ?? []}
+          loading={eventsQ.isLoading || tasksQ.isLoading}
+        />
+        <InspectionActivityCard tasks={tasksQ.data?.items ?? []} loading={tasksQ.isLoading} />
       </div>
 
       <Card>
@@ -442,26 +302,3 @@ function SimBlock({ reachId }: { reachId: string }) {
   );
 }
 
-function taskStatusText(status: InspectionTask['status']): string {
-  return {
-    PENDING: '待接收',
-    ACCEPTED: '已接收',
-    IN_PROGRESS: '进行中',
-    SUBMITTED: '已提交',
-    CANCELLED: '已取消',
-  }[status];
-}
-
-function taskActionText(action: string): string {
-  return (
-    {
-      CONTINUE_OBSERVE: '持续观察',
-      FOCUS_REACH_B: '重点观察 B',
-      FOCUS_REACH_C: '重点观察 C',
-      KEEP_LOCAL_SCOPE: '保持局部关注',
-      INSPECT_DATA_LINK: '检查数据链路',
-      MANUAL_CHECK: '现场人工核查',
-      RE_EVALUATE_AFTER_RECOVERY: '恢复后再评估',
-    }[action] ?? action
-  );
-}

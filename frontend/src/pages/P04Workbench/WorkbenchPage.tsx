@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '@/services/apiClient';
-import { useRealtimeStream } from '@/services/useRealtimeStream';
 import { Button, Card, PageHeader, Tag } from '@/components/ui';
 import { EventStatusBadge, reachName, formatTime } from '@/components/EventBits';
 import { simMetricName, simMetricUnitByKey } from '@/lib/metrics';
@@ -24,7 +23,6 @@ export default function WorkbenchPage() {
   const { eventId = '' } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  useRealtimeStream();
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<EventAction | null>(null);

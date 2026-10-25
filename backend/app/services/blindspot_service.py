@@ -50,6 +50,15 @@ def open_blind_spot(
         resolution=None,
     )
     db.add(bs)
+    from app.services import timeline_service
+    timeline_service.record(
+        db,
+        biz_type=timeline_service.BIZ_BLINDSPOT,
+        action_type="blindspot.opened",
+        event_ref=event_id,
+        description=f"{reach_id} 监测盲区开启（{reason}）：{impact}",
+        evidence_refs=[bs.blind_spot_id],
+    )
     return bs
 
 
@@ -68,6 +77,16 @@ def resolve_blind_spot(
         return None
     bs.end_at = _now()
     bs.resolution = resolution
+    from app.services import timeline_service
+    timeline_service.record(
+        db,
+        biz_type=timeline_service.BIZ_BLINDSPOT,
+        action_type="blindspot.resolved",
+        event_ref=bs.event_id,
+        description=f"{reach_id} 监测盲区解除：{resolution}",
+        evidence_refs=[bs.blind_spot_id],
+        occurred_at=bs.end_at,
+    )
     return bs
 
 

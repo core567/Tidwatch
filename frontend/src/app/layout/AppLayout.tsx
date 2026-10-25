@@ -1,27 +1,65 @@
-import { PropsWithChildren } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect, useState, type PropsWithChildren } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
+import { useRealtimeStream } from '@/services/useRealtimeStream';
+import { useStreamState } from '@/store/stream';
+import { Tag, ToastViewport } from '@/components/ui';
+import NotificationBell from './NotificationBell';
+import './layout.css';
 
 interface NavItem {
-  to: string;
   code: string;
   label: string;
+  to: string;
+  isActive: (pathname: string) => boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/', code: 'P01', label: '综合监测总览' },
-  { to: '/events', code: 'P03', label: '异常事件中心' },
-  { to: '/river-3d', code: 'P07', label: '3D 河流数字空间' },
-  { to: '/tasks', code: 'P05', label: '巡检与观察任务' },
-  { to: '/evidence', code: 'P06', label: '证据与智能分析' },
-  { to: '/reports', code: 'P09', label: '历史分析与报告' },
-  { to: '/mobile', code: 'P10', label: '移动巡检端' },
-  { to: '/field-voice', code: 'P11', label: '语音与现场感知' },
-  { to: '/admin', code: 'P12', label: '系统管理与诊断' },
+  { code: '01', label: '智慧监测总览', to: '/', isActive: (p) => p === '/' },
+  {
+    code: '02',
+    label: '水环境分析',
+    to: '/analysis',
+    isActive: (p) => p.startsWith('/analysis') || p.startsWith('/reaches'),
+  },
+  {
+    code: '03',
+    label: '异常研判与处置',
+    to: '/disposal',
+    isActive: (p) => p.startsWith('/disposal') || p.startsWith('/events') || p.startsWith('/evidence'),
+  },
+  {
+    code: '04',
+    label: '巡检协同中心',
+    to: '/inspection',
+    isActive: (p) => p.startsWith('/inspection') || p.startsWith('/tasks'),
+  },
+  {
+    code: '05',
+    label: '事件复盘与报告',
+    to: '/review',
+    isActive: (p) => p.startsWith('/review') || p.startsWith('/reports'),
+  },
+  {
+    code: '06',
+    label: '数据与系统管理',
+    to: '/admin',
+    isActive: (p) => p.startsWith('/admin') || p.startsWith('/mobile') || p.startsWith('/field-voice'),
+  },
 ];
 
+const COLLAPSE_KEY = 'tw_sidebar_collapsed';
+
 export default function AppLayout({ children }: PropsWithChildren) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1');
+  const the3dPage = location.pathname.startsWith('/river-3d');
+
+  useRealtimeStream();
+  const streamState = useStreamState();
+
   const { data: health, isError } = useQuery({
     queryKey: ['health'],
     queryFn: api.health,
@@ -29,84 +67,102 @@ export default function AppLayout({ children }: PropsWithChildren) {
     retry: 1,
   });
 
+  const { data: reaches } = useQuery({
+    queryKey: ['reaches'],
+    queryFn: api.reaches,
+    staleTime: 30000,
+  });
+
+  useEffect(() => {
+    localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
+  }, [collapsed]);
+
+  const activeItem = NAV_ITEMS.find((item) => item.isActive(location.pathname));
   const backendState = isError
-    ? { text: '后端未连接', cls: 'badge-danger' }
+    ? { text: '后端未连接', tone: 'danger' as const }
     : health?.status === 'ok'
-      ? { text: '后端正常', cls: 'badge-ok' }
-      : { text: '服务降级', cls: 'badge-watch' };
+      ? { text: '后端正常', tone: 'ok' as const }
+      : { text: '服务降级', tone: 'watch' as const };
+
+  const selectedReach = /^\/reaches\/([^/]+)/.exec(location.pathname)?.[1] ?? '';
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <aside
-        style={{
-          width: 216,
-          flexShrink: 0,
-          background: 'var(--tw-primary-800)',
-          color: '#cfe0f2',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <div style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
-          <div style={{ fontSize: 19, fontWeight: 700, color: '#fff', letterSpacing: 1 }}>
-            TideWatch
-          </div>
-          <div style={{ fontSize: 11, color: '#8fb0d0', marginTop: 2 }}>
-            汉江武汉段 · 监测与研判
+    <div className="tw-shell">
+      <aside className={`tw-sidebar${collapsed ? ' is-collapsed' : ''}`}>
+        <div className="tw-sidebar-brand">
+          <span className="tw-sidebar-logo">TW</span>
+          <div className="tw-sidebar-brand-text">
+            <div className="tw-sidebar-brand-name">TideWatch</div>
+            <div className="tw-sidebar-brand-sub">汉江武汉段 · 监测与研判</div>
           </div>
         </div>
-        <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+        <nav className="tw-sidebar-nav" aria-label="主导航">
           {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
+            <Link
+              key={item.code}
               to={item.to}
-              end={item.to === '/'}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '9px 20px',
-                fontSize: 13.5,
-                color: isActive ? '#fff' : '#a9c2dc',
-                background: isActive ? 'rgba(30,111,224,.35)' : 'transparent',
-                borderLeft: isActive ? '3px solid #4d94ff' : '3px solid transparent',
-              })}
+              className={`tw-nav-item${item.isActive(location.pathname) ? ' is-active' : ''}`}
+              title={collapsed ? item.label : undefined}
             >
-              <span style={{ fontSize: 11, color: '#6f8db0', width: 28 }}>{item.code}</span>
-              <span style={{ flex: 1 }}>{item.label}</span>
-            </NavLink>
+              <span className="tw-nav-code">{item.code}</span>
+              <span className="tw-nav-label">{item.label}</span>
+            </Link>
           ))}
         </nav>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,.08)', fontSize: 12 }}>
-          <div style={{ color: '#fff' }}>本地演示模式</div>
-          <div style={{ color: '#8fb0d0', marginTop: 2, lineHeight: 1.5 }}>
-            免登录 · 数据含模拟/官方来源标注
+        <div className="tw-sidebar-foot">
+          <div className="tw-sidebar-foot-inner">
+            <div className="tw-sidebar-foot-title">本地演示模式</div>
+            <div className="tw-sidebar-foot-desc">免登录 · 数据含模拟/官方来源标注</div>
           </div>
         </div>
       </aside>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <header
-          style={{
-            height: 44,
-            flexShrink: 0,
-            background: 'var(--tw-surface)',
-            borderBottom: '1px solid var(--tw-border)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            padding: '0 20px',
-            fontSize: 12.5,
-          }}
-        >
-          <span className={`badge ${backendState.cls}`}>{backendState.text}</span>
-          <span className="muted">规则版本 demo-rules-v1（教学阈值）</span>
-          <span className="muted" style={{ marginLeft: 'auto' }}>
-            示意拓扑：上游 A → 中游 B → 下游 C
-          </span>
+      <div className="tw-main">
+        <header className="tw-topbar">
+          <div className="tw-topbar-left">
+            <button
+              className="tw-collapse-btn"
+              onClick={() => setCollapsed((v) => !v)}
+              aria-label={collapsed ? '展开侧栏' : '折叠侧栏'}
+              title={collapsed ? '展开侧栏' : '折叠侧栏'}
+            >
+              {collapsed ? '»' : '«'}
+            </button>
+            <span className="tw-topbar-title">
+              {activeItem ? `${activeItem.code} ${activeItem.label}` : 'TideWatch'}
+            </span>
+          </div>
+
+          <div className="tw-topbar-right">
+            {the3dPage ? <Tag tone="outline">3D 数字空间</Tag> : null}
+            <select
+              className="tw-select"
+              aria-label="选择河段"
+              value={selectedReach}
+              onChange={(e) => {
+                navigate(e.target.value ? `/reaches/${e.target.value}` : '/');
+              }}
+            >
+              <option value="">河段：全部</option>
+              {(reaches ?? []).map((r) => (
+                <option key={r.reachId} value={r.reachId}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            <Tag tone={backendState.tone}>{backendState.text}</Tag>
+            <Tag tone={streamState === 'open' ? 'ok' : streamState === 'connecting' ? 'watch' : 'muted'}>
+              实时{streamState === 'open' ? '已连接' : streamState === 'connecting' ? '连接中' : '未连接'}
+            </Tag>
+            <span className="tw-topbar-divider" />
+            <NotificationBell />
+          </div>
         </header>
-        <main style={{ flex: 1, overflow: 'auto', padding: 24 }}>{children ?? <Outlet />}</main>
+
+        <main className="tw-content">{children ?? <Outlet />}</main>
       </div>
+
+      <ToastViewport />
     </div>
   );
 }

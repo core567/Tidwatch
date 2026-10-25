@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
-import { useRealtimeStream } from '@/services/useRealtimeStream';
+import { useStreamState } from '@/store/stream';
 import { Button, PageHeader, Tag } from '@/components/ui';
 import { OnlineBadge } from '@/components/StatusBits';
 import RiverScene from '@/features/threeD/RiverScene';
@@ -14,7 +14,7 @@ import type { ActiveEvent } from '@/types/contract';
  * 节点面板聚合官方实时水质、模拟趋势与关联事件，并可跳转 P02/P04。
  */
 export default function River3DPage() {
-  const streamState = useRealtimeStream();
+  const streamState = useStreamState();
   const { view, flyTo } = useCameraStore();
 
   const reachesQ = useQuery({

@@ -86,7 +86,7 @@ Page({
         const res: WechatMiniprogram.DownloadFileSuccessCallbackResult = await new Promise(
           (resolve, reject) => {
             wx.downloadFile({
-              url: `${ENV.API_BASE_URL}/inspection-tasks/uploads/${attachmentId}/content`,
+              url: `${ENV.API_BASE_URL}/api/inspection-tasks/uploads/${attachmentId}/content`,
               header: token ? { Authorization: `Bearer ${token}` } : {},
               success: resolve,
               fail: reject,
