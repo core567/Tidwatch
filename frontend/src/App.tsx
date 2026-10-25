@@ -7,9 +7,9 @@ import EventsPage from './pages/P03Events/EventsPage';
 import WorkbenchPage from './pages/P04Workbench/WorkbenchPage';
 import TasksPage from './pages/P05Tasks/TasksPage';
 import EvidencePage from './pages/P06Evidence/EvidencePage';
-import ReviewsPage from './pages/P08Reviews/ReviewsPage';
 import ReviewListPage from './pages/Review/ReviewListPage';
 import EventReviewPage from './pages/Review/EventReviewPage';
+// P08 旧研判单组件保留在代码库（pages/P08Reviews），路由已合并到 /review/:id
 import ReportsPage from './pages/P09Reports/ReportsPage';
 import MobilePage from './pages/P10Mobile/MobilePage';
 import FieldVoicePage from './pages/P11FieldVoice/FieldVoicePage';
@@ -23,6 +23,12 @@ const queryClient = new QueryClient({
 function DisposalEventRedirect() {
   const { eventId } = useParams();
   return <Navigate to={`/events/${eventId}/workbench`} replace />;
+}
+
+/** 旧研判单链接统一跳转到新版正式复盘详情（F5 合并）。 */
+function LegacyReviewRedirect() {
+  const { eventId } = useParams();
+  return <Navigate to={`/review/${eventId}`} replace />;
 }
 
 /**
@@ -61,8 +67,9 @@ export default function App() {
             {/* 05 事件复盘：/review 列表（F2）、/review/:id 详情（F3） */}
             <Route path="/review" element={<ReviewListPage />} />
             <Route path="/review/:eventId" element={<EventReviewPage />} />
-            <Route path="/reviews/:eventId" element={<ReviewsPage />} />
-            <Route path="/reviews" element={<Navigate to="/events" replace />} />
+            {/* 旧研判单路由保留为兼容跳转，指向新版复盘详情 */}
+            <Route path="/reviews/:eventId" element={<LegacyReviewRedirect />} />
+            <Route path="/reviews" element={<Navigate to="/review" replace />} />
             <Route path="/reports" element={<ReportsPage />} />
 
             {/* 06 数据与系统管理（阶段 G 迁移 P12/P10/P11） */}

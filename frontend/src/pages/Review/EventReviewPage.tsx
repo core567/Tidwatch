@@ -91,7 +91,6 @@ export default function EventReviewPage() {
           <>
             <Button size="sm" variant="ghost" onClick={() => navigate('/review')}>← 复盘列表</Button>
             <Button size="sm" variant="ghost" onClick={() => navigate(`/events/${eventId}/workbench`)}>研判工作台</Button>
-            <Button size="sm" variant="ghost" onClick={() => navigate(`/reviews/${eventId}`)}>旧版研判单</Button>
             <Button size="sm" onClick={startPrint}>🖨 打印 / 导出 PDF</Button>
           </>
         }
@@ -331,6 +330,21 @@ function EvidenceTab({ review }: { review: EventReviewDetail }) {
               <span>{reachName(b.reachId)} · {b.reason}</span>
             </div>
           ))}
+      </Card>
+      <Card title={`跨断面时序关系（${review.temporalRelations.length}）`}>
+        {review.temporalRelations.length === 0 ? <EmptyState title="无时序关系记录" /> :
+          review.temporalRelations.map((t, i) => (
+            <div key={i} className="tw-ev-row">
+              <span>变化先后相差 <b>{Math.round(t.deltaSeconds / 60)}</b> 分钟</span>
+              <span className="tw-tiny">{t.note}（时序先后不构成因果）</span>
+            </div>
+          ))}
+      </Card>
+      <Card title={`未解决问题与后续（${review.unresolved.length}）`}>
+        {review.unresolved.length === 0 ? <EmptyState title="无未解决项" /> :
+          <ul className="tw-unresolved-list">
+            {review.unresolved.map((u, i) => <li key={i}>{u}</li>)}
+          </ul>}
       </Card>
     </div>
   );

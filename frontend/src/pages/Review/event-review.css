@@ -125,3 +125,7 @@
   font-size: 13px;
 }
 .tw-ev-row:last-child { border-bottom: none; }
+
+/* 未解决项 */
+.tw-unresolved-list { margin: 0; padding-left: 18px; font-size: 13px; }
+.tw-unresolved-list li { padding: 3px 0; }

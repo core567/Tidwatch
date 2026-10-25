@@ -190,4 +190,16 @@
     background: #fff !important;
     color: #1d2b3a !important;
   }
+
+  .tw-report-agg {
+    margin: 6px 0 0;
+    padding: 8px 12px 8px 26px;
+    background: #f6f8fb;
+    border-radius: 6px;
+    font-size: 9.5pt;
+    color: var(--tw-text-secondary);
+  }
+  .tw-data-table tr { break-inside: avoid; }
+  .tw-report-head, .tw-report-foot { break-inside: avoid; }
+  h4 { break-after: avoid; }
 }

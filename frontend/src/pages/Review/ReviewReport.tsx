@@ -4,6 +4,7 @@ import { api } from '@/services/apiClient';
 import { EventStatusBadge, formatTime, reachName } from '@/components/EventBits';
 import SourceTag from '@/components/SourceTag';
 import { compareRange, splitPhases } from '@/lib/comparePhases';
+import { summarizeTimeline } from '@/lib/timelineSummary';
 import { RECOVERY_FACTOR_CN } from '@/lib/recoveryFactorCn';
 import type {
   EventReviewDetail,
@@ -244,6 +245,20 @@ export default function ReviewReport({
             ))}
           </ul>
         )}
+        <h4>跨断面时序关系（{review.temporalRelations.length}）</h4>
+        {review.temporalRelations.length === 0 ? <Missing>无时序关系</Missing> : (
+          <ul className="tw-report-list">
+            {review.temporalRelations.map((t, i) => (
+              <li key={i}>变化先后相差 {Math.round(t.deltaSeconds / 60)} 分钟（{t.note}）</li>
+            ))}
+          </ul>
+        )}
+        <h4>未解决问题与后续（{review.unresolved.length}）</h4>
+        {review.unresolved.length === 0 ? <Missing>无未解决项</Missing> : (
+          <ul className="tw-report-list">
+            {review.unresolved.map((u, i) => <li key={i}>{u}</li>)}
+          </ul>
+        )}
       </Section>
 
       <footer className="tw-report-foot">
@@ -294,19 +309,28 @@ function Missing({ children, inline }: { children: React.ReactNode; inline?: boo
   return <span className={inline ? 'tw-report-missing-inline' : 'tw-report-missing'}>— {children}</span>;
 }
 
-/** 报告内嵌的时间线（拉 business_events，打印为静态列表）。 */
+/** 报告内嵌的关键时间线（精简：关键节点逐条、重复盲区统计汇总）。 */
 function ReportTimeline({ eventId }: { eventId: string }) {
   const q = useQuery({ queryKey: ['event-timeline-report', eventId], queryFn: () => api.eventTimeline(eventId) });
+  if (q.isLoading) return <span className="tw-report-muted">时间线加载中…</span>;
   const items = q.data?.items ?? [];
   if (items.length === 0) return <Missing>暂无时间线记录。</Missing>;
+  const { key, aggregated } = summarizeTimeline(items);
   return (
-    <ol className="tw-report-timeline">
-      {items.map((it) => (
-        <li key={it.eventId}>
-          <span className="tw-report-muted">{formatTime(it.occurredAt)} · {it.actor}</span>
-          <div>{it.description || it.actionType}</div>
-        </li>
-      ))}
-    </ol>
+    <div>
+      <ol className="tw-report-timeline">
+        {key.map((k, i) => (
+          <li key={`${k.at}-${i}`}>
+            <span className="tw-report-muted">{formatTime(k.at)} · {k.actor}</span>
+            <div>{k.text}</div>
+          </li>
+        ))}
+      </ol>
+      {aggregated.length > 0 && (
+        <ul className="tw-report-agg">
+          {aggregated.map((a, i) => <li key={i}>{a}</li>)}
+        </ul>
+      )}
+    </div>
   );
 }
