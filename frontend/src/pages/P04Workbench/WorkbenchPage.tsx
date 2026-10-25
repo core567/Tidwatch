@@ -5,6 +5,8 @@ import { api, ApiError } from '@/services/apiClient';
 import { Button, Card, EmptyState, PageHeader, Tag } from '@/components/ui';
 import BusinessTimeline from '@/components/BusinessTimeline';
 import RecommendationsCard from '@/components/RecommendationsCard';
+import DisposalPipeline from '@/components/DisposalPipeline';
+import { disposalStage, latestOpenTask } from '@/lib/disposalStage';
 import { EventStatusBadge, reachName, formatTime } from '@/components/EventBits';
 import { simMetricName, simMetricUnitByKey } from '@/lib/metrics';
 import { EVENT_ACTION_LABEL } from '@/lib/eventActions';
@@ -194,6 +196,8 @@ export default function WorkbenchPage() {
           </Card>
         </div>
       </div>
+
+      <DisposalPipeline stage={disposalStage(event, latestOpenTask(tasks, eventId))} />
     </div>
   );
 }

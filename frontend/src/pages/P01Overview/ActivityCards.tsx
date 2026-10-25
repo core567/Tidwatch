@@ -2,33 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Card, EmptyState, Tag } from '@/components/ui';
 import { reachName, shortTime } from '@/components/EventBits';
 import SourceTag from '@/components/SourceTag';
+import { DISPOSAL_STEPS, disposalStage, latestOpenTask } from '@/lib/disposalStage';
 import type { ActiveEvent, InspectionTask } from '@/types/contract';
 
-const STEPS = ['发现', '研判', '待派发', '巡检中', '待复核', '已完成'] as const;
-
-function latestTaskFor(tasks: InspectionTask[], eventId: string): InspectionTask | undefined {
-  return tasks
-    .filter((t) => t.eventId === eventId && t.status !== 'CANCELLED')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-}
-
-/** 环节推导：任务状态优先，无任务时按事件状态落到发现/研判。已完成环节为 7 态任务 APPROVED 预留。 */
-function stageIndex(event: ActiveEvent, task: InspectionTask | undefined): number {
-  if (task) {
-    switch (task.status) {
-      case 'SUBMITTED':
-        return 4;
-      case 'IN_PROGRESS':
-      case 'ACCEPTED':
-        return 3;
-      case 'PENDING':
-        return 2;
-      default:
-        break;
-    }
-  }
-  return event.status === 'OPEN' ? 0 : 1;
-}
+const STEPS = DISPOSAL_STEPS;
 
 export function EventProgressCard({
   events,
@@ -62,8 +39,8 @@ export function EventProgressCard({
       ) : (
         <div>
           {events.slice(0, 5).map((e) => {
-            const task = latestTaskFor(tasks, e.eventId);
-            const stage = stageIndex(e, task);
+            const task = latestOpenTask(tasks, e.eventId);
+            const stage = disposalStage(e, task);
             return (
               <button
                 key={e.eventId}

@@ -751,3 +751,58 @@
 .tw-filter-input { width: 210px; }
 .tw-filter-input:focus,
 .tw-filter-select:focus { outline: none; border-color: var(--tw-accent); }
+
+/* ---------- sticky 处置流程条（P04） ---------- */
+.tw-pipeline-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  margin: 4px 0 0;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--tw-border);
+  border-radius: 0 0 var(--tw-radius) var(--tw-radius);
+  box-shadow: 0 -4px 16px rgba(8, 31, 56, 0.06);
+  backdrop-filter: blur(4px);
+}
+.tw-pipeline-flow {
+  display: flex;
+  align-items: flex-start;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.tw-pipeline-flow .tw-pipeline-step-wrap { flex: 1; }
+.tw-pipeline-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #d4dde7;
+  position: relative;
+  z-index: 1;
+  margin: 0 auto;
+}
+.tw-pipeline-dot.is-done { background: #1e6fe0; }
+.tw-pipeline-dot.is-current {
+  background: #1e6fe0;
+  box-shadow: 0 0 0 4px rgba(30, 111, 224, 0.2);
+}
+.tw-pipeline-txt {
+  display: block;
+  margin-top: 6px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--tw-text-tertiary);
+  white-space: nowrap;
+}
+.tw-pipeline-txt.is-done { color: var(--tw-text-secondary); }
+.tw-pipeline-txt.is-current { color: #2563a6; font-weight: 700; }
+.tw-pipeline-link {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: #d4dde7;
+  z-index: 0;
+}
+.tw-pipeline-link.is-done { background: #1e6fe0; }
