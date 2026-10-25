@@ -91,6 +91,8 @@ def _to_list_item(db: Session, e: ActiveEvent) -> EventListItem:
 def list_events(
     status: str | None = None,
     reachId: str | None = None,
+    priority: str | None = Query(default=None, description="HIGH/NORMAL/LOW"),
+    q: str | None = Query(default=None, description="标题或事件编号模糊匹配"),
     page: int = Query(default=1, ge=1),
     pageSize: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -101,6 +103,13 @@ def list_events(
         stmt = stmt.where(ActiveEvent.status.in_(ACTIVE_VALUES))
     elif status:
         stmt = stmt.where(ActiveEvent.status == status)
+    if priority:
+        stmt = stmt.where(ActiveEvent.priority == priority.upper())
+    if q:
+        like = f"%{q.strip()}%"
+        stmt = stmt.where(
+            (ActiveEvent.title.like(like)) | (ActiveEvent.event_id.like(like))
+        )
     events = list(db.execute(stmt.order_by(ActiveEvent.first_seen_at.desc())).scalars())
     if reachId:
         events = [e for e in events if reachId in _latest_scope(db, e.event_id)]

@@ -11,6 +11,7 @@ export { default as Modal } from './Modal';
 export { default as Drawer } from './Drawer';
 export { default as Tabs } from './Tabs';
 export { default as Timeline, formatTimelineTime } from './Timeline';
+export { default as Pager } from './Pager';
 export { default as ToastViewport } from './Toast';
 export { Table, Th, Td, TableEmpty } from './Table';
 export { Tag, DataStateBadge } from './Tag';

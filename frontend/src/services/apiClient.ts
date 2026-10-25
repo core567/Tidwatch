@@ -113,8 +113,14 @@ export const api = {
   diagnostics: () => request<Diagnostics>('/admin/diagnostics'),
   ingestionErrors: (params: { reason?: string; page?: number; pageSize?: number } = {}) =>
     apiPage<IngestionErrorItem>('/admin/ingestion-errors', params),
-  events: (params: { status?: string; reachId?: string; page?: number; pageSize?: number } = {}) =>
-    apiPage<ActiveEvent>('/events', params),
+  events: (params: {
+    status?: string;
+    reachId?: string;
+    priority?: string;
+    q?: string;
+    page?: number;
+    pageSize?: number;
+  } = {}) => apiPage<ActiveEvent>('/events', params),
   event: (eventId: string) => request<EventDetail>(`/events/${encodeURIComponent(eventId)}`),
   eventAction: (eventId: string, action: EventAction, reason?: string) =>
     request<ActiveEvent>(`/events/${encodeURIComponent(eventId)}/actions`, {

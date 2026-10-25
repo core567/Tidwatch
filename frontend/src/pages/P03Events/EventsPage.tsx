@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
@@ -8,6 +8,7 @@ import {
   Card,
   EmptyState,
   PageHeader,
+  Pager,
   Segmented,
   Table,
   Td,
@@ -43,24 +44,51 @@ export default function EventsPage() {
   const navigate = useNavigate();
   const stream = useStreamState();
   const [status, setStatus] = useState('ACTIVE');
+  const [priority, setPriority] = useState('');
+  const [reachId, setReachId] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [debounced, setDebounced] = useState('');
+  const [page, setPage] = useState(1);
+
+  const pageSize = 10;
+
+  // 关键字防抖
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(keyword.trim()), 350);
+    return () => clearTimeout(t);
+  }, [keyword]);
+
+  // 任一筛选条件变化回到第 1 页
+  useEffect(() => setPage(1), [status, priority, reachId, debounced]);
 
   const eventsQ = useQuery({
-    queryKey: ['events', status],
-    queryFn: () => api.events({ status: status || undefined, pageSize: 100 }),
+    queryKey: ['events', status, priority, reachId, debounced, page],
+    queryFn: () =>
+      api.events({
+        status: status || undefined,
+        priority: priority || undefined,
+        reachId: reachId || undefined,
+        q: debounced || undefined,
+        page,
+        pageSize,
+      }),
     refetchInterval: 15000,
+    placeholderData: (prev) => prev,
   });
 
-  const events = useMemo(() => {
-    const items = (eventsQ.data?.items ?? []) as ActiveEvent[];
-    return [...items].sort((a, b) => {
+  const total = eventsQ.data?.total ?? 0;
+  const events = (eventsQ.data?.items ?? []) as ActiveEvent[];
+  const sorted = useMemo(() => {
+    return [...events].sort((a, b) => {
       const sa = STATUS_ORDER[a.status] ?? 9;
       const sb = STATUS_ORDER[b.status] ?? 9;
       if (sa !== sb) return sa - sb;
       return new Date(b.firstSeenAt).getTime() - new Date(a.firstSeenAt).getTime();
     });
-  }, [eventsQ.data]);
+  }, [events]);
 
   const filterLabel = FILTERS.find((f) => f.value === status)?.label ?? '';
+  const hasFilter = !!(priority || reachId || debounced);
 
   return (
     <div className="tw-stack">
@@ -92,32 +120,69 @@ export default function EventsPage() {
       />
 
       <Card
-        title={`${filterLabel}（${eventsQ.data?.total ?? 0}）`}
-        subtitle="触发指标取自事件的首个变化记录；排序按“已升级 → 待初查 → 研判中 → 恢复相关 → 已结束”。"
+        title={`${filterLabel}（${total}）`}
+        subtitle="触发指标取自事件的首个变化记录；页内按“已升级 → 待初查 → 研判中 → 恢复相关 → 已结束”排序。"
+        padded={false}
         actions={
           <Button size="sm" variant="ghost" onClick={() => eventsQ.refetch()}>
             刷新
           </Button>
         }
-        padded={false}
       >
+        <div className="tw-card-body" style={{ paddingBottom: 12 }}>
+          <div className="tw-filter-bar">
+            <input
+              className="tw-filter-input"
+              placeholder="搜索事件标题 / 编号"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+            <select className="tw-filter-select" value={priority} onChange={(e) => setPriority(e.target.value)}>
+              <option value="">全部等级</option>
+              <option value="HIGH">高优先</option>
+              <option value="NORMAL">普通</option>
+              <option value="LOW">低优先</option>
+            </select>
+            <select className="tw-filter-select" value={reachId} onChange={(e) => setReachId(e.target.value)}>
+              <option value="">全部节点</option>
+              <option value="reach-a">上游 A</option>
+              <option value="reach-b">中游 B</option>
+              <option value="reach-c">下游 C</option>
+            </select>
+            <Segmented
+              ariaLabel="筛选事件状态"
+              value={status}
+              onChange={setStatus}
+              options={FILTERS.map((f) => ({ value: f.value, label: f.label }))}
+            />
+            {hasFilter && (
+              <Button size="sm" variant="ghost" onClick={() => { setPriority(''); setReachId(''); setKeyword(''); }}>
+                清除筛选
+              </Button>
+            )}
+          </div>
+        </div>
+
         {eventsQ.isLoading && <div className="state-box">加载中…</div>}
         {eventsQ.isError && (
           <div className="state-box">
             加载失败：{(eventsQ.error as Error).message}
-            <Button size="sm" onClick={() => eventsQ.refetch()}>
-              重试
-            </Button>
+            <Button size="sm" onClick={() => eventsQ.refetch()}>重试</Button>
           </div>
         )}
-        {!eventsQ.isLoading && !eventsQ.isError && events.length === 0 && (
+        {!eventsQ.isLoading && !eventsQ.isError && sorted.length === 0 && (
           <EmptyState
-            title={`当前没有${status === 'ACTIVE' ? '活动' : ''}事件`}
-            description="运行 simulator 的 S2/S3 场景可产生事件（见 simulator/README.md）。"
+            title={hasFilter ? '没有符合筛选条件的事件' : `当前没有${status === 'ACTIVE' ? '活动' : ''}事件`}
+            description={
+              hasFilter
+                ? '尝试调整关键字、等级、节点或状态筛选。'
+                : '运行 simulator 的 S2/S3 场景可产生事件（见 simulator/README.md）。'
+            }
           />
         )}
-        {events.length > 0 && (
-          <Table>
+        {sorted.length > 0 && (
+          <>
+            <Table>
             <thead>
               <tr>
                 <Th>事件</Th>
@@ -130,7 +195,7 @@ export default function EventsPage() {
               </tr>
             </thead>
             <tbody>
-              {events.map((e) => (
+              {sorted.map((e) => (
                 <tr
                   key={e.eventId}
                   className="tw-table-row-click"
@@ -171,6 +236,8 @@ export default function EventsPage() {
               ))}
             </tbody>
           </Table>
+            <Pager page={page} pageSize={pageSize} total={total} onPage={setPage} />
+          </>
         )}
       </Card>
 

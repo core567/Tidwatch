@@ -78,3 +78,38 @@ def test_event_manual_action_and_illegal_conflict(client, token):
 def test_events_open_in_demo_mode(client):
     # 演示模式免登录
     assert client.get("/api/events").status_code == 200
+
+
+def test_events_filter_by_keyword_priority_and_paging(client, token):
+    """D 阶段：关键字、等级筛选与分页 total 正确（隔离内存库）。"""
+    eid = _make_event("reach-c")
+    h = {"Authorization": f"Bearer {token}"}
+
+    # 关键字：按事件编号
+    r = client.get(f"/api/events?q={eid}", headers=h)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 1 and body["items"][0]["eventId"] == eid
+
+    # 关键字：无匹配 → 空结果
+    r = client.get("/api/events?q=zzz_no_such_event_zzz", headers=h)
+    assert r.json()["total"] == 0 and r.json()["items"] == []
+
+    # 节点 reach-c
+    r = client.get("/api/events?reachId=reach-c", headers=h)
+    assert all("reach-c" in x["scopeReachIds"] for x in r.json()["items"])
+    assert any(x["eventId"] == eid for x in r.json()["items"])
+
+    # 等级默认 NORMAL；造的事件升级后改优先级的逻辑不在本断言，仅验证参数被接受
+    r = client.get("/api/events?priority=NORMAL", headers=h)
+    assert r.status_code == 200
+    assert all(x["priority"] == "NORMAL" for x in r.json()["items"])
+
+    # 分页：pageSize=1 时两页各 1 条且 total 为全集大小
+    all_total = client.get("/api/events?pageSize=200", headers=h).json()["total"]
+    if all_total >= 2:
+        p1 = client.get("/api/events?pageSize=1&page=1", headers=h).json()
+        p2 = client.get("/api/events?pageSize=1&page=2", headers=h).json()
+        assert len(p1["items"]) == 1 and len(p2["items"]) == 1
+        assert p1["items"][0]["eventId"] != p2["items"][0]["eventId"]
+        assert p1["total"] == p2["total"] == all_total
