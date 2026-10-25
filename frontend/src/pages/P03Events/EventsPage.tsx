@@ -15,7 +15,7 @@ import {
   Th,
   Tag,
 } from '@/components/ui';
-import { EVENT_STATUS, EventStatusBadge, reachName, shortTime } from '@/components/EventBits';
+import { EventStatusBadge, reachName, shortTime } from '@/components/EventBits';
 import { simMetricName, simMetricUnitByKey } from '@/lib/metrics';
 import type { ActiveEvent, EventStatus } from '@/types/contract';
 
@@ -77,7 +77,13 @@ export default function EventsPage() {
   });
 
   const total = eventsQ.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const events = (eventsQ.data?.items ?? []) as ActiveEvent[];
+
+  // 页码边界保护：轮询/刷新导致总数减少、当前页超出时回到最后有效页
+  useEffect(() => {
+    if (!eventsQ.isLoading && page > totalPages) setPage(totalPages);
+  }, [page, totalPages, eventsQ.isLoading]);
   const sorted = useMemo(() => {
     return [...events].sort((a, b) => {
       const sa = STATUS_ORDER[a.status] ?? 9;
@@ -88,7 +94,13 @@ export default function EventsPage() {
   }, [events]);
 
   const filterLabel = FILTERS.find((f) => f.value === status)?.label ?? '';
-  const hasFilter = !!(priority || reachId || debounced);
+  const isDefault = status === 'ACTIVE' && !priority && !reachId && !debounced;
+  const resetFilters = () => {
+    setStatus('ACTIVE');
+    setPriority('');
+    setReachId('');
+    setKeyword('');
+  };
 
   return (
     <div className="tw-stack">
@@ -105,23 +117,15 @@ export default function EventsPage() {
         }
         description="事件由规则识别持续变化后生成；点击任意事件进入研判工作台查看时间线、证据与任务。"
         actions={
-          <>
-            <Button size="sm" variant="ghost" onClick={() => navigate('/')}>
-              ← 返回监测总览
-            </Button>
-            <Segmented
-              ariaLabel="筛选事件状态"
-              value={status}
-              onChange={setStatus}
-              options={FILTERS.map((f) => ({ value: f.value, label: f.label }))}
-            />
-          </>
+          <Button size="sm" variant="ghost" onClick={() => navigate('/')}>
+            ← 返回监测总览
+          </Button>
         }
       />
 
       <Card
-        title={`${filterLabel}（${total}）`}
-        subtitle="触发指标取自事件的首个变化记录；页内按“已升级 → 待初查 → 研判中 → 恢复相关 → 已结束”排序。"
+        title={`事件列表 · ${filterLabel || '全部'}（${total}）`}
+        subtitle="页内按已升级 → 待初查 → 研判中 → 恢复相关 → 已结束排序"
         padded={false}
         actions={
           <Button size="sm" variant="ghost" onClick={() => eventsQ.refetch()}>
@@ -155,9 +159,9 @@ export default function EventsPage() {
               onChange={setStatus}
               options={FILTERS.map((f) => ({ value: f.value, label: f.label }))}
             />
-            {hasFilter && (
-              <Button size="sm" variant="ghost" onClick={() => { setPriority(''); setReachId(''); setKeyword(''); }}>
-                清除筛选
+            {!isDefault && (
+              <Button size="sm" variant="ghost" onClick={resetFilters}>
+                恢复默认
               </Button>
             )}
           </div>
@@ -172,9 +176,9 @@ export default function EventsPage() {
         )}
         {!eventsQ.isLoading && !eventsQ.isError && sorted.length === 0 && (
           <EmptyState
-            title={hasFilter ? '没有符合筛选条件的事件' : `当前没有${status === 'ACTIVE' ? '活动' : ''}事件`}
+            title={!isDefault ? '没有符合筛选条件的事件' : `当前没有${status === 'ACTIVE' ? '活动' : ''}事件`}
             description={
-              hasFilter
+              !isDefault
                 ? '尝试调整关键字、等级、节点或状态筛选。'
                 : '运行 simulator 的 S2/S3 场景可产生事件（见 simulator/README.md）。'
             }
@@ -241,19 +245,9 @@ export default function EventsPage() {
         )}
       </Card>
 
-      <Card>
-        <div className="tw-small tw-muted">
-          状态说明：
-          {Object.entries(EVENT_STATUS).map(([key, v]) => (
-            <span key={key} style={{ marginLeft: 8 }}>
-              <Tag tone="outline">{v.text}</Tag>
-            </span>
-          ))}
-          <span style={{ marginLeft: 8 }}>
-            终态为已恢复 / 无法判定；活动事件不含终态。
-          </span>
-        </div>
-      </Card>
+      <div className="tw-small tw-muted" style={{ padding: '2px 4px' }}>
+        状态分类：「活动事件」为进行中各态；「已恢复 / 无法判定」为终态，可用上方状态筛选分别查询。
+      </div>
     </div>
   );
 }

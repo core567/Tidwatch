@@ -113,3 +113,69 @@ def test_events_filter_by_keyword_priority_and_paging(client, token):
         assert len(p1["items"]) == 1 and len(p2["items"]) == 1
         assert p1["items"][0]["eventId"] != p2["items"][0]["eventId"]
         assert p1["total"] == p2["total"] == all_total
+
+
+def _seed_event_row(event_id, *, status, priority="NORMAL", reaches=None, title=None):
+    """直接插入事件行（含 scope），用于列表筛选/分页测试。隔离内存库。"""
+    from app.models.event import ActiveEvent, EventScope
+    db = SessionLocal()
+    now = T0
+    db.add(ActiveEvent(
+        event_id=event_id, title=title or f"事件-{event_id}", event_type="FLOOD_WARNING",
+        status=status, priority=priority, first_seen_at=now, version=1,
+        rule_version="demo-rules-v1",
+    ))
+    db.add(EventScope(
+        event_id=event_id, version=1,
+        reaches_json=__import__("json").dumps(reaches or []),
+    ))
+    db.commit()
+    db.close()
+
+
+def test_events_list_filters_terminal_combo_and_paging(client, token):
+    """P03：终态分类、组合筛选、节点、多页 total 正确。"""
+    h = {"Authorization": f"Bearer {token}"}
+    _seed_event_row("TW-T01", status="RECOVERED", priority="NORMAL", reaches=["reach-a"])
+    _seed_event_row("TW-T02", status="UNRESOLVED", priority="HIGH", reaches=["reach-a", "reach-b"])
+    _seed_event_row("TW-T03", status="ESCALATED", priority="HIGH", reaches=["reach-c"])
+
+    # 终态分类可查
+    rec = client.get("/api/events?status=RECOVERED", headers=h).json()
+    assert any(x["eventId"] == "TW-T01" for x in rec["items"])
+    assert all(x["status"] == "RECOVERED" for x in rec["items"])
+    unr = client.get("/api/events?status=UNRESOLVED", headers=h).json()
+    assert any(x["eventId"] == "TW-T02" for x in unr["items"])
+
+    # ACTIVE 不含终态
+    act_ids = {x["eventId"] for x in client.get("/api/events?status=ACTIVE", headers=h).json()["items"]}
+    assert "TW-T03" in act_ids and "TW-T01" not in act_ids and "TW-T02" not in act_ids
+
+    # 组合：状态 ACTIVE + 等级 HIGH + 节点 reach-c（共享内存库可能含其它测试事件，
+    # 断言目标命中且结果全部满足条件即可）
+    combo = client.get(
+        "/api/events?status=ACTIVE&priority=HIGH&reachId=reach-c", headers=h
+    ).json()
+    combo_ids = {x["eventId"] for x in combo["items"]}
+    assert "TW-T03" in combo_ids
+    assert all(
+        x["priority"] == "HIGH" and "reach-c" in x["scopeReachIds"] and x["status"] != "RECOVERED"
+        for x in combo["items"]
+    )
+
+    # 节点 reach-a 命中 scope 包含它的两个事件
+    ra = {x["eventId"] for x in client.get("/api/events?reachId=reach-a", headers=h).json()["items"]}
+    assert {"TW-T01", "TW-T02"} <= ra and "TW-T03" not in ra
+
+    # 多页：pageSize=2
+    p1 = client.get("/api/events?status=&pageSize=2&page=1", headers=h).json()
+    p2 = client.get("/api/events?status=&pageSize=2&page=2", headers=h).json()
+    assert len(p1["items"]) == 2
+    assert p1["total"] >= 3 and p2["page"] == 2
+    ids1 = {x["eventId"] for x in p1["items"]}
+    ids2 = {x["eventId"] for x in p2["items"]}
+    assert ids1.isdisjoint(ids2)
+
+    # 超出范围的页码返回空但 total 不变（前端据此做页码钳制）
+    p_far = client.get("/api/events?pageSize=2&page=99", headers=h).json()
+    assert p_far["items"] == [] and p_far["total"] == p1["total"]

@@ -204,7 +204,8 @@
 }
 .tw-table tbody tr:hover { background: #f8fbff; }
 .tw-table tbody tr:last-child td { border-bottom: none; }
-.tw-table-row-click { cursor: pointer; }
+.tw-table-row-click { cursor: pointer; transition: background-color 0.12s ease; }
+.tw-table-row-click:hover { background: var(--tw-sidebar-hover-bg); }
 .tw-table-empty {
   text-align: center;
   color: var(--tw-text-secondary);
