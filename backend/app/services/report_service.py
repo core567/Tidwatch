@@ -23,7 +23,11 @@ from app.models.event import (
 from app.models.evidence import Evidence, Hypothesis
 from app.models.focus import BlindSpot, ObservationFocus
 from app.models.workflow import Assessment, EventReview, RunTrace
-from app.models.workflow import InspectionTask
+from app.models.workflow import (
+    InspectionTask,
+    TaskReview,
+    TaskSubmission,
+)
 
 
 def _id() -> str:
@@ -46,6 +50,67 @@ def _scope_history(db: Session, event_id: str) -> list[dict]:
          "reason": s.change_reason, "createdAt": s.created_at.isoformat() if s.created_at else None}
         for s in rows
     ]
+
+
+def _submission_out(s: TaskSubmission) -> dict:
+    return {
+        "submissionId": s.submission_id,
+        "version": s.version,
+        "observationNote": s.observation_note,
+        "conclusion": s.conclusion,
+        "measurements": json.loads(s.measurements_json or "[]"),
+        "observedAt": _aware(s.observed_at).isoformat() if _aware(s.observed_at) else None,
+        "attachmentIds": json.loads(s.attachment_ids_json or "[]"),
+        "submittedBy": s.submitted_by,
+        "submittedAt": _aware(s.submitted_at).isoformat() if _aware(s.submitted_at) else None,
+        "supersededAt": _aware(s.superseded_at).isoformat() if _aware(s.superseded_at) else None,
+    }
+
+
+def _review_out(r: TaskReview) -> dict:
+    return {
+        "reviewId": r.review_id,
+        "submissionId": r.submission_id,
+        "version": r.version,
+        "decision": r.decision,
+        "comment": r.comment,
+        "reviewer": r.reviewer,
+        "reviewedAt": _aware(r.reviewed_at).isoformat() if _aware(r.reviewed_at) else None,
+    }
+
+
+def _task_submissions(db: Session, task_id: str) -> list[dict]:
+    rows = db.execute(
+        select(TaskSubmission).where(TaskSubmission.task_id == task_id)
+        .order_by(TaskSubmission.version.asc())
+    ).scalars().all()
+    return [_submission_out(s) for s in rows]
+
+
+def _task_reviews(db: Session, task_id: str) -> list[dict]:
+    rows = db.execute(
+        select(TaskReview).where(TaskReview.task_id == task_id)
+        .order_by(TaskReview.reviewed_at.asc())
+    ).scalars().all()
+    return [_review_out(r) for r in rows]
+
+
+def _all_submissions(db: Session, tasks) -> list[dict]:
+    out: list[dict] = []
+    for t in tasks:
+        for s in _task_submissions(db, t.task_id):
+            s = {**s, "taskId": t.task_id}
+            out.append(s)
+    return out
+
+
+def _all_reviews(db: Session, tasks) -> list[dict]:
+    out: list[dict] = []
+    for t in tasks:
+        for r in _task_reviews(db, t.task_id):
+            r = {**r, "taskId": t.task_id}
+            out.append(r)
+    return out
 
 
 def build_review_payload(db: Session, event_id: str) -> dict:
@@ -168,11 +233,18 @@ def build_review_payload(db: Session, event_id: str) -> dict:
             for b in blind_spots
         ],
         "tasks": [
-            {"id": t.task_id, "reachId": t.reach_id, "title": t.title,
-             "status": t.status, "conclusion": t.result_conclusion,
-             "note": t.result_note}
+            {
+                "id": t.task_id, "reachId": t.reach_id, "title": t.title,
+                "status": t.status, "conclusion": t.result_conclusion,
+                "note": t.result_note,
+                "submissions": _task_submissions(db, t.task_id),
+                "reviews": _task_reviews(db, t.task_id),
+            }
             for t in tasks
         ],
+        # 扁平聚合，便于只取全部版本/复核的调用方（E 阶段增量字段，旧客户端忽略）
+        "taskSubmissions": _all_submissions(db, tasks),
+        "taskReviews": _all_reviews(db, tasks),
         "unresolved": unresolved,
         "trace": [
             {"actor": tr.actor, "action": tr.action, "detail": tr.detail,

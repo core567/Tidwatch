@@ -226,6 +226,17 @@ def event_recommendations(
             "items": items}
 
 
+@router.get("/{event_id}/recovery-assessment")
+def event_recovery_assessment(
+    event_id: str,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    """规则化恢复评估（只读）：三态结论 + 因子依据；不改变事件状态。"""
+    from app.services import recovery_service
+    return recovery_service.assess_recovery(db, event_id)
+
+
 @router.post("/{event_id}/actions", response_model=EventListItem)
 def event_action(
     event_id: str,

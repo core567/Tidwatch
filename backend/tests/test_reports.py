@@ -68,3 +68,36 @@ def test_review_unknown_event_404(clean_event_tables):
     with pytest.raises(NotFoundError):
         report_service.build_review_payload(db, "TW-999")
     db.close()
+
+
+def test_review_payload_has_task_versions_compat(clean_event_tables):
+    """F1：review payload 增量含 taskSubmissions/taskReviews，旧字段保留。"""
+    from datetime import datetime, timezone
+    from app.models.event import ActiveEvent, EventScope
+    from app.models.workflow import InspectionTask, TaskSubmission, TaskReview
+    import json
+    db = SessionLocal()
+    now = datetime(2026, 10, 25, 10, 0, tzinfo=timezone.utc)
+    db.add(ActiveEvent(event_id="TW-RV", title="x", event_type="FLOOD", status="RECOVERED",
+                       priority="NORMAL", first_seen_at=now, version=1, rule_version="demo-rules-v1"))
+    db.add(EventScope(event_id="TW-RV", version=1, reaches_json='["reach-a"]'))
+    db.add(InspectionTask(task_id="tsk-rv", event_id="TW-RV", reach_id="reach-a",
+                          action_type="MANUAL_CHECK", title="t", status="APPROVED", created_at=now))
+    db.add(TaskSubmission(submission_id="sub-rv", task_id="tsk-rv", version=1,
+                          observation_note="ok", conclusion="NORMAL", measurements_json="[]",
+                          observed_at=now, attachment_ids_json='["att-1"]',
+                          submitted_by="u-i", submitted_at=now))
+    db.add(TaskReview(review_id="rev-rv", task_id="tsk-rv", submission_id="sub-rv", version=1,
+                      decision="APPROVED", comment="通过", reviewer="u-admin", reviewed_at=now))
+    db.commit()
+    p = report_service.build_review_payload(db, "TW-RV")
+    # 旧字段仍在
+    for k in ("eventId", "scope", "tasks", "trace", "disclaimer"):
+        assert k in p
+    # 增量字段
+    assert p["taskSubmissions"][0]["version"] == 1 and p["taskSubmissions"][0]["attachmentIds"] == ["att-1"]
+    assert p["taskReviews"][0]["decision"] == "APPROVED"
+    # tasks 内嵌版本/复核
+    assert p["tasks"][0]["submissions"][0]["submissionId"] == "sub-rv"
+    assert p["tasks"][0]["reviews"][0]["reviewId"] == "rev-rv"
+    db.close()
