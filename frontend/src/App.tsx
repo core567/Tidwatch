@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppLayout from './app/layout/AppLayout';
 import OverviewPage from './pages/P01Overview/OverviewPage';
 import ReachDetailPage from './pages/P02ReachDetail/ReachDetailPage';
+import AnalysisPage from './pages/Analysis/AnalysisPage';
 import EventsPage from './pages/P03Events/EventsPage';
 import WorkbenchPage from './pages/P04Workbench/WorkbenchPage';
 import TasksPage from './pages/P05Tasks/TasksPage';
@@ -47,7 +48,8 @@ export default function App() {
             <Route path="/monitor" element={<MonitorPage />} />
 
             {/* 02 水环境分析（阶段 G 上线真实页面） */}
-            <Route path="/analysis" element={<Navigate to="/reaches/reach-c" replace />} />
+            {/* 02 水环境分析正式页；旧 P02 单断面详情保留 */}
+            <Route path="/analysis" element={<AnalysisPage />} />
             <Route path="/reaches/:reachId" element={<ReachDetailPage />} />
 
             {/* 03 异常研判与处置（阶段 D 上线三栏工作台） */}

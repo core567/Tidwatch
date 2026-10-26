@@ -1,0 +1,22 @@
+/* G1 水环境分析 */
+.tw-analysis-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--tw-space-4);
+}
+.tw-analysis-kpi .tw-kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--tw-primary-800);
+  margin: 4px 0 2px;
+}
+@media (max-width: 1100px) {
+  .tw-analysis-kpis { grid-template-columns: 1fr; }
+}
+.tw-analysis-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
