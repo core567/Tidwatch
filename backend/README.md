@@ -79,3 +79,12 @@ Pydantic 契约（camelCase/严格校验）、health/login/SSE/WS。
 官方自动站实时快照：`OFFICIAL_AUTO_ENABLED`（默认 false）、
 `OFFICIAL_AUTO_CACHE_MINUTES=30`、`OFFICIAL_AUTO_STALE_MINUTES=1500`、
 `OFFICIAL_AUTO_REQUEST_INTERVAL_SECONDS=1.5`（多站节流，避免触发平台反爬）。
+
+## AI 智能助手（H 阶段）
+
+- 接口：`GET /api/ai/status`、`POST /api/ai/chat`（只读业务问答 + 安全的导航/视角指令）。
+- 双层：未配置大模型时运行**规则工具模式**（查询真实水位/事件/任务/恢复评估）；配置后启用 OpenAI 兼容大模型工具调用，失败自动降级为规则模式并提示。
+- 配置（写入 `.env`，勿入库）：
+  - `AI_ENABLED=true`、`AI_API_KEY=`、`AI_BASE_URL=`（如 `https://api.deepseek.com/v1` 或通义 `.../compatible-mode/v1`）、`AI_MODEL=`
+  - `AI_TIMEOUT_SECONDS=20`、`AI_MAX_TOOL_ROUNDS=4`、`AI_MAX_OUTPUT_TOKENS=800`
+- AI 仅可读，不直接派发/复核/关闭；不同模型的工具调用能力可能不同，首次配置后以 `/api/ai/status` 与实际问答验证。

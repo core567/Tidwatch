@@ -54,6 +54,20 @@ class Settings(BaseSettings):
     upload_dir: str = str(DATA_DIR / "uploads")
     max_upload_mb: int = 8
 
+    # ---- AI 助手（OpenAI 兼容；留空即降级为规则工具模式） ----
+    ai_enabled: bool = False
+    ai_api_key: str = ""
+    ai_base_url: str = ""
+    ai_model: str = ""
+    ai_timeout_seconds: float = 20.0
+    ai_max_tool_rounds: int = 4
+    ai_max_output_tokens: int = 800
+
+    @property
+    def ai_configured(self) -> bool:
+        """是否具备调用大模型的最小配置（key + base_url + model）。"""
+        return bool(self.ai_enabled and self.ai_api_key and self.ai_base_url and self.ai_model)
+
     @property
     def resolved_database_url(self) -> str:
         if self.database_url:

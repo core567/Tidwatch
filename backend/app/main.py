@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from app import __version__
 from app.api import (
     routes_admin,
+    routes_ai,
     routes_assessments,
     routes_auth,
     routes_blindspots,
@@ -137,6 +138,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_import.router)
     app.include_router(routes_admin.router)
     app.include_router(routes_stream.router)
+    app.include_router(routes_ai.router)
 
     @app.get("/")
     def root() -> dict:
