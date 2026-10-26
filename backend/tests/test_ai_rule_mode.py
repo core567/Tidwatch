@@ -131,7 +131,11 @@ def test_status_endpoint_reports_rule_mode_when_unconfigured(client, token, monk
     assert b["configured"] is False and b["mode"] == "rule"
 
 
-def test_unknown_question_marks_basic_mode(client, token):
+def test_unknown_question_marks_basic_mode(client, token, monkeypatch):
+    # 该用例验证“未配置大模型”时的兜底，强制关闭以与运行环境解耦
+    from app.core import config
+    monkeypatch.setattr(config.settings, "ai_enabled", False, raising=False)
+    monkeypatch.setattr(config.settings, "ai_api_key", "", raising=False)
     r = client.post("/api/ai/chat", headers={"Authorization": f"Bearer {token}"},
                     json={"message": "宇宙的尽头是什么"})
     b = r.json()

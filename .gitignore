@@ -49,3 +49,7 @@ desktop.ini
 .idea/
 .vscode/
 *.swp
+
+# 后端运行期上传文件
+backend/data/uploads/*
+!backend/data/uploads/.gitkeep
