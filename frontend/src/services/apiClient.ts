@@ -175,20 +175,20 @@ export const api = {
 
   // ---- 官方月报导入（admin） ----
   previewImport: (file: File) => uploadCamel<import('@/types/contract').ImportPreview>(
-    '/admin/import/official-history', file,
+    '/import/official-history', file,
   ),
   confirmImport: (batchId: string, meta: import('@/types/contract').ImportConfirmMeta = {}) =>
     request<import('@/types/contract').ImportBatch>(
-      `/admin/import/official-history/${encodeURIComponent(batchId)}/confirm`,
+      `/import/official-history/${encodeURIComponent(batchId)}/confirm`,
       { method: 'POST', body: meta },
     ),
   revokeImport: (batchId: string) =>
     request<import('@/types/contract').ImportBatch>(
-      `/admin/import/official-history/${encodeURIComponent(batchId)}/revoke`,
+      `/import/official-history/${encodeURIComponent(batchId)}/revoke`,
       { method: 'POST' },
     ),
   importBatches: () =>
-    request<import('@/types/contract').ImportBatch[]>('/admin/import/batches'),
+    request<import('@/types/contract').ImportBatch[]>('/import/batches'),
 
   // 证据 / 假设
   evidence: (eventId: string) =>
