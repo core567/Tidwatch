@@ -202,4 +202,5 @@
   .tw-data-table tr { break-inside: avoid; }
   .tw-report-head, .tw-report-foot { break-inside: avoid; }
   h4 { break-after: avoid; }
+  tr.is-open-blind td { color: #b0433a; font-weight: 600; }
 }

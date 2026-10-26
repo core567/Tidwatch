@@ -5,6 +5,7 @@ import { EventStatusBadge, formatTime, reachName } from '@/components/EventBits'
 import SourceTag from '@/components/SourceTag';
 import { compareRange, splitPhases } from '@/lib/comparePhases';
 import { summarizeTimeline } from '@/lib/timelineSummary';
+import { groupBlindSpots } from '@/lib/groupBlindSpots';
 import { RECOVERY_FACTOR_CN } from '@/lib/recoveryFactorCn';
 import type {
   EventReviewDetail,
@@ -237,14 +238,7 @@ export default function ReviewReport({
             ))}
           </ul>
         )}
-        <h4>监测盲区（{review.blindSpots?.length ?? 0}）</h4>
-        {(review.blindSpots?.length ?? 0) === 0 ? <Missing>无盲区记录</Missing> : (
-          <ul className="tw-report-list">
-            {review.blindSpots!.map((b, i) => (
-              <li key={i}>{reachName(b.reachId)} · {b.reason} · {b.resolved ? '已解除' : '未消除'}</li>
-            ))}
-          </ul>
-        )}
+        <ReportBlindspots eventId={eventId} review={review} />
         <h4>跨断面时序关系（{review.temporalRelations.length}）</h4>
         {review.temporalRelations.length === 0 ? <Missing>无时序关系</Missing> : (
           <ul className="tw-report-list">
@@ -307,6 +301,37 @@ function KV({ k, v }: { k: string; v: React.ReactNode }) {
 }
 function Missing({ children, inline }: { children: React.ReactNode; inline?: boolean }) {
   return <span className={inline ? 'tw-report-missing-inline' : 'tw-report-missing'}>— {children}</span>;
+}
+
+/** 监测盲区：按断面+原因+最终状态分组（次数/时间范围），未解除逐项保留。 */
+function ReportBlindspots({ eventId, review }: { eventId: string; review: EventReviewDetail }) {
+  const q = useQuery({ queryKey: ['event-timeline-blind', eventId], queryFn: () => api.eventTimeline(eventId) });
+  const total = review.blindSpots?.length ?? 0;
+  const groups = groupBlindSpots(review.blindSpots, q.data?.items ?? []);
+  return (
+    <>
+      <h4>监测盲区（{total} 次，按断面/原因汇总）</h4>
+      {total === 0 ? <Missing>无盲区记录</Missing> : (
+        <table className="tw-data-table">
+          <thead>
+            <tr><th>断面</th><th>原因</th><th>次数</th><th>首次开启</th><th>最后解除</th><th>最终状态</th></tr>
+          </thead>
+          <tbody>
+            {groups.map((g, i) => (
+              <tr key={i} className={g.resolved ? '' : 'is-open-blind'}>
+                <td>{reachName(g.reachId)}</td>
+                <td>{g.reason}</td>
+                <td>{g.count}</td>
+                <td>{g.firstStart ? formatTime(g.firstStart) : '—'}</td>
+                <td>{g.resolved && g.lastEnd ? formatTime(g.lastEnd) : '—'}</td>
+                <td>{g.resolved ? '已解除' : <b>未解除（影响判断）</b>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
 }
 
 /** 报告内嵌的关键时间线（精简：关键节点逐条、重复盲区统计汇总）。 */
