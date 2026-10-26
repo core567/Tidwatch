@@ -58,15 +58,34 @@ function dedupeTransitions(items: TimelineItem[]): TimelineItem[] {
 }
 
 /**
- * 正式报告用的精简时间线：关键节点逐条保留，重复盲区/系统动作统计汇总。
+ * 正式报告用的精简时间线：关键节点逐条保留，重复盲区/状态抖动/系统动作统计汇总。
  * 完整 business_events 仍可在网页时间线 Tab 查看。
  */
+
+// 值得在报告正文逐条呈现的状态；其余中间态（MONITORING/NARROWED 等反复）汇总
+const MILESTONE_STATUS = new Set([
+  'INVESTIGATING',
+  'ESCALATED',
+  'RECOVERY_PENDING',
+  'RECOVERED',
+  'UNRESOLVED',
+]);
+// 终态只取最后一次（演练中可能出现 已恢复→研判中 的反复）
+const TERMINAL_STATUS = new Set(['RECOVERED', 'UNRESOLVED']);
+
 export function summarizeTimeline(items: TimelineItem[]): TimelineSummary {
   const key: KeyTimelineEntry[] = [];
   let blindOpened = 0;
   let blindResolved = 0;
   const blindReaches = new Set<string>();
   const otherCounts = new Map<string, number>();
+
+  let sawInvestigating = false;
+  let transitionFlapping = 0;
+
+  // 终态先暂存，只保留最后一次
+  let lastTerminal: TimelineItem | null = null;
+  let terminalKind = '';
 
   for (const it of dedupeTransitions(items)) {
     const a = it.actionType;
@@ -80,12 +99,29 @@ export function summarizeTimeline(items: TimelineItem[]): TimelineSummary {
       continue;
     }
     if (a === 'event.status-changed') {
+      const to = it.toStatus ?? '';
+      if (TERMINAL_STATUS.has(to)) {
+        lastTerminal = it;
+        terminalKind = to;
+        continue;
+      }
+      if (to === 'INVESTIGATING') {
+        if (sawInvestigating) {
+          transitionFlapping += 1;
+          continue;
+        }
+        sawInvestigating = true;
+      }
+      if (!MILESTONE_STATUS.has(to)) {
+        // MONITORING / NARROWED / OPEN 等中间态反复，计入抖动
+        transitionFlapping += 1;
+        continue;
+      }
       const from = it.fromStatus ? `${EVENT_STATUS_CN[it.fromStatus] ?? it.fromStatus} → ` : '';
-      const to = EVENT_STATUS_CN[it.toStatus ?? ''] ?? it.toStatus ?? '';
       key.push({
         at: it.occurredAt,
         actor: it.actor,
-        text: `事件状态：${from}${to}${it.description ? `（${it.description}）` : ''}`,
+        text: `事件状态：${from}${EVENT_STATUS_CN[to] ?? to}${it.description ? `（${it.description}）` : ''}`,
         kind: 'event',
       });
       continue;
@@ -110,6 +146,15 @@ export function summarizeTimeline(items: TimelineItem[]): TimelineSummary {
     otherCounts.set(a, (otherCounts.get(a) ?? 0) + 1);
   }
 
+  if (lastTerminal) {
+    key.push({
+      at: lastTerminal.occurredAt,
+      actor: lastTerminal.actor,
+      text: `事件进入${EVENT_STATUS_CN[terminalKind] ?? terminalKind}${lastTerminal.description ? `（${lastTerminal.description}）` : ''}`,
+      kind: 'event',
+    });
+  }
+
   // 时间正序
   key.sort((x, y) => x.at.localeCompare(y.at));
 
@@ -117,6 +162,9 @@ export function summarizeTimeline(items: TimelineItem[]): TimelineSummary {
   if (blindOpened || blindResolved) {
     const reaches = [...blindReaches].join('、') || '—';
     aggregated.push(`监测盲区：开启 ${blindOpened} 次、解除 ${blindResolved} 次（涉及断面：${reaches}），明细见网页完整时间线。`);
+  }
+  if (transitionFlapping > 0) {
+    aggregated.push(`持续观察/范围收窄等中间状态调整共 ${transitionFlapping} 次（演练操作记录，已汇总，明细见网页完整时间线）。`);
   }
   for (const [action, n] of otherCounts) {
     if (n > 0) aggregated.push(`${action}：${n} 条（已汇总）。`);
