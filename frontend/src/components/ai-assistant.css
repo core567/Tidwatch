@@ -1,0 +1,131 @@
+/* H2 全局 AI 助手 */
+.tw-ai-fab {
+  position: fixed;
+  right: 18px;
+  bottom: 20px;
+  z-index: 60;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--tw-primary-800, #0b2a56);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(11, 42, 86, 0.3);
+  cursor: pointer;
+}
+.tw-ai-fab:hover { background: var(--tw-accent); }
+.tw-ai-fab.is-hidden { display: none; }
+
+.tw-ai-drawer {
+  position: fixed;
+  right: 14px;
+  top: 76px;
+  bottom: 16px;
+  width: min(400px, calc(100vw - 28px));
+  z-index: 61;
+  background: var(--tw-surface, #fff);
+  border: 1px solid var(--tw-border);
+  border-radius: var(--tw-radius, 10px);
+  box-shadow: 0 10px 34px rgba(11, 42, 86, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tw-ai-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--tw-border);
+  background: linear-gradient(135deg, var(--tw-primary-800), var(--tw-primary-700, #123c66));
+  color: #fff;
+}
+.tw-ai-head b { font-size: 14px; }
+.tw-ai-mode { margin-top: 4px; }
+.tw-ai-mode .tw-tag { background: rgba(255, 255, 255, 0.16); color: #fff; border-color: rgba(255,255,255,.3); }
+.tw-ai-close { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; line-height: 1; }
+
+.tw-ai-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: #f7f9fc; }
+.tw-ai-welcome { color: var(--tw-text-secondary); font-size: 13px; line-height: 1.7; }
+.tw-ai-quick { display: flex; flex-direction: column; gap: 7px; margin: 10px 0; align-items: stretch; }
+.tw-ai-chip {
+  text-align: left;
+  border: 1px solid var(--tw-border);
+  background: #fff;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: var(--tw-primary-800);
+  cursor: pointer;
+}
+.tw-ai-chip:hover { border-color: var(--tw-accent); }
+.tw-ai-hint { font-size: 11.5px; color: var(--tw-text-tertiary); }
+
+.tw-ai-msg { display: flex; }
+.tw-ai-msg.user { justify-content: flex-end; }
+.tw-ai-bubble {
+  max-width: 88%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.tw-ai-msg.user .tw-ai-bubble { background: var(--tw-accent); color: #fff; border-bottom-right-radius: 3px; }
+.tw-ai-msg.assistant .tw-ai-bubble { background: #fff; border: 1px solid var(--tw-border); border-bottom-left-radius: 3px; }
+.tw-ai-text { white-space: pre-wrap; }
+.tw-ai-ref {
+  border: none;
+  background: rgba(30, 111, 224, 0.1);
+  color: var(--tw-accent);
+  border-radius: 5px;
+  padding: 0 5px;
+  cursor: pointer;
+  font-size: 12px;
+  margin: 0 2px;
+}
+.tw-ai-meta { margin-top: 7px; border-top: 1px dashed var(--tw-border); padding-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+.tw-ai-tools { font-size: 11px; color: var(--tw-ok); }
+.tw-ai-warn { font-size: 11px; color: var(--tw-watch); }
+.tw-ai-typing { color: var(--tw-text-tertiary); }
+
+.tw-ai-voice-transcript, .tw-ai-voice-err {
+  margin: 0 14px 6px;
+  font-size: 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.tw-ai-voice-err { color: var(--tw-danger); }
+
+.tw-ai-input {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--tw-border);
+  background: #fff;
+}
+.tw-ai-input input {
+  flex: 1;
+  border: 1px solid var(--tw-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.tw-ai-mic {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--tw-border);
+  background: #fff;
+  cursor: pointer;
+  font-size: 16px;
+}
+.tw-ai-mic.is-on { background: var(--tw-danger); color: #fff; border-color: var(--tw-danger); animation: tw-pulse 1.2s infinite; }
+.tw-ai-mic.disabled { opacity: 0.4; cursor: not-allowed; }
+.tw-ai-clear { border: none; background: none; color: var(--tw-text-tertiary); font-size: 11px; cursor: pointer; }
+@keyframes tw-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }

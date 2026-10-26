@@ -371,6 +371,26 @@ export interface RecoveryAssessment {
   disclaimers: string[];
 }
 
+export interface AiStatus {
+  aiEnabled: boolean;
+  configured: boolean;
+  mode: 'rule' | 'llm';
+  model: string | null;
+  toolCallSupported: boolean;
+}
+export interface AiChatResponse {
+  answer: string;
+  mode: 'rule' | 'llm';
+  model?: string | null;
+  toolsUsed: string[];
+  toolResults?: Record<string, unknown>[];
+  needLlm?: boolean;
+  suggestedCommands?: { type: string; to?: string }[];
+  warnings?: string[];
+  refs?: Record<string, unknown>;
+  degraded?: boolean;
+}
+
 export interface InspectionTask {
   taskId: string;
   eventId: string | null;

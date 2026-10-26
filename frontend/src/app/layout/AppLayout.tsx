@@ -6,6 +6,7 @@ import { useRealtimeStream } from '@/services/useRealtimeStream';
 import { useStreamState } from '@/store/stream';
 import { Tag, ToastViewport } from '@/components/ui';
 import NotificationBell from './NotificationBell';
+import AiAssistant from '@/components/AiAssistant';
 import './layout.css';
 
 interface NavItem {
@@ -163,6 +164,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
       </div>
 
       <ToastViewport />
+      <AiAssistant />
     </div>
   );
 }

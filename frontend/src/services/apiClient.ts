@@ -166,6 +166,9 @@ export const api = {
     request<import('@/types/contract').RecoveryAssessment>(
       `/events/${encodeURIComponent(eventId)}/recovery-assessment`,
     ),
+  aiStatus: () => request<import('@/types/contract').AiStatus>('/ai/status'),
+  aiChat: (message: string) =>
+    request<import('@/types/contract').AiChatResponse>('/ai/chat', { method: 'POST', body: { message } }),
   taskTimeline: (taskId: string) =>
     request<{ items: import('@/types/contract').TimelineItem[] }>(
       `/inspection-tasks/${encodeURIComponent(taskId)}/timeline`,
