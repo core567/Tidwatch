@@ -14,7 +14,8 @@ import EventReviewPage from './pages/Review/EventReviewPage';
 import ReportsPage from './pages/P09Reports/ReportsPage';
 import MobilePage from './pages/P10Mobile/MobilePage';
 import FieldVoicePage from './pages/P11FieldVoice/FieldVoicePage';
-import AdminPage from './pages/P12Admin/AdminPage';
+import AdminPage from './pages/Admin/AdminPage';
+// 旧 P12 管理页源文件保留（pages/P12Admin），G2 后 /admin 使用分类管理页
 import MonitorPage from './pages/Monitor/MonitorPage';
 
 const queryClient = new QueryClient({

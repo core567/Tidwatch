@@ -77,6 +77,24 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   throw new ApiError(body, res.status);
 }
 
+/** multipart 文件上传（不设 JSON 头，由浏览器生成 boundary）。 */
+async function uploadCamel<T>(path: string, file: File): Promise<T> {
+  const fd = new FormData();
+  fd.append('file', file);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { method: 'POST', body: fd });
+  } catch {
+    throw new ApiError({ code: 'NETWORK_ERROR', message: '无法连接后端服务' }, 0);
+  }
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const b = data ?? { code: `HTTP_${res.status}`, message: `请求失败（${res.status}）` };
+    throw new ApiError(b, res.status);
+  }
+  return data as T;
+}
+
 export interface ObservationQuery {
   metric?: string;
   sourceType?: string;
@@ -154,6 +172,24 @@ export const api = {
     ),
   monthlyStats: () => request<import('@/types/contract').MonthlyStats>('/reports/monthly'),
   eventFrequency: () => request<import('@/types/contract').EventFrequency>('/reports/event-frequency'),
+
+  // ---- 官方月报导入（admin） ----
+  previewImport: (file: File) => uploadCamel<import('@/types/contract').ImportPreview>(
+    '/admin/import/official-history', file,
+  ),
+  confirmImport: (batchId: string, meta: import('@/types/contract').ImportConfirmMeta = {}) =>
+    request<import('@/types/contract').ImportBatch>(
+      `/admin/import/official-history/${encodeURIComponent(batchId)}/confirm`,
+      { method: 'POST', body: meta },
+    ),
+  revokeImport: (batchId: string) =>
+    request<import('@/types/contract').ImportBatch>(
+      `/admin/import/official-history/${encodeURIComponent(batchId)}/revoke`,
+      { method: 'POST' },
+    ),
+  importBatches: () =>
+    request<import('@/types/contract').ImportBatch[]>('/admin/import/batches'),
+
   // 证据 / 假设
   evidence: (eventId: string) =>
     request<import('@/types/contract').Evidence[]>(`/events/${encodeURIComponent(eventId)}/evidence`),

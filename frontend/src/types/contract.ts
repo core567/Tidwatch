@@ -225,6 +225,46 @@ export interface EventReviewDetail extends Omit<EventReview, 'tasks'> {
   focuses?: unknown[];
 }
 
+export interface ImportRowView {
+  rowNo: number;
+  raw: Record<string, string>;
+  normalized: Record<string, unknown>;
+  matchedReachId: string | null;
+  errors: string[];
+  warnings: string[];
+}
+export interface ImportPreview {
+  batchId: string;
+  sourceKind: string;
+  originalFilename: string;
+  agency: string | null;
+  sourceUrl: string | null;
+  publishedPeriod: string | null;
+  publishedAt: string | null;
+  status: 'PREVIEW' | 'CONFIRMED' | 'REVOKED';
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  rows: ImportRowView[];
+}
+export interface ImportBatch {
+  batchId: string;
+  sourceKind: string;
+  originalFilename: string;
+  agency: string | null;
+  sourceUrl: string | null;
+  publishedPeriod: string | null;
+  publishedAt: string | null;
+  status: 'PREVIEW' | 'CONFIRMED' | 'REVOKED';
+  rowCount: number;
+  importedBy: string | null;
+  createdAt: string;
+}
+export interface ImportConfirmMeta {
+  agency?: string;
+  sourceUrl?: string;
+  publishedAt?: string;
+}
 export interface MonthlyStats {
   totalRecords: number;
   totalBatches: number;
