@@ -11,6 +11,11 @@ export interface AiMessage {
   warnings?: string[];
   model?: string | null;
   sources?: { label: string; at?: string }[];
+  feedback?: 'up' | 'down' | null;
+  pending?: boolean; // 正在生成
+  startedAt?: number; // 请求开始（真实计时）
+  elapsedMs?: number; // 请求耗时
+  error?: boolean;
 }
 
 export interface AiConversation {
@@ -47,6 +52,7 @@ interface AiState {
   remove: (id: string) => void;
   clearAll: () => void;
   append: (msg: Omit<AiMessage, 'id' | 'at'> & { at?: number }) => void;
+  updateMessage: (id: string, patch: Partial<AiMessage>) => void;
 }
 
 /** 容量裁剪：只保留最近 MAX_CONVERSATIONS 个会话。 */
@@ -114,6 +120,15 @@ export const useAiStore = create<AiState>()(
           const conversations = cap(list.map((x) => (x.id === updated.id ? updated : x)));
           return { conversations, activeId };
         }),
+
+      updateMessage: (id, patch) =>
+        set((s) => ({
+          conversations: s.conversations.map((c) =>
+            c.messages.some((m) => m.id === id)
+              ? { ...c, updatedAt: Date.now(), messages: c.messages.map((m) => (m.id === id ? { ...m, ...patch } : m)) }
+              : c,
+          ),
+        })),
     }),
     {
       name: STORAGE_KEY,

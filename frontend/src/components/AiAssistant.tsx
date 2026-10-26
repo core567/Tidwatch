@@ -40,6 +40,7 @@ export default function AiAssistant() {
   const removeConversation = useAiStore((s) => s.remove);
   const clearAll = useAiStore((s) => s.clearAll);
   const append = useAiStore((s) => s.append);
+  const updateMessage = useAiStore((s) => s.updateMessage);
 
   const voice = useVoice((text) => void send(text));
 
@@ -65,9 +66,20 @@ export default function AiAssistant() {
     localStorage.setItem('tidewatch-ai-lastvisit', String(Date.now()));
   }, [open]);
 
+  const [atBottom, setAtBottom] = useState(true);
+
+  // 仅在用户位于底部时跟随最新；上滚不强制拉回
   useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [messages.length, busy, open]);
+    if (!open) return;
+    if (atBottom) listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+  }, [messages, open, atBottom]);
+
+  // pending 计时变化（messages 引用每次 store 更新即变化）时，底部跟随
+  function onScroll() {
+    const el = listRef.current;
+    if (!el) return;
+    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 60);
+  }
 
   const handlers = useMemo(
     () => ({
@@ -121,11 +133,16 @@ export default function AiAssistant() {
 
     setInput('');
     append({ role: 'user', text });
+    const startedAt = Date.now();
+    // 先落一条 pending 助手消息，提供即时思考反馈与真实计时
+    append({ role: 'assistant', text: '', pending: true, startedAt });
+    const placeholder = useAiStore.getState().activeConversation().messages.slice(-1)[0];
     setBusy(true);
     try {
       const r = await requestAi(text);
-      append({
-        role: 'assistant',
+      updateMessage(placeholder.id, {
+        pending: false,
+        elapsedMs: Date.now() - startedAt,
         text: r.answer,
         mode: r.mode,
         tools: r.toolsUsed,
@@ -134,25 +151,47 @@ export default function AiAssistant() {
         sources: buildSources(r),
       });
     } catch (e) {
-      append({ role: 'assistant', text: `请求失败：${(e as Error).message}`, mode: 'rule' });
+      updateMessage(placeholder.id, {
+        pending: false,
+        error: true,
+        elapsedMs: Date.now() - startedAt,
+        text: `请求失败：${(e as Error).message}`,
+        mode: 'rule',
+      });
     } finally {
       setBusy(false);
     }
   }
 
   async function regenerate(m: AiMessage) {
-    if (busy) return;
-    // 找到该助手消息之前最近的一条用户问题
+    if (busy || m.pending) return;
     const idx = messages.findIndex((x) => x.id === m.id);
     const userMsg = [...messages.slice(0, idx)].reverse().find((x) => x.role === 'user');
     if (!userMsg) return;
+    const startedAt = Date.now();
+    append({ role: 'assistant', text: '', pending: true, startedAt });
+    const placeholder = useAiStore.getState().activeConversation().messages.slice(-1)[0];
     setBusy(true);
     try {
       const r = await requestAi(userMsg.text);
-      // 就地替换（简单做法：追加一条新的重生成回答，保留历史）
-      append({ role: 'assistant', text: r.answer, mode: r.mode, tools: r.toolsUsed, warnings: r.warnings, model: r.model, sources: buildSources(r) });
+      updateMessage(placeholder.id, {
+        pending: false,
+        elapsedMs: Date.now() - startedAt,
+        text: r.answer,
+        mode: r.mode,
+        tools: r.toolsUsed,
+        warnings: r.warnings,
+        model: r.model,
+        sources: buildSources(r),
+      });
     } catch (e) {
-      append({ role: 'assistant', text: `重新生成失败：${(e as Error).message}`, mode: 'rule' });
+      updateMessage(placeholder.id, {
+        pending: false,
+        error: true,
+        elapsedMs: Date.now() - startedAt,
+        text: `重新生成失败：${(e as Error).message}`,
+        mode: 'rule',
+      });
     } finally {
       setBusy(false);
     }
@@ -163,6 +202,11 @@ export default function AiAssistant() {
       setCopied(m.id);
       setTimeout(() => setCopied(null), 1500);
     }).catch(() => undefined);
+  }
+
+  function feedback(m: AiMessage, fb: 'up' | 'down') {
+    // 无后端反馈接口：仅保存在当前本地会话，不声称已存服务器
+    updateMessage(m.id, { feedback: m.feedback === fb ? null : fb });
   }
 
   function startNew() {
@@ -181,7 +225,7 @@ export default function AiAssistant() {
         aria-label="打开 AI 助手"
         title="AI 助手"
       >
-        <SvgSparkle />
+        <SvgAiMark />
       </button>
 
       {open && (
@@ -212,7 +256,7 @@ export default function AiAssistant() {
             />
           ) : (
             <>
-              <div className="tw-ai-msgs" ref={listRef}>
+              <div className="tw-ai-msgs" ref={listRef} onScroll={onScroll}>
                 {messages.length === 0 ? (
                   <Welcome
                     quick={QUICK}
@@ -226,7 +270,6 @@ export default function AiAssistant() {
                       if (last) { selectConversation(last.id); setShowHistoryHint(false); }
                     }}
                     onNew={startNew}
-                    onHistory={() => setView('history')}
                     busy={busy}
                   />
                 ) : (
@@ -240,11 +283,20 @@ export default function AiAssistant() {
                       onRegen={() => regenerate(m)}
                       onToggleSources={() => setOpenSources(openSources === m.id ? null : m.id)}
                       onNav={(to) => navigate(to)}
+                      onFeedback={(fb) => feedback(m, fb)}
+                      onRetry={() => regenerate(m)}
                     />
                   ))
                 )}
-                {busy && <div className="tw-ai-typing">正在查询与分析…</div>}
               </div>
+              {!atBottom && (
+                <button className="tw-scroll-bottom" onClick={() => {
+                  setAtBottom(true);
+                  listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+                }}>
+                  ↓ 回到最新
+                </button>
+              )}
 
               {voice.transcript && (
                 <div className="tw-ai-voice-transcript">
@@ -262,7 +314,12 @@ export default function AiAssistant() {
                   value={input}
                   placeholder="输入问题或指令…"
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && send()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      send();
+                    }
+                  }}
                 />
                 <Button size="sm" disabled={busy || !input.trim()} onClick={() => send()}>发送</Button>
               </footer>
@@ -293,7 +350,7 @@ function ModeBadge() {
 }
 
 function Welcome({
-  quick, onQuick, hasHistory, stale, showHint, lastVisit, onContinue, onNew, onHistory, busy,
+  quick, onQuick, hasHistory, stale, showHint, lastVisit, onContinue, onNew, busy,
 }: {
   quick: string[];
   onQuick: (q: string) => void;
@@ -303,39 +360,31 @@ function Welcome({
   lastVisit: number | null;
   onContinue: () => void;
   onNew: () => void;
-  onHistory: () => void;
   busy: boolean;
 }) {
   return (
     <div className="tw-ai-welcome">
       <div className="tw-welcome-title">你好，我是 TideWatch AI 助手</div>
-      <p>可查询真实监测数据、分析异常事件、解释恢复评估、给出巡检建议，也能用语音导航和切换 3D 视角。</p>
+      <p>查询真实监测数据、分析异常事件、解释恢复评估，或用语音导航与切换 3D 视角。</p>
 
       {showHint && hasHistory && (
         <div className="tw-welcome-hint">
           <div>
             {stale && lastVisit
-              ? `上次访问：${formatTime(new Date(lastVisit).toISOString())}。历史数据可能已变化，建议重新查询。`
+              ? `以上为历史记录 · 上次对话 ${formatMsgTime(lastVisit)}，数据可能已变化。`
               : '欢迎回来，是否继续上次对话？'}
           </div>
           <div className="tw-welcome-actions">
-            <Button size="sm" onClick={onContinue}>继续上次</Button>
-            <Button size="sm" variant="ghost" onClick={onNew}>开始新对话</Button>
+            <Button size="sm" onClick={onContinue}>继续之前的问题</Button>
+            <Button size="sm" variant="ghost" onClick={onNew}>查询最新数据</Button>
           </div>
         </div>
       )}
 
-      <div className="tw-welcome-sec">快捷问题</div>
       <div className="tw-ai-quick">
         {quick.map((q) => (
           <button key={q} className="tw-ai-chip" disabled={busy} onClick={() => onQuick(q)}>{q}</button>
         ))}
-      </div>
-
-      <div className="tw-welcome-sec">会话</div>
-      <div className="tw-welcome-actions">
-        <Button size="sm" variant="ghost" onClick={onHistory}>历史会话</Button>
-        <Button size="sm" variant="ghost" onClick={onNew}>新建会话</Button>
       </div>
 
       <p className="tw-welcome-voice">语音示例：“打开水环境分析”“聚焦上游 A 的 3D 图”“返回河流全景”。</p>
@@ -344,7 +393,7 @@ function Welcome({
 }
 
 function MessageView({
-  m, copied, sourcesOpen, onCopy, onRegen, onToggleSources, onNav,
+  m, copied, sourcesOpen, onCopy, onRegen, onToggleSources, onNav, onFeedback, onRetry,
 }: {
   m: AiMessage;
   copied: boolean;
@@ -353,6 +402,8 @@ function MessageView({
   onRegen: () => void;
   onToggleSources: () => void;
   onNav: (to: string) => void;
+  onFeedback: (fb: 'up' | 'down') => void;
+  onRetry: () => void;
 }) {
   const renderRich = (text: string) => {
     const parts = text.split(EVENT_RE);
@@ -370,6 +421,16 @@ function MessageView({
     });
   };
 
+  if (m.role === 'assistant' && m.pending) {
+    return (
+      <div className="tw-ai-msg assistant">
+        <div className="tw-ai-bubble">
+          <Thinking startedAt={m.startedAt ?? m.at} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`tw-ai-msg ${m.role}`}>
       <div className="tw-ai-bubble">
@@ -377,7 +438,15 @@ function MessageView({
           <span className={`tw-msg-mode ${m.mode}`}>{m.mode === 'llm' ? '大模型' : '规则'}</span>
         )}
         <div className="tw-ai-text">{m.role === 'assistant' ? renderRich(m.text) : m.text}</div>
-        <div className="tw-ai-time">{formatMsgTime(m.at)}</div>
+        {m.role === 'assistant' && m.error && (
+          <div className="tw-msg-retry">
+            <Button size="sm" variant="ghost" onClick={onRetry}>重试</Button>
+          </div>
+        )}
+        <div className="tw-ai-time">
+          {formatMsgTime(m.at)}
+          {m.role === 'assistant' && m.elapsedMs ? ` · 耗时 ${(m.elapsedMs / 1000).toFixed(1)}s` : ''}
+        </div>
         {m.role === 'assistant' && (m.tools?.length || m.warnings?.length) && (
           <>
             <button className="tw-sources-toggle" onClick={onToggleSources}>
@@ -393,13 +462,39 @@ function MessageView({
             )}
           </>
         )}
-        {m.role === 'assistant' && (
+        {m.role === 'assistant' && !m.error && m.text && (
           <div className="tw-msg-actions">
-            <button onClick={onCopy} title="复制正文">{copied ? '已复制' : '复制'}</button>
-            <button onClick={onRegen} title="可能产生额外 API 调用">重新生成</button>
+            <button className={`icon ${copied ? 'is-on' : ''}`} onClick={onCopy} title="复制正文" aria-label="复制回答">
+              {copied ? <SvgCheck /> : <SvgCopy />}
+            </button>
+            <button className={`icon ${m.feedback === 'up' ? 'is-on' : ''}`} onClick={() => onFeedback('up')} title="有帮助" aria-label="点赞">
+              <SvgThumb up />
+            </button>
+            <button className={`icon ${m.feedback === 'down' ? 'is-on' : ''}`} onClick={() => onFeedback('down')} title="待改进" aria-label="点踩">
+              <SvgThumb />
+            </button>
+            <button className="icon" onClick={onRegen} title="重新生成（可能产生额外 API 调用）" aria-label="重新生成">
+              <SvgRegen />
+            </button>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** 真实计时的思考状态；非流式接口只能反映请求阶段，不伪造工具子步骤。 */
+function Thinking({ startedAt }: { startedAt: number }) {
+  const [sec, setSec] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setSec(Math.max(0, (Date.now() - startedAt) / 1000)), 200);
+    return () => clearInterval(t);
+  }, [startedAt]);
+  return (
+    <div className="tw-thinking">
+      <span className="tw-thinking-dots"><i /><i /><i /></span>
+      <span>正在思考</span>
+      <span className="tw-thinking-time">· {sec.toFixed(0)}s</span>
     </div>
   );
 }
@@ -470,6 +565,22 @@ function targetName(t: FocusTarget): string {
 }
 
 /* ---- 简洁线性图标（无卡通/炫光） ---- */
+function SvgAiMark() {
+  // 原创：紫蓝渐变“智能山峰 + 星光”，白底圆章内
+  const gid = 'ai-mark-grad';
+  return (
+    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id={gid} x1="4" y1="26" x2="28" y2="6" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#4f46e5" />
+          <stop offset="1" stopColor="#0ea5e9" />
+        </linearGradient>
+      </defs>
+      <path d="M4 24 L12 13 L16.5 19 L20 14.5 L28 24 Z" fill={`url(#${gid})`} opacity="0.92" />
+      <path d="M23 5.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9L23 5.5z" fill="#6366f1" />
+    </svg>
+  );
+}
 function SvgSparkle({ small }: { small?: boolean }) {
   const s = small ? 14 : 20;
   return (
@@ -490,4 +601,19 @@ function SvgMic() {
 }
 function SvgMicOff() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 9v2a3 3 0 0 0 5 2.2M12 3a3 3 0 0 0-3 3v1" /><path d="M5 11a7 7 0 0 0 11 5.3M12 18v3M3 3l18 18" /></svg>;
+}
+function SvgCopy() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>;
+}
+function SvgCheck() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>;
+}
+function SvgThumb({ up }: { up?: boolean }) {
+  const path = up
+    ? 'M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3zm0 0l4-7a2 2 0 0 1 2 2v4h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 20H7'
+    : 'M17 13V4h3a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3zm0 0l-4 7a2 2 0 0 1-2-2v-4H6a2 2 0 0 1-2-2.3l1.2-6A2 2 0 0 1 7.2 4H17';
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={up ? undefined : { transform: 'scaleY(-1)' }}><path d={path} /></svg>;
+}
+function SvgRegen() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5" /></svg>;
 }
