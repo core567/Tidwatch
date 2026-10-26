@@ -30,15 +30,25 @@ export default function ReportsPage() {
         }
       />
 
-      {/* 官方月报统计（仅统计与趋势；导入/批次管理在 06） */}
+      {/* 官方月报统计（仅统计与趋势；导入/批次管理在 06）。四态严格互斥 */}
       <Card
         title="官方月报统计"
         subtitle="月度水质类别（人工导入），非连续传感器值，不参与实时事件检测"
         actions={<SourceTag source="OFFICIAL_AUTO" />}
       >
-        {monthlyQ.isLoading && <div className="tw-tiny">加载中…</div>}
-        {monthlyQ.isError && <EmptyState title="月报统计加载失败" />}
-        {monthlyQ.data && !hasMonthly && (
+        {monthlyQ.isLoading && <div className="tw-tiny">正在加载月报统计…</div>}
+
+        {!monthlyQ.isLoading && monthlyQ.isError && (
+          <div className="tw-monthly-error">
+            <EmptyState
+              title="月报统计加载失败"
+              description={(monthlyQ.error as Error)?.message || '统计接口请求失败，请稍后重试。'}
+            />
+            <Button size="sm" onClick={() => monthlyQ.refetch()}>重试</Button>
+          </div>
+        )}
+
+        {!monthlyQ.isLoading && !monthlyQ.isError && !hasMonthly && (
           <div className="tw-monthly-empty">
             <EmptyState
               title="暂无官方月报数据"
@@ -49,7 +59,8 @@ export default function ReportsPage() {
             </Button>
           </div>
         )}
-        {monthlyQ.data && hasMonthly && (
+
+        {!monthlyQ.isLoading && !monthlyQ.isError && hasMonthly && monthlyQ.data && (
           <>
             <div className="tw-tiny" style={{ marginBottom: 8 }}>
               共 {monthlyQ.data.totalRecords} 条月报记录 · 来自 {monthlyQ.data.totalBatches} 个导入批次
@@ -62,6 +73,10 @@ export default function ReportsPage() {
               <div>
                 <Bars title="按断面" data={monthlyQ.data.byReach} fmt={reachName} color="var(--tw-ok)" />
               </div>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <div className="tw-muted" style={{ fontSize: 12, marginBottom: 6 }}>按月份</div>
+              <Bars title="" data={monthlyQ.data.byPeriod} color="var(--tw-watch)" />
             </div>
           </>
         )}
@@ -121,7 +136,7 @@ function Bars({
   const max = Math.max(1, ...entries.map(([, v]) => v));
   return (
     <div>
-      <div className="tw-muted" style={{ fontSize: 12, marginBottom: 4 }}>{title}</div>
+      {title && <div className="tw-muted" style={{ fontSize: 12, marginBottom: 4 }}>{title}</div>}
       {entries.map(([k, v]) => (
         <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, marginBottom: 3 }}>
           <span style={{ width: 110 }}>{fmt ? fmt(k) : k}</span>

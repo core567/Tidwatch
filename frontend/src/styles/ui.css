@@ -3,3 +3,4 @@
 .tw-monthly-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .tw-monthly-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; }
 @media (max-width: 1000px) { .tw-monthly-grid { grid-template-columns: 1fr; } }
+.tw-monthly-error { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }

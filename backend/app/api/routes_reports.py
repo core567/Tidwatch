@@ -59,9 +59,8 @@ def monthly_analysis(
     rows = list(db.execute(q).scalars())
 
     def period_of(r: OfficialMonthlyRecord) -> str:
-        # period 来自导入批次（YYYY-MM），记录本身不带，按批次聚合
-        batch = db.get(ImportBatch, r.batch_id)
-        return batch.period if batch and batch.period else "unknown"
+        # 月份以明细行自身的 period（YYYY-MM）为准；批次 published_period 可能为空
+        return getattr(r, "period", None) or "unknown"
 
     by_class: Counter = Counter()
     by_reach: Counter = Counter()
@@ -83,7 +82,7 @@ def monthly_analysis(
         "byPeriod": dict(sorted(by_period.items())),
         "batches": [
             {
-                "batchId": b.batch_id, "period": b.period, "agency": b.agency,
+                "batchId": b.batch_id, "period": b.published_period, "agency": b.agency,
                 "status": b.status, "rowCount": b.row_count,
                 "sourceUrl": b.source_url,
                 "createdAt": b.created_at.isoformat() if b.created_at else None,
