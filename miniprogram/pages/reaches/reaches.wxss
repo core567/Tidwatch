@@ -1,32 +1,119 @@
-.topo-note {
-  font-size: 22rpx;
-  color: #5d7186;
-  background: rgba(30, 111, 224, 0.08);
-  border-radius: 10rpx;
-  padding: 14rpx 20rpx;
-  margin-bottom: 20rpx;
+/* pages/reaches/reaches.wxss V2 */
+.rv {
+  min-height: 100vh;
+  background: var(--m-bg);
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }
-.reach-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+
+/* Hero */
+.rv-hero { padding-top: 28rpx; padding-bottom: 48rpx; }
+.rv-hero-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 20rpx; }
+.rv-title { font-size: 40rpx; font-weight: 800; color: #fff; margin-top: 6rpx; }
+.rv-sub { font-size: 21rpx; color: #a9c4de; margin-top: 8rpx; line-height: 1.55; max-width: 480rpx; }
+
+.rv-link-pill {
+  display: inline-flex; align-items: center; gap: 10rpx;
+  font-size: 20rpx; font-weight: 700; padding: 8rpx 18rpx;
+  border-radius: 999rpx; white-space: nowrap;
 }
-.reach-name {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #0b2a4a;
+.rv-link-pill.on { color: #7fe0d2; background: rgba(15, 168, 150, 0.14); border: 1rpx solid rgba(15, 168, 150, 0.4); }
+.rv-link-pill.off { color: #ffc36e; background: rgba(232, 144, 42, 0.14); border: 1rpx solid rgba(232, 144, 42, 0.4); }
+.rv-link-dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: currentColor; }
+
+/* 河流拓扑 */
+.rv-river-wrap {
+  margin-top: 28rpx; border-radius: 24rpx;
+  background: rgba(4, 22, 42, 0.42); border: 1rpx solid rgba(127, 178, 224, 0.22);
+  padding: 16rpx 20rpx 14rpx;
 }
-.reach-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 24rpx;
-  color: #5d7186;
-  padding-top: 12rpx;
+.rv-river-label {
+  display: flex; justify-content: space-between;
+  font-size: 17rpx; letter-spacing: 2rpx; color: #7fb2e0;
 }
-.err-msg {
-  margin: 16rpx 0 24rpx;
+.rv-river { position: relative; height: 150rpx; margin-top: 6rpx; }
+.rv-river-line {
+  position: absolute; left: 4%; right: 4%; top: 48rpx; height: 8rpx; border-radius: 999rpx;
+  background: linear-gradient(90deg, #2a6ba0, #1e6fe0 50%, #18b7c8);
+  opacity: 0.85;
 }
-.retry-btn {
-  width: 240rpx;
-  margin-top: 16rpx;
+.rv-node-wrap { position: absolute; top: 18rpx; transform: translateX(-50%); text-align: center; width: 96rpx; }
+.rv-node {
+  width: 64rpx; height: 64rpx; border-radius: 50%; margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30rpx; font-weight: 800; color: #fff;
+  background: #0b2a4a; border: 4rpx solid #7fe0d2;
+}
+.rv-node.online { border-color: #7fe0d2; }
+.rv-node.off { border-color: #ffc36e; }
+.rv-node.alert { background: #7a1f1f; border-color: #ff8e8e; }
+.rv-node-label { font-size: 19rpx; color: #bcd7f0; margin-top: 6rpx; font-weight: 600; }
+
+.rv-sheet { position: relative; z-index: 3; margin-top: -28rpx; padding: 0 28rpx; }
+
+/* 概览条 */
+.rv-fresh { display: flex; gap: 14rpx; margin-bottom: 22rpx; }
+.rv-fresh-i {
+  flex: 1; background: #fff; border-radius: 18rpx;
+  border: 1rpx solid rgba(226, 232, 240, 0.7);
+  padding: 16rpx 12rpx; display: flex; align-items: center; justify-content: center; gap: 10rpx;
+  font-size: 21rpx; color: var(--m-text-2); font-weight: 700;
+}
+.rv-fresh-dot { width: 13rpx; height: 13rpx; border-radius: 50%; }
+.rv-fresh-dot.g { background: var(--m-ok); }
+.rv-fresh-dot.o { background: var(--m-watch); }
+.rv-fresh-dot.r { background: var(--m-danger); }
+
+/* 断面卡 */
+.rv-card {
+  background: #fff; border-radius: var(--m-radius-lg);
+  margin-bottom: 22rpx; overflow: hidden;
+  box-shadow: var(--m-shadow-card); border: 1rpx solid rgba(226, 232, 240, 0.7);
+}
+.rv-card-head { display: flex; justify-content: space-between; align-items: center; padding: 24rpx 28rpx 12rpx; }
+.rv-card-id { display: flex; align-items: center; gap: 18rpx; }
+.rv-letter {
+  width: 76rpx; height: 76rpx; border-radius: 24rpx;
+  background: var(--m-navy-800); color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 32rpx; font-weight: 800; line-height: 1;
+}
+.rv-letter text { font-size: 14rpx; opacity: 0.75; letter-spacing: 1rpx; margin-top: 3rpx; }
+.rv-letter.grad { background: var(--m-grad-accent); }
+.rv-name { font-size: 29rpx; font-weight: 800; color: var(--m-navy-800); }
+.rv-station { font-size: 19rpx; color: var(--m-text-3); margin-top: 3rpx; }
+
+.rv-link-badge {
+  font-size: 20rpx; font-weight: 700; padding: 7rpx 18rpx; border-radius: 999rpx; white-space: nowrap;
+}
+.rv-link-badge.on { background: rgba(15, 168, 150, 0.1); color: var(--m-ok); }
+.rv-link-badge.stale { background: rgba(232, 144, 42, 0.1); color: var(--m-watch); }
+.rv-link-badge.off { background: rgba(232, 144, 42, 0.1); color: var(--m-watch); }
+
+.rv-metrics { display: grid; grid-template-columns: repeat(3, 1fr); padding: 8rpx 16rpx 18rpx; }
+.rv-metric { text-align: center; padding: 8rpx 4rpx; position: relative; }
+.rv-metric + .rv-metric::before {
+  content: ''; position: absolute; left: 0; top: 18%; bottom: 18%;
+  width: 1rpx; background: var(--m-border);
+}
+.rv-mv { font-size: 37rpx; font-weight: 800; color: var(--m-navy-800); line-height: 1.15; }
+.rv-mv small { font-size: 20rpx; font-weight: 700; color: var(--m-text-2); }
+.rv-mk { font-size: 21rpx; color: var(--m-text-2); margin-top: 3rpx; font-weight: 600; }
+.rv-mt { font-size: 18rpx; color: var(--m-text-3); margin-top: 2rpx; }
+
+.rv-card-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 14rpx;
+  padding: 16rpx 28rpx; background: #f7fafd; border-top: 1rpx solid #ecf1f6;
+  font-size: 21rpx; color: var(--m-text-2);
+}
+.rv-foot-left { display: flex; align-items: center; gap: 12rpx; flex-wrap: wrap; }
+.rv-blind { color: var(--m-danger); font-weight: 700; }
+.rv-event {
+  color: #fff; background: var(--m-danger); border-radius: 8rpx;
+  font-size: 19rpx; font-weight: 800; padding: 3rpx 12rpx;
+}
+.rv-detail-link { color: var(--m-accent); font-weight: 700; }
+
+.rv-note {
+  font-size: 20rpx; color: var(--m-text-3); line-height: 1.7;
+  background: #f7fafd; border-radius: 16rpx; padding: 18rpx 22rpx;
 }

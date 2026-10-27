@@ -1,7 +1,16 @@
 .login {
+  position: relative;
   min-height: 100vh;
   padding: 120rpx 48rpx 48rpx;
   background: linear-gradient(180deg, #0b2a4a 0%, #123c66 38%, #f2f5f9 38%);
+}
+.login-back {
+  position: absolute;
+  top: calc(24rpx + env(safe-area-inset-top));
+  left: 32rpx;
+  color: #dcebfa;
+  font-size: 28rpx;
+  padding: 12rpx 20rpx;
 }
 .login-brand {
   text-align: center;

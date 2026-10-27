@@ -1,0 +1,12 @@
+<view class="m-tabbar">
+  <view
+    wx:for="{{list}}"
+    wx:key="pagePath"
+    class="m-tab {{selected === index ? 'is-active' : ''}}"
+    data-idx="{{index}}"
+    bindtap="onTap"
+  >
+    <image class="m-tab-icon" src="{{selected === index ? item.iconActive : item.icon}}" mode="aspectFit" />
+    <text class="m-tab-text">{{item.text}}</text>
+  </view>
+</view>

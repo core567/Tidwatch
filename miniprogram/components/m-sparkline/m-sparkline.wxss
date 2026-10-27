@@ -1,0 +1,73 @@
+.m-spark-wrap {
+  position: relative;
+  width: 100%;
+}
+.m-spark-canvas {
+  display: block;
+  /* 首帧未绘制时保持完全透明，避免转场期间空原生层浮现 */
+  opacity: 0;
+}
+.m-spark-canvas.is-ready {
+  opacity: 1;
+}
+/* 骨架占位（普通 WXML 层，随页面一起转场，不会覆盖到旧页） */
+.m-spark-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14rpx;
+  padding: 20rpx 8rpx;
+}
+.m-spark-sk-bar,
+.m-spark-sk-line {
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: linear-gradient(90deg, #e8edf3 25%, #f4f7fa 37%, #e8edf3 63%);
+  background-size: 400rpx 100%;
+  animation: m-spark-shimmer 1.3s infinite linear;
+}
+.m-spark-sk-bar { width: 40%; }
+.m-spark-sk-line { width: 80%; height: 120rpx; border-radius: 14rpx; }
+.m-spark-sk-text {
+  font-size: 20rpx;
+  color: #8aa0b8;
+}
+@keyframes m-spark-shimmer {
+  0% { background-position: -400rpx 0; }
+  100% { background-position: 400rpx 0; }
+}
+.m-spark-tip {
+  position: absolute;
+  transform: translate(10px, -50%);
+  background: rgba(7, 30, 56, 0.94);
+  border-radius: 10rpx;
+  padding: 10rpx 16rpx;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+  box-shadow: 0 6rpx 20rpx rgba(7, 30, 56, 0.3);
+}
+.m-spark-tip.is-left {
+  transform: translate(calc(-100% - 10px), -50%);
+}
+.m-spark-tip-v {
+  font-size: 26rpx;
+  font-weight: 800;
+  color: #6fe3f0;
+  line-height: 1.2;
+}
+.m-spark-tip-t {
+  font-size: 19rpx;
+  color: #dcebfa;
+  margin-top: 3rpx;
+}
+.m-spark-tip-s {
+  font-size: 18rpx;
+  color: #8fb4d8;
+  margin-top: 2rpx;
+}

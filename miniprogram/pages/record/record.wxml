@@ -1,66 +1,197 @@
-<view class="container">
-  <view class="tw-card" wx:if="{{taskId}}">
-    <view class="tw-muted">任务编号</view>
-    <view class="rec-taskid">{{taskId}}</view>
-  </view>
+<!-- pages/record/record.wxml - 现场采集 V2 -->
+<view class="rc">
 
-  <view class="tw-card">
-    <view class="tw-card-title">
-      现场观察记录
+  <block wx:if="{{ctxState === 'loading'}}"><m-state type="loading" /></block>
+  <block wx:elif="{{ctxState === 'error'}}">
+    <m-state type="error" title="任务加载失败" desc="{{ctxError}}" bind:retry="loadContext" />
+  </block>
+
+  <block wx:else>
+    <!-- 任务上下文 Hero -->
+    <view class="m-hero rc-hero">
+      <view class="m-hero-inner">
+        <view class="rc-hero-top">
+          <view class="rc-task-name">{{task.title}}</view>
+          <text class="m-badge m-badge-{{rejected ? 'danger' : 'watch'}}">{{rejected ? '需重提' : '进行中'}}</text>
+        </view>
+        <view class="rc-hero-chips">
+          <text class="rc-chip">第 {{nextVersion}} 次提交 · v{{nextVersion}}</text>
+          <text class="rc-chip">{{task.reachId}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="rc-sheet">
+      <!-- 退回意见 -->
+      <view wx:if="{{rejected}}" class="rc-reject">
+        <view class="rc-reject-t">↺ 上一版退回意见</view>
+        <view class="rc-reject-c">{{rejectComment || '请按复核意见补充后重新提交'}}</view>
+        <view class="rc-reject-f">{{rejectReviewer}} · {{rejectedAtText}}</view>
+      </view>
+
+      <!-- 人工复测 -->
+      <view class="m-card">
+        <view class="rc-sec-head">
+          <view class="m-sec-title">人工复测</view>
+          <text class="m-src m-src-man">人工测量 · 非传感器</text>
+        </view>
+
+        <view wx:for="{{measures}}" wx:key="key" class="rc-measure">
+          <view class="rc-measure-icon">{{item.key === 'waterLevel' ? '📏' : item.key === 'turbidity' ? '💧' : '〰️'}}</view>
+          <view class="rc-measure-main">
+            <view class="rc-measure-name">
+              {{item.label}}
+              <text wx:if="{{item.suggested}}" class="rc-tag-req">建议测量</text>
+            </view>
+            <view class="rc-measure-sub">{{item.hint}}</view>
+            <view wx:if="{{item.error}}" class="rc-measure-err">{{item.error}}</view>
+            <view wx:if="{{item.reason}}" class="rc-unmeasured">
+              未测原因：{{item.reason}}
+              <text class="rc-unmeasured-clear" data-key="{{item.key}}" bindtap="onClearReason">清除</text>
+            </view>
+          </view>
+
+          <!-- 小数输入 -->
+          <block wx:if="{{item.input === 'decimal'}}">
+            <input
+              class="rc-input {{item.error ? 'is-err' : ''}}"
+              type="digit"
+              placeholder="—"
+              value="{{item.raw}}"
+              data-key="{{item.key}}"
+              bindinput="onMeasureInput"
+            />
+            <text class="rc-unit">{{item.unit}}</text>
+            <view class="rc-reason-btn" data-key="{{item.key}}" bindtap="onPickReason">未测</view>
+          </block>
+
+          <!-- 等级步进器 -->
+          <block wx:else>
+            <view class="rc-step">
+              <view class="rc-step-btn" data-key="{{item.key}}" data-delta="-1" bindtap="onStep">−</view>
+              <text class="rc-step-val">{{item.raw || '—'}}</text>
+              <view class="rc-step-btn" data-key="{{item.key}}" data-delta="1" bindtap="onStep">+</view>
+            </view>
+            <view class="rc-reason-btn" data-key="{{item.key}}" bindtap="onPickReason">未测</view>
+          </block>
+        </view>
+
+        <view class="rc-rule-note">
+          数值只做格式校验（数字/非负/等级 0–3）；建议项可填值或选择未测原因，不设无依据的业务阈值。
+        </view>
+      </view>
+
+      <!-- 观察记录 -->
+      <view class="m-card">
+        <view class="rc-sec-head">
+          <view class="m-sec-title">现场观察记录</view>
+          <button
+            class="rc-voice {{voiceState === 'start' ? 'rec' : ''}}"
+            bindtouchstart="onVoiceStart"
+            bindtouchend="onVoiceEnd"
+          >{{voiceState === 'start' ? '松开发送' : '🎙 按住说话'}}</button>
+        </view>
+        <textarea
+          class="rc-textarea"
+          placeholder="记录现场水面、气味、排口、漂浮物等实际观察（人工记录，不伪装为模型结论）"
+          value="{{observationNote}}"
+          bindinput="onNoteInput"
+          maxlength="1000"
+        />
+        <view class="rc-char">
+          <text>
+            <text wx:if="{{voiceSource}}" class="m-src {{voiceSource === 'VOICE_PLUGIN' ? 'm-src-gov' : 'm-src-sim'}}">{{voiceSource === 'VOICE_PLUGIN' ? '语音转写' : '手动输入'}}</text>
+          </text>
+          <text class="muted">{{observationNote.length}}/1000</text>
+        </view>
+        <view wx:if="{{voiceHint}}" class="rc-voice-hint">{{voiceHint}}</view>
+      </view>
+
+      <!-- 照片 -->
+      <view class="m-card">
+        <view class="rc-sec-head">
+          <view class="m-sec-title">现场照片</view>
+          <view class="muted">{{photos.length}}/6 · 单张上传</view>
+        </view>
+
+        <!-- 两个独立入口：现场拍照（后置摄像头） / 相册选择 -->
+        <view class="rc-cam-actions">
+          <view class="rc-cam-btn is-camera" bindtap="takePhoto">
+            <view class="rc-cam-ic">
+              <view class="rc-ic-camera"></view>
+            </view>
+            <text class="rc-cam-label">现场拍照</text>
+          </view>
+          <view class="rc-cam-btn is-album" bindtap="chooseAlbum">
+            <view class="rc-cam-ic">
+              <view class="rc-ic-album"></view>
+            </view>
+            <text class="rc-cam-label">相册选择</text>
+          </view>
+        </view>
+
+        <view class="rc-photos" wx:if="{{photos.length > 0}}">
+          <view wx:for="{{photos}}" wx:key="localPath" class="rc-photo">
+            <image src="{{item.localPath}}" mode="aspectFill" class="rc-photo-img" data-idx="{{index}}" bindtap="previewPhoto" />
+            <view class="rc-photo-status st-{{item.status}}">{{item.statusText}}</view>
+            <view wx:if="{{item.status === 'failed'}}" class="rc-photo-retry" data-idx="{{index}}" catchtap="retryPhoto">
+              ⚠️<text>重试</text>
+            </view>
+            <view class="rc-photo-del" data-idx="{{index}}" catchtap="removePhoto">×</view>
+          </view>
+        </view>
+        <view wx:if="{{photos.length >= 6}}" class="rc-photo-limit">已达上限 6 张，删除后可继续添加</view>
+        <view class="muted" style="margin-top:14rpx">照片真实上传后关联本次提交；不做图像自动判级，结论由人工确认。</view>
+      </view>
+
+      <!-- 结论 -->
+      <view class="m-card">
+        <view class="m-sec-title" style="margin-bottom:16rpx">现场结论</view>
+        <radio-group bindchange="onConclusionChange">
+          <label class="rc-radio {{conclusion === 'NORMAL' ? 'checked' : ''}}">
+            <radio value="NORMAL" checked="{{conclusion === 'NORMAL'}}" color="#1E6FE0" />
+            <view>
+              <view class="rc-radio-t">未见明显异常</view>
+              <view class="rc-radio-d">NORMAL · 现场观测未发现异常特征</view>
+            </view>
+          </label>
+          <label class="rc-radio {{conclusion === 'ABNORMAL' ? 'checked' : ''}}">
+            <radio value="ABNORMAL" checked="{{conclusion === 'ABNORMAL'}}" color="#1E6FE0" />
+            <view>
+              <view class="rc-radio-t">发现异常，建议再评估</view>
+              <view class="rc-radio-d">ABNORMAL · 是否触发事件再评估由后端规则决定</view>
+            </view>
+          </label>
+          <label class="rc-radio {{conclusion === 'UNCERTAIN' ? 'checked' : ''}}">
+            <radio value="UNCERTAIN" checked="{{conclusion === 'UNCERTAIN'}}" color="#1E6FE0" />
+            <view>
+              <view class="rc-radio-t">无法确认</view>
+              <view class="rc-radio-d">UNCERTAIN · 证据不足或条件受限</view>
+            </view>
+          </label>
+        </radio-group>
+      </view>
+
+      <!-- 提交前检查 -->
+      <view class="m-card">
+        <view class="m-sec-title" style="margin-bottom:14rpx">提交前检查</view>
+        <view wx:for="{{checkItems}}" wx:key="text" class="rc-check {{item.ok ? '' : 'no'}}">
+          <text class="rc-check-ic">{{item.ok ? '✓' : '!'}}</text>
+          <text class="rc-check-t">{{item.text}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{errorMsg}}" class="rc-error">{{errorMsg}}</view>
+    </view>
+
+    <view class="rc-bottom-space"></view>
+    <view class="rc-bar">
       <button
-        class="voice-btn {{voiceState === 'start' ? 'voice-btn-active' : ''}}"
-        size="mini"
-        bindtouchstart="onVoiceStart"
-        bindtouchend="onVoiceEnd"
-      >{{voiceState === 'start' ? '松开发送' : '按住说话'}}</button>
+        class="m-btn m-btn-primary"
+        loading="{{submitting}}"
+        disabled="{{submitting}}"
+        bindtap="onSubmit"
+      >提交巡检结果（v{{nextVersion}}）</button>
     </view>
-    <textarea
-      class="rec-textarea"
-      placeholder="记录现场水面、气味、排口、漂浮物等实际观察（人工记录，不伪装为模型结论）"
-      value="{{observationNote}}"
-      bindinput="onNoteInput"
-      maxlength="1000"
-    />
-    <view class="tw-muted rec-count">
-      <text wx:if="{{voiceSource}}" class="voice-tag voice-{{voiceSource === 'VOICE_PLUGIN' ? 'plugin' : 'manual'}}">
-        {{voiceSource === 'VOICE_PLUGIN' ? '语音转写' : '手动输入'}}
-      </text>
-      {{observationNote.length}}/1000
-    </view>
-    <view wx:if="{{voiceHint}}" class="tw-muted voice-hint">{{voiceHint}}</view>
-  </view>
-
-  <view class="tw-card">
-    <view class="tw-card-title">现场照片</view>
-    <view class="photo-grid">
-      <view wx:for="{{photos}}" wx:key="localPath" class="photo-item">
-        <image src="{{item.localPath}}" mode="aspectFill" class="photo-img" data-idx="{{index}}" bindtap="previewPhoto" />
-        <view class="photo-status status-{{item.status}}">{{item.statusText}}</view>
-        <view class="photo-del" data-idx="{{index}}" bindtap="removePhoto">×</view>
-      </view>
-      <view class="photo-add" bindtap="choosePhoto" wx:if="{{photos.length < 6}}">
-        <text>＋ 拍照/相册</text>
-      </view>
-    </view>
-    <view class="tw-muted">照片仅保存附件元数据；V1.0 不做图像自动判级，结论由人工确认。</view>
-  </view>
-
-  <view class="tw-card">
-    <view class="tw-card-title">现场结论</view>
-    <radio-group bindchange="onConclusionChange">
-      <label class="radio-row"><radio value="NORMAL" checked="{{conclusion === 'NORMAL'}}" />未见明显异常</label>
-      <label class="radio-row"><radio value="ABNORMAL" checked="{{conclusion === 'ABNORMAL'}}" />发现异常，建议再评估</label>
-      <label class="radio-row"><radio value="UNCERTAIN" checked="{{conclusion === 'UNCERTAIN'}}" />无法确认</label>
-    </radio-group>
-  </view>
-
-  <view wx:if="{{errorMsg}}" class="rec-error">{{errorMsg}}</view>
-
-  <button
-    class="tw-btn-primary"
-    loading="{{submitting}}"
-    disabled="{{submitting}}"
-    bindtap="onSubmit"
-  >提交巡检结果</button>
-  <view class="tw-muted rec-hint">提交后由后端写入任务结果并按规则决定是否触发事件再评估。</view>
+  </block>
 </view>

@@ -1,38 +1,130 @@
-<view class="container">
-  <view class="tw-card">
-    <view class="profile-name">TideWatch 移动巡检端</view>
-    <view class="tw-muted">本地演示模式 · 免登录</view>
-    <view class="tw-muted" style="margin-top: 8rpx;">
-      数据含 MQTT 模拟与官方来源标注；任务、事件、照片与 PC 端共用同一后端。
+<!-- pages/profile/profile.wxml - 巡检人员个人工作中心 -->
+<view class="pf">
+  <!-- Hero 常驻，避免切 Tab 闪白 -->
+  <view class="m-hero pf-hero">
+    <view class="m-hero-inner">
+      <view class="pf-id">
+        <view class="pf-avatar">{{pageState === 'ready' ? avatarText : '·'}}</view>
+        <view class="pf-id-main">
+          <view class="pf-name">{{pageState === 'ready' ? displayName : '加载中…'}}</view>
+          <view class="pf-sub">{{pageState === 'ready' ? '@' + username + ' · ' + roleText : '正在获取身份'}}</view>
+        </view>
+        <view wx:if="{{pageState === 'ready'}}" class="pf-mode {{mode === 'jwt' ? 'is-jwt' : 'is-demo'}}">{{modeText}}</view>
+      </view>
+      <view wx:if="{{pageState === 'ready' && mode === 'demo'}}" class="pf-mode-note">
+        演示模式 · 数据为演示环境任务，非你的专属任务
+      </view>
+      <view class="pf-stats">
+        <view class="pf-stat"><text class="pf-stat-v t-danger">{{stats.todo}}</text><text class="pf-stat-k">待接收</text></view>
+        <view class="pf-stat"><text class="pf-stat-v t-watch">{{stats.doing}}</text><text class="pf-stat-k">进行中</text></view>
+        <view class="pf-stat"><text class="pf-stat-v t-cyan">{{stats.review}}</text><text class="pf-stat-k">待复核</text></view>
+        <view class="pf-stat"><text class="pf-stat-v t-red">{{stats.rejected}}</text><text class="pf-stat-k">被退回</text></view>
+        <view class="pf-stat"><text class="pf-stat-v t-ok">{{stats.done}}</text><text class="pf-stat-k">已完成</text></view>
+      </view>
     </view>
   </view>
 
-  <view class="tw-card ws-card">
-    <view class="ws-row">
-      <text>实时通道状态</text>
-      <text class="tw-badge ws-badge-{{wsState}}">{{wsStateText}}</text>
-    </view>
-    <view class="tw-muted">WebSocket 自动重连、断线后状态补偿（25s 心跳）。</view>
-  </view>
+  <view class="pf-sheet">
+    <block wx:if="{{pageState === 'loading'}}">
+      <view class="pf-skeleton">
+        <view class="pf-sk-card" wx:for="{{[1,2]}}" wx:key="*this">
+          <view class="pf-sk-bar w40"></view>
+          <view class="pf-sk-bar w80"></view>
+          <view class="pf-sk-bar w60"></view>
+        </view>
+      </view>
+    </block>
+    <block wx:elif="{{pageState === 'error'}}">
+      <m-state type="error" title="加载失败" desc="{{errorMsg}}" bind:retry="load" />
+    </block>
 
-  <view class="tw-card ws-card">
-    <view class="ws-row">
-      <text>语音现场感知</text>
-      <text class="tw-badge {{voiceAvailable ? 'ws-badge-open' : 'ws-badge-connecting'}}">
-        {{voiceAvailable ? '同声传译可用' : '手动输入模式'}}
-      </text>
-    </view>
-    <view class="tw-muted">
-      {{voiceAvailable ? '现场记录页可按住说话转写。' : '未配置同声传译插件或识别失败时降级为手动输入，不影响提交。'}}
-    </view>
-  </view>
+    <block wx:else>
+      <m-connection-bar tone="{{connTone}}" text="{{connText}}" />
+      <!-- 我的待办 -->
+      <view class="m-card" wx:if="{{todos.length > 0}}">
+        <view class="m-sec-title pf-sec">我的待办</view>
+        <view
+          wx:for="{{todos}}"
+          wx:key="taskId"
+          class="pf-todo {{item.isRejected ? 'is-rejected' : ''}}"
+          hover-class="pf-todo-hover"
+          data-id="{{item.taskId}}"
+          bindtap="openTask"
+        >
+          <view class="pf-todo-main">
+            <view class="pf-todo-title">{{item.title}}</view>
+            <view class="pf-todo-meta">
+              <text class="m-badge m-badge-{{item.tone === 'offline' ? 'offline' : item.tone}}">{{item.statusText}}</text>
+              <text wx:if="{{item.reachName}}" class="m-chip m-chip-accent pf-todo-reach">{{item.reachName}}</text>
+              <text class="pf-todo-due">{{item.dueText}}</text>
+            </view>
+            <view wx:if="{{item.isRejected}}" class="pf-reject-comment">↺ {{item.reviewComment}}</view>
+          </view>
+          <text class="pf-go">{{item.isRejected ? '去重提' : '处理'}} ›</text>
+        </view>
+      </view>
 
-  <view class="tw-card">
-    <view class="tw-card-title">数据口径</view>
-    <view class="tw-muted policy">
-      本端展示的连续监测数据来自 MQTT 模拟链路时均带「模拟数据」标签；
-      官方公开月报仅为月度水质类别背景，不作为实时读数。
-      离线/无数据不等同于现场正常。
-    </view>
+      <view class="m-card" wx:else>
+        <view class="m-sec-title pf-sec">我的待办</view>
+        <view class="pf-empty">暂无待处理或进行中的巡检任务</view>
+      </view>
+
+      <!-- 最近工作记录 -->
+      <view class="m-card">
+        <view class="m-sec-title pf-sec">最近工作记录</view>
+        <view wx:if="{{activities.length > 0}}" class="pf-act">
+          <view
+            wx:for="{{activities}}"
+            wx:key="taskId"
+            class="pf-act-i k-{{item.kind}}"
+            data-id="{{item.taskId}}"
+            bindtap="openTask"
+          >
+            <view class="pf-act-dot"></view>
+            <view class="pf-act-body">
+              <view class="pf-act-text">{{item.text}}</view>
+              <view class="pf-act-title">{{item.title}}</view>
+              <view class="pf-act-time">{{item.atText}}</view>
+            </view>
+          </view>
+        </view>
+        <view wx:else class="pf-empty">暂无提交或审核记录</view>
+      </view>
+
+      <!-- 账户与系统 -->
+      <view class="m-card">
+        <view class="m-sec-title pf-sec">账户与系统</view>
+        <view class="pf-row">
+          <view class="pf-row-k">
+            <view class="pf-dot {{wsState === 'open' ? 'ok' : wsState === 'connecting' ? 'watch' : 'off'}}"></view>
+            实时通道
+          </view>
+          <text class="pf-row-v">{{wsStateText}}</text>
+        </view>
+        <view class="pf-row">
+          <view class="pf-row-k">语音转写插件</view>
+          <text class="pf-row-v">{{voiceAvailable ? '可用' : '不可用（手动输入）'}}</text>
+        </view>
+        <view class="pf-row" wx:if="{{mode === 'demo'}}" bindtap="goLogin" hover-class="pf-row-hover">
+          <view class="pf-row-k">账户</view>
+          <text class="pf-row-v pf-link">登录真实账户 ›</text>
+        </view>
+        <view class="pf-row" wx:else bindtap="onLogout" hover-class="pf-row-hover">
+          <view class="pf-row-k">账户</view>
+          <text class="pf-row-v pf-logout">退出登录（回到演示模式）</text>
+        </view>
+        <view class="pf-row" bindtap="toggleHelp" hover-class="pf-row-hover">
+          <view class="pf-row-k">数据来源与帮助</view>
+          <text class="pf-row-v">{{showHelp ? '收起 ∧' : '查看 ∨'}}</text>
+        </view>
+        <view wx:if="{{showHelp}}" class="pf-help">
+          <view>· MQTT 模拟连续观测标注「模拟数据」，仅用于演示。</view>
+          <view>· 官方自动站为月度/拉取时点快照，不画连续曲线。</view>
+          <view>· 人工复测与照片由现场巡检提交，标注「人工测量」。</view>
+          <view>· 「链路中断」只代表数据推送停止，不代表水质异常。</view>
+          <view>· 研判结论、审核与事件状态流转在 PC 端完成。</view>
+        </view>
+      </view>
+    </block>
   </view>
 </view>

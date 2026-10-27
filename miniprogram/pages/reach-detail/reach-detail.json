@@ -1,6 +1,8 @@
 {
-  "navigationBarTitleText": "监测点详情",
+  "navigationBarTitleText": "断面详情",
+  "enablePullDownRefresh": true,
   "usingComponents": {
-    "source-tag": "/components/source-tag/source-tag"
+    "m-state": "/components/m-state/m-state",
+    "m-sparkline": "/components/m-sparkline/m-sparkline"
   }
 }

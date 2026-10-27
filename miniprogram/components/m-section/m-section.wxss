@@ -1,0 +1,10 @@
+.m-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22rpx;
+}
+.m-section-more {
+  font-size: 22rpx;
+  color: var(--m-text-3);
+}

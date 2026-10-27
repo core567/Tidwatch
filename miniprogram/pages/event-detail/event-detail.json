@@ -1,6 +1,7 @@
 {
-  "navigationBarTitleText": "事件详情",
+  "navigationBarTitleText": "事件协同详情",
+  "enablePullDownRefresh": true,
   "usingComponents": {
-    "source-tag": "/components/source-tag/source-tag"
+    "m-state": "/components/m-state/m-state"
   }
 }

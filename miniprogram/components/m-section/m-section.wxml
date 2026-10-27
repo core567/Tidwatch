@@ -1,0 +1,7 @@
+<view class="m-card m-section">
+  <view wx:if="{{title || more}}" class="m-section-head">
+    <view class="m-sec-title">{{title}}</view>
+    <view wx:if="{{more}}" class="m-section-more" bindtap="onMore">{{more}}</view>
+  </view>
+  <slot></slot>
+</view>

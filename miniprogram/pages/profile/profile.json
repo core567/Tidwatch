@@ -1,4 +1,8 @@
 {
   "navigationBarTitleText": "我的",
-  "usingComponents": {}
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "m-state": "/components/m-state/m-state",
+    "m-connection-bar": "/components/m-connection-bar/m-connection-bar"
+  }
 }

@@ -1,23 +1,30 @@
 /* app.wxss - 全局样式：深蓝 / 科技蓝 / 浅灰，与 PC Web 同一设计语言 */
+/* V2.0 设计令牌与组件类（不改动下方 V1 的 .tw-* 类，旧页面零回归） */
+@import "styles/tokens.wxss";
+
 page {
-  --tw-color-bg: #f2f5f9;
+  --tw-color-bg: #edf1f6;
   --tw-color-surface: #ffffff;
   --tw-color-primary: #0b2a4a;
   --tw-color-accent: #1e6fe0;
-  --tw-color-text: #1d2b3a;
+  --tw-color-text: #16263a;
   --tw-color-text-secondary: #5d7186;
   --tw-color-border: #e2e8f0;
-  --tw-color-ok: #12a594;     /* 正常 - 青绿 */
+  --tw-color-ok: #0fa896;     /* 正常 - 青绿 */
   --tw-color-watch: #e8902a;  /* 关注 - 橙 */
   --tw-color-danger: #d84c4c; /* 高风险 - 红 */
   --tw-color-offline: #94a3b8;
 
-  background-color: var(--tw-color-bg);
+  /*
+   * 关键：page 底色与各 V2 页面根容器（--m-bg #edf1f6）统一。
+   * Tab 切换是原生对新页面 webview 的切换，样式首帧应用前会先透出 page 底色；
+   * 底色不一致（曾为 #f2f5f9）就表现为白色/浅色空档。这里全站统一，消除闪白。
+   */
+  background-color: #edf1f6;
   color: var(--tw-color-text);
   font-size: 28rpx;
   line-height: 1.55;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
 .container {

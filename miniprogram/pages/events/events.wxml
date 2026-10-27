@@ -1,45 +1,94 @@
-<view class="container">
-  <view class="filter-bar">
-    <view
-      wx:for="{{filters}}"
-      wx:key="value"
-      class="filter-item {{activeStatus === item.value ? 'filter-active' : ''}}"
-      data-value="{{item.value}}"
-      bindtap="onFilter"
-    >{{item.label}}</view>
+<!-- pages/events/events.wxml - 异常事件协同中心 V2 -->
+<view class="ev m-tab-space">
+  <!-- Hero 常驻：加载期也保持深蓝，避免切 Tab 时顶部白色空档/跳变 -->
+  <view class="m-hero ev-hero">
+    <view class="m-hero-inner">
+      <view class="ev-hero-row">
+        <view>
+          <view class="m-hero-eyebrow">EVENT COLLABORATION</view>
+          <view class="ev-title">异常事件</view>
+          <view class="ev-sub">现场协同以查看为主 · 研判与处置在 PC 端</view>
+        </view>
+      </view>
+      <view class="ev-hud">
+        <view class="ev-hud-i">
+          <text class="ev-hud-v t-danger">{{counts.active}}</text><text class="ev-hud-k">活动中</text>
+        </view>
+        <view class="ev-hud-i">
+          <text class="ev-hud-v t-watch">{{counts.recovery}}</text><text class="ev-hud-k">待恢复</text>
+        </view>
+        <view class="ev-hud-i">
+          <text class="ev-hud-v t-ok">{{counts.recovered}}</text><text class="ev-hud-k">已恢复</text>
+        </view>
+        <view class="ev-hud-i">
+          <text class="ev-hud-v">{{counts.all}}</text><text class="ev-hud-k">全部</text>
+        </view>
+      </view>
+    </view>
   </view>
 
-  <block wx:if="{{uiState === 'loading'}}">
-    <view class="tw-state">加载中…</view>
-  </block>
-  <block wx:elif="{{uiState === 'error'}}">
-    <view class="tw-state">
-      <view>事件加载失败</view>
-      <view class="tw-muted err-msg">{{errorMsg}}</view>
-      <button class="tw-btn-primary retry-btn" bindtap="loadEvents">重试</button>
+  <m-connection-bar wx:if="{{pageState === 'ready'}}" tone="{{connTone}}" text="{{connText}}" />
+
+  <view class="ev-sheet">
+    <!-- 筛选（常驻，四等宽在任意屏宽完整显示，保留选择） -->
+    <view class="ev-filter-bar">
+      <view
+        wx:for="{{filters}}"
+        wx:key="key"
+        class="ev-filter-item {{activeFilter === item.key ? 'is-active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onFilter"
+      >{{filterLabels[index]}}</view>
     </view>
-  </block>
-  <block wx:elif="{{uiState === 'empty'}}">
-    <view class="tw-state">当前筛选条件下无异常事件</view>
-  </block>
-  <block wx:else>
-    <view
-      wx:for="{{events}}"
-      wx:key="eventId"
-      class="tw-card event-card"
-      data-id="{{item.eventId}}"
-      bindtap="openEvent"
-    >
-      <view class="event-head">
-        <text class="event-id">{{item.eventId}}</text>
-        <text class="tw-badge {{badgeClass[item.status] || 'tw-badge-offline'}}">{{statusNames[item.status] || item.status}}</text>
+
+    <!-- 首次加载：内容骨架（Hero 与筛选已就位，无白屏） -->
+    <block wx:if="{{pageState === 'loading'}}">
+      <view class="ev-skeleton">
+        <view class="ev-sk-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+          <view class="ev-sk-bar w40"></view>
+          <view class="ev-sk-bar w80"></view>
+          <view class="ev-sk-bar w60"></view>
+        </view>
       </view>
-      <view class="event-title">{{item.title}}</view>
-      <view class="event-meta">
-        <text>范围 {{item.scopeText}}</text>
-        <text class="tw-muted">v{{item.version}}</text>
-      </view>
-      <view class="tw-muted event-time">更新于 {{item.updatedAtText}}</view>
-    </view>
-  </block>
+    </block>
+
+    <!-- 加载失败 -->
+    <block wx:elif="{{pageState === 'error'}}">
+      <m-state type="error" title="事件加载失败" desc="{{errorMsg}}" bind:retry="load" />
+    </block>
+
+    <!-- 正常内容 -->
+    <block wx:else>
+      <block wx:if="{{!listEmpty}}">
+        <view
+          wx:for="{{events}}"
+          wx:key="eventId"
+          class="ev-card {{item.active ? '' : 'is-done'}}"
+          data-id="{{item.eventId}}"
+          bindtap="openEvent"
+        >
+          <view class="ev-card-top">
+            <view class="ev-card-id">
+              <text class="ev-id">{{item.eventId}}</text>
+              <text wx:if="{{item.triggerText}}" class="ev-trigger">{{item.triggerText}}</text>
+            </view>
+            <text class="m-badge m-badge-{{item.statusTone === 'offline' ? 'offline' : item.statusTone}}">{{item.statusText}}</text>
+          </view>
+          <view class="ev-card-title">{{item.title}}</view>
+          <view class="ev-card-meta">
+            <text class="m-chip m-chip-accent" wx:if="{{item.scopeText}}">断面 {{item.scopeText}}</text>
+            <text class="m-chip">优先级 {{item.priorityText}}</text>
+            <text class="m-chip" wx:if="{{item.relatedTaskTitle}}">有巡检任务</text>
+          </view>
+          <view class="ev-card-foot">
+            <text class="ev-updated">{{item.updatedText}}更新</text>
+            <text class="ev-go">协同详情 ›</text>
+          </view>
+        </view>
+      </block>
+
+      <m-state wx:else type="empty" title="该分类下暂无事件" desc="可切换其他分类或下拉刷新" />
+    </block>
+  </view>
 </view>
+

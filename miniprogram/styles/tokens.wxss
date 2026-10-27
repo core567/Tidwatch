@@ -1,0 +1,190 @@
+/* styles/tokens.wxss — TideWatch Mobile V2.0 设计令牌
+ * 仅新增 V2 变量与组件类，不修改/删除 V1 的 .tw-* 类，保证旧页面零回归。
+ * 单位换算：设计稿 390pt，小程序 750rpx（1pt = 2rpx）。 */
+page {
+  /* 品牌深蓝阶 */
+  --m-navy-900: #071e38;
+  --m-navy-800: #0b2a4a;
+  --m-navy-700: #123e68;
+  --m-navy-600: #1b5285;
+  --m-navy-500: #2a6ba0;
+  /* 强调 */
+  --m-accent: #1e6fe0;
+  --m-accent-deep: #1559b8;
+  --m-cyan: #18b7c8;
+  --m-cyan-bright: #3fd6e4;
+  /* 中性面（沿用 V1 变量，别名保持一致） */
+  --m-bg: #edf1f6;
+  --m-surface: #ffffff;
+  --m-text: #16263a;
+  --m-text-2: #5d7186;
+  --m-text-3: #8aa0b8;
+  --m-border: #e2e8f0;
+  /* 状态 */
+  --m-ok: #0fa896;
+  --m-watch: #e8902a;
+  --m-danger: #d84c4c;
+  --m-offline: #94a3b8;
+  /* 渐变 */
+  --m-grad-hero: linear-gradient(158deg, #08233f 0%, #0e355e 46%, #1b5285 100%);
+  --m-grad-accent: linear-gradient(135deg, #1e6fe0 0%, #18b7c8 100%);
+  --m-grad-dark-card: linear-gradient(140deg, #0e3155, #16467a);
+  /* 圆角 */
+  --m-radius-lg: 36rpx;
+  --m-radius-md: 26rpx;
+  --m-radius-sm: 18rpx;
+  /* 阴影 */
+  --m-shadow-card: 0 6rpx 28rpx rgba(10, 38, 70, 0.07);
+  --m-shadow-raised: 0 24rpx 68rpx rgba(11, 42, 74, 0.16);
+  --m-shadow-btn: 0 16rpx 36rpx rgba(30, 111, 224, 0.32);
+  /* 固定栏高度（含安全区由组件自身 padding 处理） */
+  --m-tabbar-h: 148rpx;
+}
+
+/* ===== 通用工具类 ===== */
+.m-num {
+  font-variant-numeric: tabular-nums;
+}
+.m-muted { color: var(--m-text-2); font-size: 23rpx; }
+.muted { color: var(--m-text-2); font-size: 23rpx; }
+.m-tiny { color: var(--m-text-3); font-size: 21rpx; }
+
+/* Hero 渐变头：HUD 网格 + 青蓝辉光，由组件 m-hero 组合 */
+.m-hero {
+  position: relative;
+  color: #fff;
+  background: var(--m-grad-hero);
+  overflow: hidden;
+  padding: 36rpx 36rpx 88rpx;
+}
+.m-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(120, 190, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 190, 255, 0.07) 1px, transparent 1px);
+  background-size: 48rpx 48rpx;
+}
+.m-hero::after {
+  content: '';
+  position: absolute;
+  width: 520rpx;
+  height: 520rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(24, 183, 200, 0.28), transparent 65%);
+  right: -180rpx;
+  top: -220rpx;
+}
+.m-hero > .m-hero-inner { position: relative; z-index: 2; }
+
+/* 白卡 */
+.m-card {
+  position: relative;
+  background: var(--m-surface);
+  border-radius: var(--m-radius-lg);
+  padding: 30rpx 32rpx;
+  margin-bottom: 24rpx;
+  border: 1rpx solid rgba(226, 232, 240, 0.7);
+  box-shadow: var(--m-shadow-card);
+}
+
+/* 分区标题（渐变竖条） */
+.m-sec-title {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  font-size: 29rpx;
+  font-weight: 800;
+  color: var(--m-navy-800);
+}
+.m-sec-title::before {
+  content: '';
+  width: 8rpx;
+  height: 30rpx;
+  border-radius: 4rpx;
+  background: var(--m-grad-accent);
+}
+
+/* 徽标（颜色+文字双通道） */
+.m-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 21rpx;
+  font-weight: 700;
+  line-height: 1.75;
+  white-space: nowrap;
+}
+.m-badge-ok { background: rgba(15, 168, 150, 0.1); color: var(--m-ok); }
+.m-badge-watch { background: rgba(232, 144, 42, 0.1); color: var(--m-watch); }
+.m-badge-danger { background: rgba(216, 76, 76, 0.08); color: var(--m-danger); }
+.m-badge-off { background: rgba(148, 163, 184, 0.16); color: #5b7088; }
+/* taskLabels/事件文案的 tone=offline 别名 */
+.m-badge-offline { background: rgba(148, 163, 184, 0.16); color: #5b7088; }
+.m-badge-accent { background: rgba(30, 111, 224, 0.1); color: var(--m-accent); }
+.m-badge-cyan { background: rgba(24, 183, 200, 0.12); color: #0e8c99; }
+.m-badge-outline { background: #fff; border: 1rpx solid var(--m-border); color: var(--m-text-2); }
+/* 深底反白徽标 */
+.m-badge-on-dark { background: rgba(255, 255, 255, 0.12); color: #fff; border: 1rpx solid rgba(255,255,255,.18); }
+
+/* 来源标：官方 / 模拟 / 人工 必须显式区分 */
+.m-src {
+  display: inline-flex;
+  align-items: center;
+  font-size: 19rpx;
+  font-weight: 600;
+  padding: 2rpx 14rpx;
+  border-radius: 10rpx;
+  border: 1rpx solid var(--m-border);
+  color: var(--m-text-3);
+  background: #fff;
+}
+.m-src-sim { border-color: #c9d8e6; color: #6e85a0; }
+.m-src-gov { border-color: #bbd5f0; color: #1559b8; background: #f2f8ff; }
+.m-src-man { border-color: #a7e4ea; color: #0e8c99; background: #effdfe; }
+
+/* chip */
+.m-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 21rpx;
+  font-weight: 600;
+  padding: 6rpx 18rpx;
+  border-radius: 14rpx;
+  background: #f1f5f9;
+  color: var(--m-text-2);
+}
+.m-chip-accent { background: rgba(30, 111, 224, 0.08); color: var(--m-accent); }
+.m-chip-event { background: rgba(216, 76, 76, 0.07); color: var(--m-danger); }
+
+/* 主按钮（渐变） */
+.m-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14rpx;
+  border: 0;
+  border-radius: 24rpx;
+  font-size: 29rpx;
+  font-weight: 800;
+  padding: 26rpx 0;
+}
+.m-btn::after { border: 0; }
+.m-btn-primary { background: var(--m-grad-accent); color: #fff; box-shadow: var(--m-shadow-btn); }
+.m-btn-primary[disabled] {
+  background: #edf1f6;
+  color: var(--m-text-3);
+  box-shadow: none;
+}
+.m-btn-primary:active { opacity: 0.85; }
+
+/* tab 页内容避让固定 TabBar */
+.m-tab-space {
+  padding-bottom: calc(150rpx + env(safe-area-inset-bottom));
+}

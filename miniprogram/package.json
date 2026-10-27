@@ -4,7 +4,11 @@
   "private": true,
   "description": "TideWatch 智慧河流水环境监测系统 - 移动巡检端",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "wxss:check": "node scripts/wxss-check.mjs",
+    "wxml:check": "node scripts/wxml-check.mjs",
+    "build:test": "tsc -p tsconfig.test.json",
+    "test": "npm run build:test && node --test \"dist-test/tests/**/*.test.js\" && npm run wxss:check && npm run wxml:check"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^4.0.0",

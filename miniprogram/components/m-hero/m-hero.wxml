@@ -1,0 +1,13 @@
+<view class="m-hero">
+  <view class="m-hero-inner">
+    <view class="m-hero-head">
+      <view class="m-hero-titles">
+        <view wx:if="{{eyebrow}}" class="m-hero-eyebrow">{{eyebrow}}</view>
+        <view wx:if="{{title}}" class="m-hero-title">{{title}}</view>
+        <view wx:if="{{sub}}" class="m-hero-sub">{{sub}}</view>
+      </view>
+      <view class="m-hero-side"><slot name="side"></slot></view>
+    </view>
+    <slot></slot>
+  </view>
+</view>

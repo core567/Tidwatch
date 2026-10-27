@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "异常事件",
   "enablePullDownRefresh": true,
-  "usingComponents": {}
+  "usingComponents": {
+    "m-state": "/components/m-state/m-state",
+    "m-connection-bar": "/components/m-connection-bar/m-connection-bar"
+  }
 }

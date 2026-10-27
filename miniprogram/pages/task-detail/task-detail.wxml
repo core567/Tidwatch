@@ -1,72 +1,155 @@
-<view class="container">
+<view class="td">
   <block wx:if="{{uiState === 'loading'}}">
-    <view class="tw-state">加载中…</view>
+    <m-state type="loading" />
   </block>
   <block wx:elif="{{uiState === 'error'}}">
-    <view class="tw-state">
-      <view>任务加载失败</view>
-      <view class="tw-muted err-msg">{{errorMsg}}</view>
-      <button class="tw-btn-primary retry-btn" bindtap="load">重试</button>
-    </view>
+    <m-state type="error" title="任务加载失败" desc="{{errorMsg}}" bind:retry="load" />
   </block>
+
   <block wx:else>
-    <view class="tw-card">
-      <view class="tw-card-title">{{task.title}}</view>
-      <view class="row"><text class="tw-muted">任务编号</text><text>{{task.taskId}}</text></view>
-      <view class="row"><text class="tw-muted">监测点</text><text>{{task.reachId}}</text></view>
-      <view class="row"><text class="tw-muted">动作类型</text><text>{{actionText}}</text></view>
-      <view class="row"><text class="tw-muted">优先级</text>
-        <text class="tw-badge {{task.priority === 'HIGH' ? 'tw-badge-danger' : 'tw-badge-ok'}}">{{task.priority}}</text>
-      </view>
-      <view class="row"><text class="tw-muted">状态</text><text>{{task.status}}</text></view>
-      <view class="row"><text class="tw-muted">截止时间</text><text>{{dueAtText}}</text></view>
-      <view class="row row-top"><text class="tw-muted">派发理由</text><text class="reason">{{task.reason || '—'}}</text></view>
-    </view>
-
-    <view class="tw-card" wx:if="{{task.eventId}}">
-      <view class="tw-card-title">关联异常事件</view>
-      <view class="link-row" data-id="{{task.eventId}}" bindtap="openEvent">
-        <text class="link">{{task.eventId}}</text>
-        <text class="tw-muted">查看事件时间线与证据 ›</text>
+    <!-- Hero -->
+    <view class="m-hero td-hero">
+      <view class="m-hero-inner">
+        <view class="td-badges">
+          <text class="m-badge m-badge-{{statusTone === 'offline' ? 'offline' : statusTone}}">{{statusText}}</text>
+          <text wx:if="{{task.priority === 'HIGH'}}" class="m-badge m-badge-on-dark">HIGH</text>
+        </view>
+        <view class="td-title">{{task.title}}</view>
+        <view class="td-chips">
+          <text class="td-chip">{{reachName || task.reachId}}</text>
+          <text class="td-chip">{{actionText}}</text>
+          <text class="td-chip">截止 {{dueAtText}}</text>
+          <text class="td-chip td-chip-id">{{task.taskId}}</text>
+        </view>
       </view>
     </view>
 
-    <view class="tw-card" wx:if="{{submittedPhotos.length > 0}}">
-      <view class="tw-card-title">巡检照片（{{submittedPhotos.length}}）</view>
-      <view class="photo-grid">
-        <image
-          wx:for="{{submittedPhotos}}"
-          wx:key="attachmentId"
-          src="{{item.tempPath}}"
-          mode="aspectFill"
-          class="photo-img"
-          data-src="{{item.tempPath}}"
-          bindtap="previewImage"
-        />
+    <view class="td-sheet">
+      <!-- FSM 步骤条 -->
+      <view class="m-card td-steps-card" wx:if="{{steps}}">
+        <view class="td-steps">
+          <view
+            wx:for="{{steps}}"
+            wx:key="key"
+            class="td-step {{item.state === 'done' ? 'is-done' : ''}} {{item.state === 'current' ? 'is-cur' : ''}}"
+          >
+            <view class="td-step-dot">{{item.state === 'done' ? '✓' : index + 1}}</view>
+            <view class="td-step-lb">{{item.label}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 退回横幅 -->
+      <view wx:if="{{rejected}}" class="td-reject">
+        <view class="td-reject-t">↺ 复核未通过，请补充后重新提交（任务仍为进行中，非独立状态）</view>
+        <view class="td-reject-c">{{task.latestReview.comment || '复核人未填写具体意见'}}</view>
+        <view class="td-reject-f">
+          <text>复核人：{{task.latestReview.reviewer}}（PC 端）</text>
+          <text>{{rejectedAtText}}</text>
+        </view>
+      </view>
+
+      <!-- 异常背景 -->
+      <view class="m-card">
+        <view class="m-sec-title td-sec">异常背景</view>
+        <view class="td-kv">
+          <text class="td-k">关联事件</text>
+          <text wx:if="{{task.eventId}}" class="td-link" data-id="{{task.eventId}}" bindtap="openEvent">{{task.eventId}} · 时间线与证据 ›</text>
+          <text wx:else class="td-v">—</text>
+        </view>
+        <view class="td-kv" wx:if="{{task.reason}}">
+          <text class="td-k">派发理由</text>
+          <text class="td-v">{{task.reason}}</text>
+        </view>
+      </view>
+
+      <!-- 建议现场测量项（前端按任务类型派生，非后端硬性要求） -->
+      <view class="m-card" wx:if="{{suggestedMeasures.length > 0}}">
+        <view class="m-sec-title td-sec">建议现场测量</view>
+        <view class="td-suggest-note">
+          依据任务类型「{{actionText}}」给出的建议测量项（前端提示，非系统硬性规定）；未测请在采集页选择原因。
+        </view>
+        <view class="td-measure-list">
+          <view wx:for="{{suggestedMeasures}}" wx:key="key" class="td-measure-i">
+            <text class="td-measure-name">{{item.label}}</text>
+            <text class="td-measure-unit">{{item.unit || '—'}}</text>
+            <text class="td-measure-hint">{{item.hint}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 提交版本 + 审核 -->
+      <view class="m-card" wx:if="{{submissions.length > 0}}">
+        <view class="m-sec-title td-sec">我的提交记录</view>
+        <view class="td-sub" wx:for="{{submissions}}" wx:key="submissionId" wx:for-item="s">
+          <view class="td-sub-head">
+            <text class="td-sub-ver">第 {{s.version}} 次提交 · v{{s.version}}</text>
+            <text wx:if="{{s.reviewDecision === 'APPROVED'}}" class="m-badge m-badge-ok">复核通过</text>
+            <text wx:elif="{{s.reviewDecision === 'REJECTED'}}" class="m-badge m-badge-danger">需重提</text>
+            <text wx:else class="m-badge m-badge-watch">待复核</text>
+          </view>
+          <view class="td-sub-line"><text class="muted">现场结论</text><text>{{s.conclusionText}}</text></view>
+          <view class="td-sub-line"><text class="muted">提交时间</text><text>{{s.submittedAtText}}</text></view>
+          <view class="td-sub-line"><text class="muted">照片 / 复测</text><text>{{s.photoCount}} 张 · {{s.measureCount}} 项</text></view>
+          <view wx:if="{{s.measures.length > 0}}" class="td-sub-measures">
+            <text
+              wx:for="{{s.measures}}"
+              wx:for-item="mm"
+              wx:key="label"
+              class="td-measure-tag {{mm.unmeasured ? 'is-unmeasured' : ''}}"
+            >{{mm.label}} {{mm.text}}</text>
+          </view>
+          <view wx:if="{{s.observationNote}}" class="td-sub-note">{{s.observationNote}}</view>
+          <view wx:if="{{s.reviewDecision}}" class="td-review is-{{s.reviewDecision === 'APPROVED' ? 'ok' : 'danger'}}">
+            <view class="td-review-h">
+              <text>{{s.reviewDecision === 'APPROVED' ? '复核通过意见' : '退回意见（REJECTED）'}}</text>
+              <text class="muted">{{s.reviewer}} · {{s.reviewedAtText}}</text>
+            </view>
+            <view wx:if="{{s.reviewComment}}" class="td-review-c">{{s.reviewComment}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 最新快照照片 -->
+      <view class="m-card" wx:if="{{submittedPhotos.length > 0}}">
+        <view class="m-sec-title td-sec">现场照片（{{submittedPhotos.length}}）</view>
+        <view class="td-photos">
+          <image
+            wx:for="{{submittedPhotos}}"
+            wx:key="attachmentId"
+            src="{{item.tempPath}}"
+            mode="aspectFill"
+            class="td-photo"
+            data-src="{{item.tempPath}}"
+            bindtap="previewImage"
+          />
+        </view>
+      </view>
+
+      <!-- 终态 -->
+      <view class="m-card td-done" wx:if="{{task.status === 'APPROVED'}}">
+        <view class="td-done-emoji">✅</view>
+        <view class="td-done-title">任务已完成并通过复核</view>
+        <view class="muted" wx:if="{{task.completedAt}}">完成时间 {{completedAtText}}</view>
+      </view>
+      <view class="m-card td-done" wx:if="{{task.status === 'CANCELLED'}}">
+        <view class="td-done-emoji">🚫</view>
+        <view class="td-done-title">任务已取消</view>
       </view>
     </view>
 
-    <view class="actions">
-      <button
-        wx:if="{{task.status === 'PENDING'}}"
-        class="tw-btn-primary"
-        bindtap="onAccept"
-      >接收任务</button>
-      <button
-        wx:if="{{task.status === 'ACCEPTED'}}"
-        class="tw-btn-primary"
-        bindtap="onStart"
-      >开始巡检</button>
-      <button
-        wx:if="{{task.status === 'IN_PROGRESS'}}"
-        class="tw-btn-primary"
-        data-id="{{task.taskId}}"
-        bindtap="goRecord"
-      >填写巡检记录</button>
-    </view>
+    <view class="td-bottom-space"></view>
 
-    <view class="tw-muted hint">
-      任务状态由后端统一校验并写入 Run Trace；非法流转会被拒绝。M3 完成业务对接。
+    <!-- 状态感知底部操作栏 -->
+    <view class="td-bar" wx:if="{{task.status === 'PENDING' || task.status === 'ACCEPTED' || task.status === 'IN_PROGRESS'}}">
+      <button wx:if="{{task.status === 'PENDING'}}" class="m-btn m-btn-primary td-bar-btn" bindtap="onAccept">接收任务</button>
+      <button wx:if="{{task.status === 'ACCEPTED'}}" class="m-btn m-btn-primary td-bar-btn" bindtap="onStart">开始巡检</button>
+      <button wx:if="{{task.status === 'IN_PROGRESS'}}" class="m-btn m-btn-primary td-bar-btn" bindtap="goRecord">
+        {{rejected ? '补充记录并重新提交' : '填写巡检记录'}}
+      </button>
+    </view>
+    <view class="td-bar" wx:elif="{{task.status === 'SUBMITTED'}}">
+      <button class="td-bar-btn td-bar-wait" disabled>已提交，等待 PC 端复核</button>
     </view>
   </block>
 </view>

@@ -1,0 +1,24 @@
+<!-- 加载：骨架屏；空：说明；错误：原因 + 重试 -->
+<view class="m-state">
+  <block wx:if="{{type === 'loading'}}">
+    <view class="m-state-skeleton">
+      <view class="sk-bar"></view>
+      <view class="sk-line w80"></view>
+      <view class="sk-line w50"></view>
+    </view>
+  </block>
+
+  <block wx:elif="{{type === 'error'}}">
+    <view class="m-state-emoji">⚠️</view>
+    <view class="m-state-title">{{title || '加载失败'}}</view>
+    <view wx:if="{{desc}}" class="m-state-desc">{{desc}}</view>
+    <button wx:if="{{showRetry}}" class="m-btn m-btn-primary m-state-btn" bindtap="onRetry">{{retryText}}</button>
+  </block>
+
+  <block wx:else>
+    <view class="m-state-emoji">📭</view>
+    <view class="m-state-title">{{title || '暂无数据'}}</view>
+    <view wx:if="{{desc}}" class="m-state-desc">{{desc}}</view>
+    <slot></slot>
+  </block>
+</view>

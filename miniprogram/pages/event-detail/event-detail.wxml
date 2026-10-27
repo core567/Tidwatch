@@ -1,27 +1,196 @@
-<view class="container">
-  <block wx:if="{{uiState === 'loading'}}">
-    <view class="tw-state">加载中…</view>
-  </block>
-  <block wx:elif="{{uiState === 'error'}}">
-    <view class="tw-state">
-      <view>事件加载失败</view>
-      <view class="tw-muted err-msg">{{errorMsg}}</view>
-      <button class="tw-btn-primary retry-btn" bindtap="load">重试</button>
-    </view>
-  </block>
-  <block wx:else>
-    <view class="tw-card">
-      <view class="ev-id">{{eventId}}</view>
-      <view class="tw-page-title">{{detail.title || '—'}}</view>
-      <view class="tw-muted">
-        事件完整时间线、证据与假设请在 PC 端「演化研判工作台」查看；
-        小程序提供现场巡检所需的关键信息。
+<!-- pages/event-detail/event-detail.wxml V2 -->
+<view class="ed">
+  <!-- Hero 常驻：加载/转场期间也保持深蓝，避免顶部白色空档 -->
+  <view class="m-hero ed-hero">
+    <view class="m-hero-inner">
+      <view class="ed-hero-top">
+        <text class="ed-id">{{eventId || '事件加载中'}}</text>
+        <text wx:if="{{pageState === 'ready'}}" class="m-badge m-badge-{{statusTone === 'offline' ? 'offline' : statusTone}}">{{statusText}}</text>
+      </view>
+      <view class="ed-title">{{pageState === 'ready' ? title : '正在获取事件信息…'}}</view>
+      <view class="ed-chips" wx:if="{{pageState === 'ready'}}">
+        <text class="ed-chip">优先级 {{priorityText}}</text>
+        <text class="ed-chip">首发 {{firstSeenText}}</text>
       </view>
     </view>
+  </view>
 
-    <view class="tw-card">
-      <view class="tw-card-title">基本信息（M3 接口对接后展示）</view>
-      <view class="tw-state placeholder">等待后端事件接口就绪</view>
+  <view class="ed-sheet">
+    <block wx:if="{{pageState === 'loading'}}">
+      <view class="ed-skeleton">
+        <view class="ed-sk-card" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+          <view class="ed-sk-bar w40"></view>
+          <view class="ed-sk-bar w90"></view>
+          <view class="ed-sk-bar w70"></view>
+        </view>
+      </view>
+    </block>
+    <block wx:elif="{{pageState === 'error'}}">
+      <m-state type="error" title="事件加载失败" desc="{{errorMsg}}" bind:retry="load" />
+    </block>
+
+    <block wx:else>
+      <!-- 触发与范围 -->
+      <view class="m-card">
+        <view class="m-sec-title ed-sec">触发与影响</view>
+        <view class="ed-kv">
+          <text class="ed-k">触发指标</text>
+          <text class="ed-v">{{trigger.metric}} <text wx:if="{{trigger.direction}}" class="ed-dir">{{trigger.direction}} {{trigger.magnitude}}</text></text>
+        </view>
+        <view class="ed-kv">
+          <text class="ed-k">影响断面</text>
+          <view class="ed-scopes">
+            <text wx:for="{{scope}}" wx:key="*this" class="m-chip m-chip-accent">{{item}}</text>
+          </view>
+        </view>
+        <view class="ed-kv">
+          <text class="ed-k">最近更新</text>
+          <text class="ed-v">{{updatedText}}</text>
+        </view>
+      </view>
+
+      <!-- 关联巡检任务 -->
+      <view class="m-card" wx:if="{{relatedTasks.length > 0}}">
+        <view class="m-sec-title ed-sec">关联巡检任务</view>
+        <view
+          wx:for="{{relatedTasks}}"
+          wx:key="taskId"
+          class="ed-task {{item.canExecute ? '' : 'is-lock'}}"
+          data-id="{{item.taskId}}"
+          bindtap="openTask"
+        >
+          <view class="ed-task-main">
+            <view class="ed-task-id">{{item.taskId}}</view>
+            <view class="ed-task-title">{{item.title}}</view>
+            <view wx:if="{{item.reviewSummary}}" class="ed-task-review">{{item.reviewSummary}}</view>
+          </view>
+          <view class="ed-task-right">
+            <text class="m-badge m-badge-{{item.tone === 'offline' ? 'offline' : item.tone}}">{{item.statusText}}</text>
+            <text class="ed-chev">›</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 开放盲区 -->
+      <view class="m-card" wx:if="{{openBlinds.length > 0}}">
+        <view class="m-sec-title ed-sec">当前开放盲区（{{openBlinds.length}}）</view>
+        <view class="ed-blind-risk">
+          当前存在 {{openBlinds.length}} 个观测盲区，实时数据不足，无法据此确认现场水环境已恢复。
+        </view>
+        <view wx:for="{{openBlinds}}" wx:key="reachId" class="ed-blind">
+          <view class="ed-blind-head">
+            <text class="ed-blind-reach">{{item.reachName}}</text>
+            <text class="ed-blind-time">{{item.startText}} 起</text>
+          </view>
+          <view class="ed-blind-reason">{{item.reason}}</view>
+        </view>
+        <view class="ed-note">「链路中断」仅表示 MQTT 数据链路停止推送，不等于现场水质异常，也不能据此判定正常；链路恢复后本卡随真实数据更新。</view>
+      </view>
+
+      <!-- 规则建议（非 AI） -->
+      <view class="m-card" wx:if="{{recommendations.length > 0}}">
+        <view class="m-sec-title ed-sec">规则处置建议</view>
+        <view class="ed-note">由规则 {{ruleSource || 'RULE'}} 生成，非 AI 结论；是否处置由 PC 研判决定。</view>
+        <view wx:for="{{recommendations}}" wx:key="title" class="ed-rec">
+          <view class="ed-rec-head">
+            <text class="ed-rec-cat {{item.priorityClass}}">{{item.categoryText}}</text>
+            <text class="ed-rec-title">{{item.title}}</text>
+          </view>
+          <view class="ed-rec-reason">{{item.reason}}</view>
+        </view>
+      </view>
+
+      <!-- 恢复评估：第一层结论 / 第二层条件分组 / 第三层可折叠规则 -->
+      <view class="ed-assess" wx:if="{{assessment}}">
+        <!-- 第一层：结论 -->
+        <view class="ed-assess-head">
+          <view>
+            <view class="ed-assess-title">恢复评估</view>
+            <view class="ed-assess-meta">最近评估 {{assessment.evaluatedText}}</view>
+          </view>
+          <text class="ed-assess-label {{assessment.resultClass}}">{{assessment.label}}</text>
+        </view>
+        <view class="ed-assess-evidence {{assessment.resultClass}}">{{assessment.evidenceText}}</view>
+        <view class="ed-assess-blockers" wx:if="{{assessment.blockers.length > 0}}">
+          存在 {{assessment.blockers.length}} 项未满足的关键条件，暂不支持恢复判定：
+          <text wx:for="{{assessment.blockers}}" wx:for-item="b" wx:key="code" class="ed-blocker-tag">{{b.weightText}}</text>
+        </view>
+
+        <!-- 第二层：条件分组（严格按后端 true/false/null） -->
+        <view class="ed-factor-group" wx:if="{{assessment.failedFactors.length > 0}}">
+          <view class="ed-factor-group-h is-no">未满足条件 · {{assessment.failedFactors.length}}</view>
+          <view wx:for="{{assessment.failedFactors}}" wx:key="code" class="ed-factor">
+            <text class="ed-factor-ic no">!</text>
+            <view class="ed-factor-body">
+              <view class="ed-factor-detail">{{item.detail}}</view>
+              <view class="ed-factor-weight">{{item.weightText}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="ed-factor-group" wx:if="{{assessment.unknownFactors.length > 0}}">
+          <view class="ed-factor-group-h is-na">待补充证据 / 数据不足 · {{assessment.unknownFactors.length}}</view>
+          <view wx:for="{{assessment.unknownFactors}}" wx:key="code" class="ed-factor">
+            <text class="ed-factor-ic na">—</text>
+            <view class="ed-factor-body">
+              <view class="ed-factor-detail">{{item.detail}}</view>
+              <view class="ed-factor-weight">{{item.weightText}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="ed-factor-group" wx:if="{{assessment.passedFactors.length > 0}}">
+          <view class="ed-factor-group-h is-ok">已满足条件 · {{assessment.passedFactors.length}}</view>
+          <view wx:for="{{assessment.passedFactors}}" wx:key="code" class="ed-factor">
+            <text class="ed-factor-ic ok">✓</text>
+            <view class="ed-factor-body">
+              <view class="ed-factor-detail">{{item.detail}}</view>
+              <view class="ed-factor-weight">{{item.weightText}}</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 第三层：详细规则（可折叠） -->
+        <view class="ed-rules-toggle" bindtap="toggleRules">
+          {{showRules ? '收起详细规则与免责说明' : '查看详细规则与免责说明'}}
+          <text class="ed-rules-arrow">{{showRules ? '∧' : '∨'}}</text>
+        </view>
+        <view wx:if="{{showRules}}" class="ed-rules">
+          <view class="ed-rule-line">规则版本：{{assessment.ruleVersion}}</view>
+          <view class="ed-rule-line">依据：恢复锚点、处置后有效观测、样本质量、现场复核闭环、盲区、持续性等条件综合判定。</view>
+          <view class="ed-rule-line">数据来源：MQTT 模拟观测（明确标注）、现场人工提交与 PC 复核记录。</view>
+          <view wx:for="{{assessment.disclaimers}}" wx:key="*this" class="ed-disclaimer">· {{item}}</view>
+        </view>
+      </view>
+
+      <!-- 关键时间线 -->
+      <view class="m-card" wx:if="{{milestones.length > 0}}">
+        <view class="m-sec-title ed-sec">关键进展</view>
+        <view class="ed-tl">
+          <block
+            wx:for="{{showAllTimeline ? milestones : milestones}}"
+            wx:key="atText"
+          >
+            <view class="ed-tl-i k-{{item.kind}}" wx:if="{{showAllTimeline || index < 8}}">
+              <view class="ed-tl-dot"></view>
+              <view class="ed-tl-body">
+                <view class="ed-tl-text">{{item.text}}</view>
+                <view class="ed-tl-meta">{{item.atText}} · {{item.actorText}}</view>
+              </view>
+            </view>
+          </block>
+        </view>
+        <view wx:if="{{milestones.length > 8}}" class="ed-tl-more" bindtap="toggleTimeline">
+          {{showAllTimeline ? '收起' : '查看全部 ' + milestones.length + ' 条'}}
+        </view>
+        <view class="ed-note" wx:if="{{blindSummary.opened > 0 || blindSummary.flapping > 0}}">
+          已聚合：盲区开/合 {{blindSummary.opened}}/{{blindSummary.resolved}} 次、状态抖动 {{blindSummary.flapping}} 次（不逐条展示）。
+        </view>
+      </view>
+
+      <view class="ed-note ed-foot-note">
+        移动端为现场协同只读视图：可查看状态、任务、时间线与规则建议；研判结论与状态流转请在 PC 研判工作台操作。
+      </view>
+    </block>
     </view>
-  </block>
 </view>

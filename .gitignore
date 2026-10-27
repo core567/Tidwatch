@@ -50,6 +50,16 @@ desktop.ini
 .vscode/
 *.swp
 
-# 后端运行期上传文件
+# 后端运行期上传文件（保留目录占位）
 backend/data/uploads/*
 !backend/data/uploads/.gitkeep
+# 仅忽略运行期上传的图片，不全局忽略 *.png（避免误伤小程序/文档中的图片资源）
+backend/data/uploads/**/*.png
+backend/data/uploads/**/*.jpg
+backend/data/uploads/**/*.jpeg
+
+# 开发过程的临时渲染校验产物（不入库）
+handoff/_*/
+handoff/tidewatch-mobile-v2-prototype/*.png
+handoff/tidewatch-mobile-v2-prototype/*.jpg
+handoff/*.zip

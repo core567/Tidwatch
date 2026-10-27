@@ -7,21 +7,22 @@
     "pages/reach-detail/reach-detail",
     "pages/task-detail/task-detail",
     "pages/record/record",
-    "pages/profile/profile"
+    "pages/profile/profile",
+    "pages/login/login"
   ],
   "window": {
     "navigationBarBackgroundColor": "#0B2A4A",
     "navigationBarTextStyle": "white",
     "navigationBarTitleText": "TideWatch 巡检",
-    "backgroundColor": "#F2F5F9",
+    "backgroundColor": "#EDF1F6",
     "backgroundTextStyle": "dark",
     "enablePullDownRefresh": false
   },
   "tabBar": {
+    "custom": true,
     "color": "#8AA0B8",
     "selectedColor": "#1E6FE0",
     "backgroundColor": "#FFFFFF",
-    "borderStyle": "black",
     "list": [
       {
         "pagePath": "pages/tasks/tasks",
@@ -33,7 +34,7 @@
       },
       {
         "pagePath": "pages/reaches/reaches",
-        "text": "监测点"
+        "text": "监测"
       },
       {
         "pagePath": "pages/profile/profile",

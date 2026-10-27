@@ -1,4 +1,5 @@
 <view class="login">
+  <view class="login-back" bindtap="onBack">‹ 返回</view>
   <view class="login-brand">
     <view class="login-title">TideWatch</view>
     <view class="login-sub">智慧河流水环境监测 · 移动巡检端</view>
@@ -37,8 +38,8 @@
     >登录</button>
 
     <view class="login-note">
-      账号由 PC 端系统管理统一分配（管理员 / 分析人员 / 巡检人员）。
-      开发期后端未启动时登录将提示网络错误，属正常现象。
+      账号由 PC 端系统管理统一分配。演示环境可用 admin / Admin#2026 登录。
+      不登录也可返回，以「演示模式」浏览演示数据。
     </view>
   </view>
 </view>

@@ -1,37 +1,163 @@
-<view class="container">
-  <block wx:if="{{uiState === 'loading'}}">
-    <view class="tw-state">加载中…</view>
+<!-- pages/reach-detail/reach-detail.wxml V2 -->
+<view class="rd">
+
+  <block wx:if="{{pageState === 'loading'}}"><m-state type="loading" /></block>
+  <block wx:elif="{{pageState === 'error'}}">
+    <m-state type="error" title="断面加载失败" desc="{{errorMsg}}" bind:retry="load" />
   </block>
-  <block wx:elif="{{uiState === 'error'}}">
-    <view class="tw-state">
-      <view>监测点加载失败</view>
-      <view class="tw-muted err-msg">{{errorMsg}}</view>
-      <button class="tw-btn-primary retry-btn" bindtap="load">重试</button>
-    </view>
-  </block>
+
   <block wx:else>
-    <view class="tw-card">
-      <view class="tw-card-title">{{reach.name}}</view>
-      <view class="row"><text class="tw-muted">监测点 ID</text><text>{{reach.reachId}}</text></view>
-      <view class="row"><text class="tw-muted">拓扑角色</text><text>{{roleText}}</text></view>
-      <view class="row">
-        <text class="tw-muted">在线状态</text>
-        <text class="tw-badge {{badgeClass}}">{{statusText}}</text>
-      </view>
-      <view class="row"><text class="tw-muted">最后有效观测</text><text>{{lastText}}</text></view>
-      <view class="row"><text class="tw-muted">坐标状态</text><text>{{reach.coordinateStatus === 'VERIFIED' ? '已核实' : '逻辑点（示意拓扑）'}}</text></view>
-      <view class="row" wx:if="{{reach.officialCandidateName}}">
-        <text class="tw-muted">官方候选断面</text><text>{{reach.officialCandidateName}}（待核实）</text>
+    <!-- Hero -->
+    <view class="m-hero rd-hero">
+      <view class="m-hero-inner">
+        <view class="rd-hero-top">
+          <view class="rd-hero-id">
+            <view class="rd-letter">{{letter}}</view>
+            <view>
+              <view class="rd-name">{{reach.name}}</view>
+              <view class="rd-station">{{stationText}}</view>
+            </view>
+          </view>
+          <view class="rd-link {{linkBadgeClass}}">◉ {{linkBadgeText}}</view>
+        </view>
+        <view class="rd-hero-chips">
+          <text class="rd-chip">最后有效观测 {{seenText}}</text>
+          <text class="rd-chip">{{reach.coordinateStatus === 'VERIFIED' ? '坐标已核实' : '逻辑点 · LOGICAL'}}</text>
+        </view>
       </view>
     </view>
 
-    <view class="tw-card">
-      <view class="tw-card-title">最新指标</view>
-      <view class="tw-state placeholder">实时指标与历史趋势将在 M1 观测接口就绪后展示</view>
-    </view>
+    <view class="rd-sheet">
+      <!-- 最新三指标 -->
+      <view class="m-card rd-latest">
+        <view class="rd-latest-grid">
+          <view wx:for="{{metrics}}" wx:key="key" class="rd-latest-i">
+            <view class="rd-latest-v m-num">{{item.value}}<small wx:if="{{item.value !== '—'}}"> {{item.unit}}</small></view>
+            <view class="rd-latest-k">{{item.label}}</view>
+          </view>
+        </view>
+        <view class="rd-latest-foot">
+          <text class="m-src m-src-sim" wx:if="{{currentValue !== '—'}}">模拟数据</text>
+          <text class="muted">离线 ≠ 现场正常，仅表示链路停止推送</text>
+        </view>
+      </view>
 
-    <view class="tw-muted hint">
-      该点连续观测数据来自 MQTT 模拟链路并明确标注；官方月报仅提供月度水质类别背景，不展示为连续曲线。
+      <!-- 趋势 -->
+      <view class="m-card">
+        <!-- 图表头 -->
+        <view class="rd-chart-header">
+          <view>
+            <view class="rd-chart-title">连续观测趋势</view>
+            <view class="rd-chart-time m-muted" wx:if="{{currentAtText !== '—'}}">最新观测 {{currentAtText}}</view>
+          </view>
+          <view class="rd-chart-cur">
+            <text class="rd-chart-v m-num">{{currentValue}}</text>
+            <text class="rd-chart-unit" wx:if="{{currentValue !== '—'}}">{{currentUnit}}</text>
+            <text class="m-src m-src-sim">模拟</text>
+          </view>
+        </view>
+
+        <!-- 指标切换 -->
+        <view class="rd-tabs">
+          <view
+            wx:for="{{metricTabs}}"
+            wx:key="key"
+            class="rd-tab {{activeMetric === item.key ? 'active' : ''}}"
+            data-key="{{item.key}}"
+            bindtap="onMetricTap"
+          >{{item.label}} {{item.unit}}</view>
+        </view>
+        <!-- 时间窗口 -->
+        <scroll-view scroll-x class="rd-window-scroll" enhanced show-scrollbar="{{false}}">
+          <view class="rd-windows">
+            <view
+              wx:for="{{windowTabs}}"
+              wx:key="key"
+              class="rd-window {{activeWindow === item.key ? 'active' : ''}}"
+              data-key="{{item.key}}"
+              bindtap="onWindowTap"
+            >{{item.label}}</view>
+          </view>
+        </scroll-view>
+
+        <!-- 图 -->
+        <block wx:if="{{!chartEmpty}}">
+          <m-sparkline
+            points="{{sparkPoints}}"
+            alert-from="{{sparkAlertFrom}}"
+            height="{{220}}"
+            show-axis="{{true}}"
+            active="{{chartActive}}"
+          />
+          <view class="rd-chart-meta">
+            <text>{{chartPointText}}</text>
+            <text class="rd-chart-span">{{chartSpanText}}</text>
+          </view>
+          <view class="rd-legend">
+            <text class="rd-legend-i"><view class="rd-dot normal"></view>正常段</text>
+            <text class="rd-legend-i"><view class="rd-dot alert"></view>事件后段</text>
+            <text class="rd-legend-i"><view class="rd-gap"></view>缺测（断线）</text>
+          </view>
+          <view class="rd-anchor-note">{{anchorText}}</view>
+        </block>
+        <m-state
+          wx:elif="{{chartActive}}"
+          type="empty"
+          title="该时间窗口暂无观测"
+          desc="不插值、不补点；可切换更长时间范围"
+        />
+      </view>
+
+      <!-- 官方自动站快照 -->
+      <view class="rd-gov">
+        <view class="rd-gov-head">
+          <view>
+            <view class="rd-gov-title">国家地表水自动站 · 快照</view>
+            <view class="rd-gov-station" wx:if="{{official}}">{{official.stationName}} · 国家地表水自动监测实时数据发布系统</view>
+            <view class="rd-gov-station" wx:else>该断面暂无已缓存官方快照</view>
+          </view>
+          <view wx:if="{{official}}" class="rd-waterclass tone-{{officialTone}}">{{official.waterClass || '—'}}</view>
+        </view>
+        <block wx:if="{{official}}">
+          <view class="rd-gov-grid">
+            <view wx:for="{{officialItems}}" wx:key="def.key" class="rd-gov-i">
+              <view class="rd-gov-v m-num">{{item.text}}</view>
+              <view class="rd-gov-k">{{item.def.label}}</view>
+            </view>
+          </view>
+          <view class="rd-gov-foot">
+            <text class="rd-gov-state">{{officialStateText}}</text>
+            <text class="rd-gov-src">官方公开</text>
+          </view>
+          <view class="rd-gov-note">快照为月度/拉取时点数据，不作为连续实时曲线；教学参考区间不构成 GB3838 判定。</view>
+        </block>
+      </view>
+
+      <!-- 关联事件 -->
+      <view class="m-card" wx:if="{{relatedEvents.length > 0}}">
+        <view class="m-sec-title rd-sec">关联异常事件</view>
+        <view
+          wx:for="{{relatedEvents}}"
+          wx:key="eventId"
+          class="rd-ev"
+          data-id="{{item.eventId}}"
+          bindtap="openEvent"
+        >
+          <view class="rd-ev-main">
+            <view class="rd-ev-id">{{item.eventId}}</view>
+            <view class="rd-ev-title">{{item.title}}</view>
+          </view>
+          <view class="rd-ev-right">
+            <text class="m-badge m-badge-{{item.tone === 'offline' ? 'offline' : item.tone}}">{{item.statusText}}</text>
+            <text class="rd-ev-chev">›</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="rd-note">
+        数据口径：MQTT 模拟连续观测标注「模拟数据」；官方自动站为快照；人工复测在任务采集页提交，标注「人工测量」。
+        缺测时段断线不插值，数据时间与来源在每张卡上明示。
+      </view>
     </view>
   </block>
 </view>

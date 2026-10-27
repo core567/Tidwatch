@@ -37,4 +37,14 @@ Page({
       this.setData({ submitting: false });
     }
   },
+
+  /** 返回上一页（从「我的」进入登录但不登录时） */
+  onBack(): void {
+    const pages = getCurrentPages();
+    if (pages.length > 1) {
+      wx.navigateBack();
+    } else {
+      wx.switchTab({ url: '/pages/tasks/tasks' });
+    }
+  },
 });

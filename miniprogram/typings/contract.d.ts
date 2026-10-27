@@ -64,8 +64,12 @@ declare interface Reach {
   role: ReachRole;
   topoOrder: number;
   onlineStatus: ReachOnlineStatus;
-  lastObservedAt: string | null;
+  /** 后端字段为 lastSeenAt（最后有效观测的业务时间，迟到数据不回滚） */
+  lastSeenAt: string | null;
   coordinateStatus: 'LOGICAL' | 'VERIFIED';
+  longitude?: number | null;
+  latitude?: number | null;
+  coordinateSource?: string | null;
   officialCandidateName?: string | null; // 新沟 / 宗关 / 龙王庙（仅候选，未核实）
 }
 
@@ -78,8 +82,74 @@ declare interface Observation {
   observedAt: string;
   ingestedAt: string;
   sourceType: SourceType;
+  sourceName?: string | null;
+  sourceRef?: string | null;
   scenarioId: string | null;
   qualityFlag: QualityFlag;
+  ruleVersion: string;
+}
+
+/** 国家地表水自动监测实时数据发布系统快照（月度/拉取时点，非连续实时数据） */
+declare interface OfficialAutoRecord {
+  stationName: string;
+  reachId: string;
+  mappingStatus: 'VERIFIED' | 'UNVERIFIED' | string;
+  province?: string;
+  basin?: string;
+  observedAt: string;
+  fetchedAt: string;
+  waterClass: string | null;
+  waterTemp: number | null;
+  ph: number | null;
+  dissolvedOxygen: number | null;
+  conductivity: number | null;
+  turbidity: number | null;
+  codMn: number | null;
+  ammoniaN: number | null;
+  totalPhosphorus: number | null;
+  totalNitrogen: number | null;
+  chlorophyllA: number | null;
+  algaeDensity: number | null;
+  dataState: 'FRESH' | 'STALE' | string;
+  ageMinutes?: number | null;
+  sourceLabel?: string;
+  sourceUrl?: string;
+}
+
+declare interface OfficialAutoGroup {
+  reachId: string;
+  records: OfficialAutoRecord[];
+}
+
+/** 监测盲区（链路中断等导致的不可观察时段） */
+declare interface BlindSpot {
+  blindSpotId: string;
+  eventId: string | null;
+  reachId: string;
+  startAt: string;
+  endAt: string | null;
+  reason: string;
+  impact?: string | null;
+  resolution?: string | null;
+}
+
+/** 事件触发信息 */
+declare interface EventTrigger {
+  reachId: string;
+  metric: string;
+  magnitude: number;
+  direction: 'UP' | 'DOWN' | string;
+  ruleId: string;
+}
+
+declare interface EventTransition {
+  fromStatus: EventStatus | null;
+  toStatus: EventStatus;
+  trigger: 'RULE' | 'MANUAL' | 'SCENARIO' | string;
+  reason: string | null;
+  actor: string;
+  ruleVersion: string;
+  createdAt: string;
 }
 
 declare type TaskActionType =
@@ -91,7 +161,21 @@ declare type TaskActionType =
   | 'MANUAL_CHECK'
   | 'RE_EVALUATE_AFTER_RECOVERY';
 
-declare type TaskStatus = 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'CANCELLED';
+declare type TaskStatus =
+  | 'DRAFT'
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'IN_PROGRESS'
+  | 'SUBMITTED'
+  | 'APPROVED'
+  | 'CANCELLED';
+
+declare interface ReviewBrief {
+  decision: 'APPROVED' | 'REJECTED' | string;
+  comment: string;
+  reviewer: string;
+  reviewedAt: string;
+}
 
 declare interface InspectionTask {
   taskId: string;
@@ -105,19 +189,81 @@ declare interface InspectionTask {
   assignee: string | null;
   dueAt: string | null;
   reason: string;
+  resultNote: string | null;
+  resultConclusion: 'NORMAL' | 'ABNORMAL' | 'UNCERTAIN' | null;
+  attachmentIds: string[];
+  observedAt?: string | null;
+  completedAt: string | null;
   createdAt: string;
+  draft?: boolean;
+  latestVersion?: number;
+  latestReview?: ReviewBrief | null;
 }
 
 declare interface ActiveEvent {
   eventId: string; // TW-E01 风格
   title: string;
+  eventType?: string;
   status: EventStatus;
   priority: 'LOW' | 'NORMAL' | 'HIGH';
   scopeReachIds: string[];
+  trigger?: EventTrigger | null;
   firstSeenAt: string;
   updatedAt: string;
   version: number;
   ruleVersion: string;
+}
+
+/** GET /events/{id} 详情 */
+declare interface EventDetail extends ActiveEvent {
+  transitions: EventTransition[];
+  changeCount?: number;
+  allowedActions?: string[];
+}
+
+/** 统一业务时间线条目（business_events） */
+declare interface TimelineItem {
+  eventId: string;
+  bizType: 'EVENT' | 'TASK' | 'SUBMISSION' | 'REVIEW' | 'ASSESSMENT' | string;
+  actionType: string;
+  eventRef: string | null;
+  taskRef: string | null;
+  submissionRef: string | null;
+  reviewRef: string | null;
+  actor: string;
+  actorRole: string | null;
+  fromStatus: string | null;
+  toStatus: string | null;
+  description: string | null;
+  occurredAt: string;
+  createdAt: string;
+}
+
+/** 规则处置建议（非 AI） */
+declare interface EventRecommendation {
+  code: string;
+  category: string;
+  title: string;
+  reason: string;
+  priority: 'LOW' | 'NORMAL' | 'HIGH' | string;
+  reachIds?: string[];
+}
+
+/** 恢复评估因子 */
+declare interface RecoveryFactor {
+  code: string;
+  passed: boolean;
+  weight: 'hard' | 'soft' | string;
+  detail: string;
+}
+declare interface RecoveryAssessment {
+  result: 'RECOVERED_SUPPORTED' | 'NEEDS_OBSERVATION' | 'INSUFFICIENT_EVIDENCE' | string;
+  label: string;
+  evaluatedAt: string;
+  ruleVersion: string;
+  currentStatus: EventStatus;
+  anchor: { at: string; source: string; note: string } | null;
+  factors: RecoveryFactor[];
 }
 
 declare interface AttachmentMeta {

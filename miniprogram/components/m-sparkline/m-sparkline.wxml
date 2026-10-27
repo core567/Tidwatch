@@ -1,0 +1,33 @@
+<view class="m-spark-wrap" style="height: {{height}}px;">
+  <!--
+    canvas 2d 是原生组件：navigateTo 侧滑转场期间，即使透明也会以原生层浮到旧页面上。
+    因此在 active（页面转场结束且可见）之前用 wx:if 完全不挂载 canvas 节点，
+    只显示普通 WXML 骨架（骨架随页面一起做转场动画，不会穿透）。
+  -->
+  <canvas
+    wx:if="{{active}}"
+    type="2d"
+    id="mSparkCanvas"
+    class="m-spark-canvas {{chartReady ? 'is-ready' : ''}}"
+    style="width: 100%; height: {{height}}px;"
+    bindtouchstart="onTouch"
+    bindtouchend="onTouchEnd"
+  ></canvas>
+
+  <!-- 未绘制完成时的占位（普通 WXML 层） -->
+  <view wx:if="{{!chartReady}}" class="m-spark-loading">
+    <view class="m-spark-sk-bar"></view>
+    <view class="m-spark-sk-line"></view>
+    <view class="m-spark-sk-text">图表加载中…</view>
+  </view>
+
+  <view
+    wx:if="{{chartReady && hit}}"
+    class="m-spark-tip {{hit.x > 240 ? 'is-left' : ''}}"
+    style="left: {{hit.x}}px; top: {{hit.y}}px;"
+  >
+    <view class="m-spark-tip-v">{{hit.value}}</view>
+    <view class="m-spark-tip-t">{{hit.label}}</view>
+    <view wx:if="{{hit.source}}" class="m-spark-tip-s">{{hit.source}}</view>
+  </view>
+</view>

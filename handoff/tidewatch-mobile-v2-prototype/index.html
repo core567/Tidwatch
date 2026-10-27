@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TideWatch Mobile V2.0 · M0 高保真原型 v2</title>
+<style>
+/* ===== TideWatch Mobile V2.0 — M0 静态高保真原型（无外部依赖，占位数据均有标注） ===== */
+:root{
+  --navy-900:#071E38; --navy-800:#0B2A4A; --navy-700:#123E68; --navy-600:#1B5285; --navy-500:#2A6BA0;
+  --accent:#1E6FE0; --accent-deep:#1559B8; --cyan:#18B7C8; --cyan-bright:#3FD6E4;
+  --bg:#EDF1F6; --surface:#FFFFFF;
+  --text:#16263A; --text-2:#5D7186; --text-3:#8AA0B8; --border:#E2E8F0;
+  --ok:#0FA896; --ok-bg:rgba(18,165,148,.10);
+  --watch:#E8902A; --watch-bg:rgba(232,144,42,.10);
+  --danger:#D84C4C; --danger-bg:rgba(216,76,76,.08);
+  --offline:#94A3B8; --offline-bg:rgba(148,163,184,.16);
+  --grad-hero:linear-gradient(158deg,#08233F 0%,#0E355E 46%,#1B5285 100%);
+  --grad-accent:linear-gradient(135deg,#1E6FE0 0%,#18B7C8 100%);
+  --grad-dark-card:linear-gradient(140deg,#0E3155,#16467A);
+  --radius-lg:18px; --radius-md:13px; --radius-sm:9px;
+  --num: "SF Mono","Cascadia Mono",Consolas,"Roboto Mono",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+  background:#050F1C;color:var(--text);font-size:13.5px;line-height:1.5;
+  display:flex;justify-content:center;gap:26px;flex-wrap:wrap;padding:24px 14px 50px;
+}
+.prototype-note{
+  position:fixed;left:12px;top:10px;z-index:99;font-size:12px;color:#BFD4EA;
+  background:rgba(7,30,56,.9);border:1px solid #2A4B70;border-radius:8px;padding:6px 12px;
+}
+.phone{width:390px;height:844px;background:var(--bg);border-radius:30px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 8px #0C2238,0 0 0 9px #23436A;
+  position:relative;flex-shrink:0}
+.screen{display:none;height:844px;overflow-y:scroll;padding-bottom:92px;scrollbar-width:none;background:var(--bg)}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{display:block}
+
+/* 状态栏 / 导航 */
+.statusbar{height:34px;background:transparent;color:#fff;display:flex;align-items:center;
+  justify-content:space-between;padding:0 22px;font-size:12.5px;font-weight:700;position:absolute;top:0;left:0;right:0;z-index:9}
+.statusbar .back{font-weight:500;font-size:14px}
+.statusbar .sb-right{display:flex;gap:6px;align-items:center;font-size:10.5px;font-weight:600}
+
+/* Hero 通用 */
+.hero{position:relative;color:#fff;padding:42px 18px 64px;background:var(--grad-hero);overflow:hidden}
+.hero::before{ /* HUD 网格 */
+  content:"";position:absolute;inset:0;opacity:.5;
+  background-image:linear-gradient(rgba(120,190,255,.07) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(120,190,255,.07) 1px,transparent 1px);
+  background-size:24px 24px;mask-image:linear-gradient(180deg,#000 0%,transparent 92%);
+}
+.hero::after{ /* 青蓝辉光 */
+  content:"";position:absolute;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle,rgba(24,183,200,.28),transparent 65%);
+  right:-90px;top:-110px;
+}
+.hero>*{position:relative;z-index:2}
+.hero h1{font-size:20px;font-weight:800;letter-spacing:.5px}
+.hero .sub{font-size:11.5px;color:#A9C4DE;margin-top:4px;line-height:1.55}
+.hero-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ws-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;color:#D5E7F8;
+  background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);
+  padding:5px 11px;border-radius:999px;white-space:nowrap}
+.ws-pill i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(18,165,148,.25)}
+.ws-pill.off i{background:var(--watch);box-shadow:0 0 0 3px rgba(232,144,42,.25)}
+.eyebrow{font-size:10px;letter-spacing:2.5px;color:#7FB2E0;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+
+.sheet{position:relative;z-index:3;margin-top:-40px;padding:0 14px}
+
+/* 卡片基础 */
+.card{background:#fff;border-radius:var(--radius-lg);padding:15px 16px;
+  box-shadow:0 3px 14px rgba(10,38,70,.07);margin-bottom:12px;border:1px solid rgba(226,232,240,.7)}
+.sec-head{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 11px}
+.sec-title{font-size:14.5px;font-weight:800;color:var(--navy-800);display:flex;align-items:center;gap:8px}
+.sec-title::before{content:"";width:4px;height:15px;border-radius:2px;background:var(--grad-accent)}
+.sec-more{font-size:11px;color:var(--text-3)}
+.muted{color:var(--text-2);font-size:11.5px}.tiny{font-size:10.5px;color:var(--text-3)}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+
+/* 徽标 */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;
+  font-size:10.5px;font-weight:700;line-height:1.75;white-space:nowrap}
+.b-ok{background:var(--ok-bg);color:var(--ok)}
+.b-watch{background:var(--watch-bg);color:var(--watch)}
+.b-danger{background:var(--danger-bg);color:var(--danger)}
+.b-off{background:var(--offline-bg);color:#5B7088}
+.b-accent{background:rgba(30,111,224,.10);color:var(--accent)}
+.b-cyan{background:var(--cyan-soft,rgba(24,183,200,.12));color:#0E8C99}
+.b-outline{background:#fff;border:1px solid var(--border);color:var(--text-2)}
+
+/* chips */
+.chip{font-size:10.5px;padding:3px 9px;border-radius:7px;background:#F1F5F9;color:var(--text-2);font-weight:600}
+.chip.accent{background:rgba(30,111,224,.08);color:var(--accent)}
+.chip.event{background:rgba(216,76,76,.07);color:var(--danger)}
+.src{font-size:9.5px;padding:1px 7px;border-radius:5px;border:1px solid var(--border);color:var(--text-3);font-weight:600}
+.src.sim{border-color:#C9D8E6;color:#6E85A0}
+.src.gov{border-color:#BBD5F0;color:#1559B8;background:#F2F8FF}
+.src.man{border-color:#A7E4EA;color:#0E8C99;background:#EFFDFE}
+
+/* ===== 工作台 Hero HUD：进度环 + 2×2 指标 ===== */
+.hud-panel{margin-top:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:17px;padding:14px;display:flex;align-items:center;gap:16px;backdrop-filter:blur(6px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.ring{position:relative;width:74px;height:74px;flex-shrink:0}
+.ring svg{transform:rotate(-90deg)}
+.ring .rc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .rc b{font-size:19px;font-weight:800;line-height:1}
+.ring .rc span{font-size:8.5px;color:#A9C4DE;margin-top:2px;letter-spacing:1px}
+.hud-metrics{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+.hm{display:flex;flex-direction:column}
+.hm .v{font-size:21px;font-weight:800;line-height:1.1}
+.hm .v small{font-size:10px;color:#A9C4DE;font-weight:600;margin-left:3px}
+.hm .k{font-size:10px;color:#A9C4DE;margin-top:2px;letter-spacing:.5px}
+.hm.danger .v{color:#FF8E8E}.hm.watch .v{color:#FFC36E}
+.hm.cyan .v{color:#6FE3F0}.hm.ok .v{color:#7FE0D2}
+.hud-foot{display:flex;justify-content:space-between;margin-top:11px;font-size:10px;color:#8FB4D8}
+.hud-foot .live{display:flex;align-items:center;gap:5px}
+.hud-foot .live i{width:5px;height:5px;border-radius:50%;background:var(--cyan-bright);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.25}}
+
+/* 高优横卡 */
+.hot-scroll{display:flex;overflow:hidden;margin:0 -14px 14px;padding:2px 14px 6px;gap:10px}
+.hot-card{border-radius:var(--radius-lg);padding:14px 15px;color:#fff;width:228px;flex-shrink:0;
+  position:relative;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;min-height:108px}
+.hot-card.blue{background:linear-gradient(135deg,#103964,#1E6FE0)}
+.hot-card.amber{background:linear-gradient(135deg,#87530F,#E8902A)}
+.hot-card::after{content:"";position:absolute;right:-30px;bottom:-34px;width:110px;height:110px;border-radius:50%;
+  background:radial-gradient(circle,rgba(24,183,200,.35),transparent 68%)}
+.hot-card .ht{font-size:10px;opacity:.9;display:flex;justify-content:space-between;align-items:center}
+.hot-card .hn{font-size:14px;font-weight:700;margin:9px 0 5px;line-height:1.45}
+.hot-card .hm{font-size:10.5px;opacity:.86;display:flex;gap:6px;align-items:center;margin-top:auto}
+.pulse-dot{position:relative;width:8px;height:8px;border-radius:50%;background:#FFD27D}
+.pulse-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1.5px solid #FFD27D;animation:ping 1.6s infinite}
+@keyframes ping{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.7);opacity:0}}
+
+/* pills */
+.pills{display:flex;gap:7px;overflow:hidden;margin-bottom:12px}
+.pill{padding:7px 15px;border-radius:999px;background:#fff;border:1px solid var(--border);
+  font-size:12.5px;color:var(--text-2);cursor:pointer;white-space:nowrap;font-weight:600}
+.pill.active{background:var(--navy-800);border-color:var(--navy-800);color:#fff;
+  box-shadow:0 5px 12px rgba(11,42,74,.25)}
+
+/* 任务卡 */
+.task-card{position:relative;background:#fff;border-radius:var(--radius-lg);padding:14px 15px 13px 18px;
+  box-shadow:0 3px 14px rgba(10,38,70,.07);margin-bottom:11px;border:1px solid rgba(226,232,240,.7);
+  display:flex;gap:12px;cursor:pointer}
+.task-card::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 3px 3px 0;
+  background:var(--accent)}
+.task-card.urgent::before{background:var(--danger)}
+.task-card.reject::before{background:var(--watch)}
+.task-body{flex:1;min-width:0}
+.task-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.task-name{font-size:14px;font-weight:700;color:var(--navy-800);line-height:1.4}
+.task-meta{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0 7px}
+.task-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.due{font-size:11px;color:var(--text-3);display:flex;align-items:center;gap:4px}
+.due.red{color:var(--danger);font-weight:700}
+.chev{color:var(--text-3);font-size:18px;line-height:1}
+
+/* 动态时间线 */
+.tl{position:relative;margin-left:5px;padding-left:17px}
+.tl::before{content:"";position:absolute;left:4px;top:7px;bottom:7px;width:2px;background:#E3EAF2}
+.tl-i{position:relative;padding:7px 0}
+.tl-i::before{content:"";position:absolute;left:-17px;top:11px;width:9px;height:9px;border-radius:50%;
+  background:#fff;border:2.5px solid var(--accent)}
+.tl-i.red::before{border-color:var(--danger)}
+.tl-i.ok::before{border-color:var(--ok)}
+.tl-t{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--text)}
+.tl-t .tt{font-family:var(--num);font-size:11px;color:var(--text-3);font-weight:600}
+.tl-d{font-size:11px;color:var(--text-2);margin-top:1px}
+
+/* 快捷入口 */
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.quick{display:flex;align-items:center;gap:10px;background:#fff;border-radius:var(--radius-md);
+  padding:12px 13px;border:1px solid rgba(226,232,240,.7);cursor:pointer}
+.quick .qi{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.qi.q1{background:rgba(30,111,224,.10)} .qi.q2{background:rgba(24,183,200,.12)}
+.quick .qt{font-size:12.5px;font-weight:700;color:var(--navy-800)}
+.quick .qd{font-size:10px;color:var(--text-3);margin-top:1px}
+
+/* ===== 监测页：Hero 河流拓扑 ===== */
+.river-wrap{margin-top:14px;border-radius:16px;background:rgba(4,22,42,.42);
+  border:1px solid rgba(127,178,224,.22);padding:10px 12px 8px}
+.river-wrap .rw-label{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:1.5px;color:#7FB2E0;margin-bottom:2px}
+.river-svg{width:100%;display:block}
+.flow-anim{stroke-dasharray:7 9;animation:flow 1.1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-16}}
+.node-pulse{transform-origin:center;animation:nodepulse 2s infinite}
+@keyframes nodepulse{0%,100%{opacity:.95}50%{opacity:.35}}
+
+/* 断面卡 */
+.reach-card{background:#fff;border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden;
+  box-shadow:0 3px 14px rgba(10,38,70,.07);border:1px solid rgba(226,232,240,.7)}
+.reach-head{display:flex;justify-content:space-between;align-items:center;padding:13px 15px 8px}
+.reach-id{display:flex;align-items:center;gap:10px}
+.reach-letter{width:38px;height:38px;border-radius:12px;background:var(--navy-800);color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;line-height:1;
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.18),0 4px 9px rgba(11,42,74,.25)}
+.reach-letter span{font-size:7.5px;font-weight:600;opacity:.75;letter-spacing:1px;margin-top:2px}
+.reach-letter.grad{background:var(--grad-accent)}
+.reach-name{font-size:14.5px;font-weight:800;color:var(--navy-800)}
+.reach-sub{font-size:10px;color:var(--text-3);margin-top:2px}
+.link-pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;
+  padding:4px 10px;border-radius:999px;background:var(--watch-bg);color:var(--watch)}
+.metric-row{display:grid;grid-template-columns:repeat(3,1fr);padding:4px 10px 11px}
+.metric-cell{text-align:center;padding:4px 2px;position:relative}
+.metric-cell+.metric-cell::before{content:"";position:absolute;left:0;top:14%;bottom:14%;width:1px;background:var(--border)}
+.metric-cell .mv{font-size:18.5px;font-weight:800;color:var(--navy-800);font-family:var(--num)}
+.metric-cell .mv small{font-size:10px;font-weight:700;color:var(--text-2);margin-left:2px;font-family:inherit}
+.metric-cell .mk{font-size:10.5px;color:var(--text-2);margin-top:1px;font-weight:600}
+.metric-cell .mt{font-size:9.5px;color:var(--text-3);margin-top:1px}
+.spark-thumb{width:74px;height:20px;margin:3px auto 0}
+.reach-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 15px;
+  background:#F7FAFD;border-top:1px solid #ECF1F6;font-size:11px;color:var(--text-2)}
+.reach-card.expanded{box-shadow:0 12px 34px rgba(30,111,224,.16);border:1px solid rgba(30,111,224,.28)}
+
+.chart-tabs{display:flex;gap:6px;margin:2px 0 11px}
+.chart-tab{flex:1;text-align:center;padding:8px 0;border-radius:9px;font-size:11.5px;color:var(--text-2);
+  background:#F2F5F9;border:1px solid transparent;cursor:pointer;font-weight:600}
+.chart-tab.active{background:#fff;border-color:rgba(30,111,224,.35);color:var(--accent);
+  box-shadow:0 2px 8px rgba(11,42,74,.08)}
+.chart-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.chart-meta .v{font-size:27px;font-weight:800;color:var(--navy-800);font-family:var(--num)}
+.chart-meta .v small{font-size:11.5px;color:var(--text-2);font-weight:700}
+.spark{width:100%;height:118px;display:block}
+.legend{display:flex;gap:12px;margin-top:5px;font-size:10px;color:var(--text-2);align-items:center}
+.legend i{display:inline-block;width:13px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.gap-tag{font-size:9.5px;color:var(--watch);background:var(--watch-bg);border-radius:5px;padding:2px 7px;font-weight:700}
+
+/* 官方快照深色面板 */
+.gov-panel{margin:10px 0 4px;border-radius:var(--radius-md);padding:14px 15px;color:#DCEBFA;
+  background:linear-gradient(150deg,#0C2B4D,#143E6B);position:relative;overflow:hidden}
+.gov-panel::before{content:"";position:absolute;inset:0;opacity:.4;
+  background-image:linear-gradient(rgba(127,178,224,.08) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(127,178,224,.08) 1px,transparent 1px);background-size:20px 20px}
+.gov-panel>*{position:relative}
+.gov-head{display:flex;justify-content:space-between;align-items:flex-start}
+.gov-title{font-size:12.5px;font-weight:800;color:#fff;display:flex;align-items:center;gap:7px}
+.gov-station{font-size:10px;color:#8FB4D8;margin-top:2px}
+.water-class{font-size:30px;font-weight:800;color:#5BE0C8;line-height:1;font-family:var(--num)}
+.water-class small{display:block;font-size:9px;color:#8FB4D8;font-weight:600;text-align:center;margin-top:2px}
+.gov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.gov-item{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:8px 10px}
+.gov-item .v{font-size:14.5px;font-weight:800;color:#fff;font-family:var(--num)}
+.gov-item .v small{font-size:9px;color:#9DC0E2;font-weight:600}
+.gov-item .k{font-size:9.5px;color:#9DC0E2;margin-top:1px}
+.gov-foot{display:flex;justify-content:space-between;align-items:center;margin-top:11px;font-size:10px;color:#A9C8E4}
+.stale{color:#FFC36E;font-weight:700}
+
+/* 新鲜度条 */
+.fresh{display:flex;gap:8px;margin:2px 0 12px}
+.fresh-i{flex:1;background:#fff;border-radius:11px;padding:9px 11px;border:1px solid rgba(226,232,240,.7);
+  display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--text-2);font-weight:600}
+.fresh-i i{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.fresh-i i.g{background:var(--ok)} .fresh-i i.o{background:var(--watch)} .fresh-i i.r{background:var(--danger)}
+
+/* ===== 任务详情：状态机步骤条 ===== */
+.stepper-card{margin-bottom:12px}
+.stepper{display:flex;align-items:flex-start;justify-content:space-between;padding:6px 0 2px}
+.stp{flex:1;text-align:center;position:relative;z-index:2}
+.stp .dot{width:24px;height:24px;border-radius:50%;background:#E6ECF3;color:#94A3B8;font-size:10px;
+  display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:800;border:2px solid #E6ECF3}
+.stp .lb{font-size:9px;color:var(--text-3);margin-top:5px;line-height:1.3;font-weight:600}
+.stp.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.stp.done .lb{color:var(--ok)}
+.stp.cur .dot{background:#fff;border-color:var(--danger);color:var(--danger);
+  box-shadow:0 0 0 4px rgba(216,76,76,.13)}
+.stp.cur .lb{color:var(--danger);font-weight:800}
+.stp::before{content:"";position:absolute;top:12px;left:-50%;width:100%;height:2.5px;background:#E6ECF3;z-index:1}
+.stp:first-child::before{display:none}
+.stp.done::before{background:var(--ok)}
+.detail-hero h2{font-size:18px;font-weight:800;margin:11px 0 10px;line-height:1.45}
+.dh-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dh-chip{font-size:10.5px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.11);
+  border:1px solid rgba(255,255,255,.17);color:#DCEBFA;font-weight:600}
+.reject-banner{background:var(--danger-bg);border:1px solid rgba(216,76,76,.32);
+  border-left:4px solid var(--danger);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px}
+.reject-banner .rt{font-size:13px;font-weight:800;color:var(--danger);display:flex;gap:6px;align-items:center}
+.reject-banner .rc{font-size:12.5px;margin-top:6px;line-height:1.65;color:#4A3535}
+.reject-banner .rf{display:flex;justify-content:space-between;margin-top:9px;font-size:10.5px;color:var(--text-2)}
+.kv-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:9px 0;font-size:12.5px;
+  border-bottom:1px dashed #EDF1F6}
+.kv-row:last-child{border-bottom:0}
+.kv-row .k{color:var(--text-2);flex-shrink:0}
+.kv-row .v{font-weight:600;color:var(--text);text-align:right}
+.link-blue{color:var(--accent);font-weight:700;cursor:pointer}
+.req-list{margin-top:4px}
+.req-i{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:7px 0;border-bottom:1px dashed #EDF1F6}
+.req-i:last-child{border-bottom:0}
+.req-i .ck{width:18px;height:18px;border-radius:6px;background:var(--ok-bg);color:var(--ok);font-size:11px;
+  display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0}
+.req-i.no .ck{background:var(--danger-bg);color:var(--danger)}
+.sub-item{border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 13px;margin-top:10px}
+.sub-item:first-of-type{margin-top:4px}
+.sub-head{display:flex;justify-content:space-between;align-items:center}
+.sub-ver{font-size:13px;font-weight:800;color:var(--navy-800)}
+.sub-line{display:flex;justify-content:space-between;font-size:12px;margin-top:7px;color:var(--text)}
+.sub-note{margin-top:9px;font-size:12px;background:#F6F9FC;border-radius:8px;padding:9px 11px;line-height:1.6}
+.review-box{margin-top:10px;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.6}
+.review-box.danger{background:var(--danger-bg)} .review-box.ok{background:var(--ok-bg)}
+.review-box .rh{display:flex;justify-content:space-between;font-weight:800;font-size:11.5px}
+.review-box.danger .rh{color:var(--danger)} .review-box.ok .rh{color:var(--ok)}
+.photo-row{display:flex;gap:9px;margin-top:10px}
+.photo-thumb{width:60px;height:60px;border-radius:10px;
+  background:linear-gradient(135deg,#A8C4DF,#6E93B8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px}
+
+/* ===== 现场采集 ===== */
+.req-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.req-chip{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;
+  background:rgba(63,214,228,.14);color:#9FE9F0;border:1px dashed rgba(63,214,228,.55)}
+.measure-row{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px dashed #EDF1F6}
+.measure-row:last-of-type{border-bottom:0}
+.m-icon{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+  background:rgba(24,183,200,.12);flex-shrink:0}
+.m-main{flex:1;min-width:0}
+.m-name{font-size:13px;font-weight:800;color:var(--navy-800)}
+.m-name .manual-tag{font-size:9px;font-weight:700;color:#0E8C99;background:rgba(24,183,200,.12);
+  border-radius:5px;padding:1px 6px;margin-left:6px}
+.m-name .req-tag{font-size:9px;font-weight:700;color:var(--accent);background:rgba(30,111,224,.1);
+  border-radius:5px;padding:1px 6px;margin-left:5px}
+.m-sub{font-size:10px;color:var(--text-3);margin-top:2px;line-height:1.45}
+.m-input{width:84px;border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:16px;
+  font-weight:800;text-align:right;color:var(--navy-800);background:#F7FAFD;font-family:var(--num)}
+.m-input:focus{outline:2px solid rgba(30,111,224,.3);background:#fff}
+.m-unit{font-size:11px;color:var(--text-2);width:24px;font-weight:700}
+.stepper-ui{display:flex;align-items:center;gap:8px}
+.stepper-ui button{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:#fff;
+  font-size:17px;color:var(--accent);font-weight:800;cursor:pointer;line-height:1}
+.stepper-ui .sv{width:16px;text-align:center;font-weight:800;font-size:17px;color:var(--navy-800);font-family:var(--num)}
+.unmeasured{margin-top:11px;background:#F8FAFC;border-radius:10px;padding:10px 12px}
+.ut{font-size:11px;color:var(--text-2);margin-bottom:8px;font-weight:600}
+.reason-pills{display:flex;gap:6px;flex-wrap:wrap}
+.reason-pill{font-size:10.5px;padding:4px 11px;border-radius:999px;background:#fff;border:1px solid var(--border);
+  color:var(--text-2);cursor:pointer;font-weight:600}
+.reason-pill.active{border-color:var(--watch);color:var(--watch);background:var(--watch-bg)}
+.textarea{width:100%;min-height:88px;border:1px solid var(--border);border-radius:11px;padding:11px;
+  font-size:13px;font-family:inherit;background:#F7FAFD;margin-top:8px;line-height:1.65}
+.voice-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--accent);
+  background:rgba(30,111,224,.08);border:1px solid rgba(30,111,224,.32);border-radius:999px;padding:6px 13px;cursor:pointer}
+.char-count{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.photo-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.pg-item{width:64px;height:64px;border-radius:10px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#9DBBD6,#6E93B8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.pg-item .ph-status{position:absolute;left:0;right:0;bottom:0;font-size:8.5px;text-align:center;
+  background:rgba(7,30,56,.75);padding:2px 0;font-weight:600}
+.pg-item.fail{background:#EEDCDE;border:1px solid var(--danger)}
+.pg-retry{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;color:var(--danger);font-size:9.5px;font-weight:800;cursor:pointer;background:rgba(255,255,255,.94)}
+.pg-add{width:64px;height:64px;border-radius:10px;border:1.5px dashed #B9CBDD;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--text-3);
+  font-size:9.5px;cursor:pointer;background:#FAFCFE;font-weight:600}
+.pg-add .plus{font-size:21px;line-height:1}
+.radio-card{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1.5px solid var(--border);
+  border-radius:11px;margin-bottom:8px;cursor:pointer;background:#FAFCFE}
+.radio-card.checked{border-color:var(--accent);background:rgba(30,111,224,.04);box-shadow:0 2px 8px rgba(30,111,224,.1)}
+.radio-dot{width:18px;height:18px;border-radius:50%;border:2px solid #C3D0DE;margin-top:1px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center}
+.radio-card.checked .radio-dot{border-color:var(--accent)}
+.radio-card.checked .radio-dot::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--accent)}
+.rc-title{font-size:12.5px;font-weight:700;color:var(--navy-800)}
+.rc-desc{font-size:10.5px;color:var(--text-3);margin-top:1px;line-height:1.45}
+.check-list{font-size:11.5px;color:var(--text-2)}
+.check-list li{list-style:none;display:flex;gap:8px;padding:3px 0}
+.check-list li::before{content:"✓";color:var(--ok);font-weight:900}
+.check-list li.no::before{content:"!";color:var(--watch)}
+
+/* 固定底栏 */
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:74px;background:#fff;
+  border-top:1px solid var(--border);display:flex;z-index:30;
+  padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 18px rgba(11,42,74,.06)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font-size:10px;color:var(--text-3);cursor:pointer;position:relative}
+.tab svg{width:22px;height:22px;stroke-width:1.9}
+.tab.active{color:var(--accent);font-weight:800}
+.tab .tdot{position:absolute;top:9px;margin-left:18px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;
+  background:var(--danger);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.actionbar{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--border);
+  padding:11px 14px calc(11px + 14px);display:flex;gap:10px;z-index:30;box-shadow:0 -4px 18px rgba(11,42,74,.07)}
+.btn{flex:1;border:0;border-radius:12px;font-size:14.5px;font-weight:800;padding:13px 0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-primary{background:var(--grad-accent);color:#fff;box-shadow:0 8px 18px rgba(30,111,224,.32)}
+.btn[disabled]{background:#EDF1F6;color:var(--text-3);box-shadow:none}
+
+/* overview 模式（整页导出用） */
+body.overview{padding:20px;gap:26px;background:#050F1C}
+body.overview .phone{height:auto}
+body.overview .screen{display:block;height:auto;overflow:visible;padding-bottom:26px}
+body.overview .tabbar,body.overview .actionbar{display:none}
+body.overview .prototype-note{display:none}
+</style>
+</head>
+<body>
+<div class="prototype-note">M0 原型 v2 · 所有数值均为 <b style="color:#FFB27D">占位数据</b>，非真实监测值 · 字段对齐真实契约</div>
+
+<div class="phone">
+
+<!-- ============ ① 巡检工作台 ============ -->
+<section class="screen active" id="s-tasks">
+  <div class="statusbar"><span>9:41</span><span class="sb-right">●●● 5G ▮</span></div>
+  <div class="hero">
+    <div class="hero-row">
+      <div>
+        <div class="eyebrow">INSPECTION WORKBENCH</div>
+        <h1>下午好，巡检员</h1>
+        <div class="sub">2026-10-27 周二 · 汉江武汉段智慧巡防</div>
+      </div>
+      <span class="ws-pill"><i></i>实时已连接</span>
+    </div>
+
+    <!-- HUD 数据面板：进度环 + 四指标 -->
+    <div class="hud-panel">
+      <div class="ring">
+        <svg width="74" height="74" viewBox="0 0 74 74">
+          <circle cx="37" cy="37" r="31" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="7"/>
+          <circle cx="37" cy="37" r="31" fill="none" stroke="url(#rg)" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="194.8" stroke-dashoffset="64"/>
+          <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#3FD6E4"/><stop offset="1" stop-color="#1E6FE0"/>
+          </linearGradient></defs>
+        </svg>
+        <div class="rc"><b class="num">67%</b><span>今日进度</span></div>
+      </div>
+      <div class="hud-metrics">
+        <div class="hm danger"><div class="v num">1<small>项</small></div><div class="k">待接收</div></div>
+        <div class="hm watch"><div class="v num">2<small>项</small></div><div class="k">进行中</div></div>
+        <div class="hm cyan"><div class="v num">0<small>项</small></div><div class="k">待复核</div></div>
+        <div class="hm ok"><div class="v num">3<small>项</small></div><div class="k">已完成</div></div>
+      </div>
+    </div>
+    <div class="hud-foot">
+      <span class="live"><i></i>WebSocket 实时同步 · 25s 心跳</span>
+      <span>共 6 项任务</span>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <div class="sec-head"><div class="sec-title">高优先级</div><div class="sec-more">HIGH · 未完成 2</div></div>
+    <div class="hot-scroll">
+      <div class="hot-card blue">
+        <div class="ht"><span>待接收 · PENDING</span><span class="pulse-dot"></span></div>
+        <div class="hn">现场核查 reach-c 断面水质异常传播</div>
+        <div class="hm">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2v6m0 8v6M2 12h6m8 0h6"/></svg>
+          下游 C · 现场人工核查 · TW-002
+        </div>
+      </div>
+      <div class="hot-card amber">
+        <div class="ht"><span>需重提 · IN_PROGRESS</span><span>↺</span></div>
+        <div class="hn">补充 reach-b 复测照片与浊度读数</div>
+        <div class="hm">中游 B · 持续观察 · TW-002 · 退回 22 分钟前</div>
+      </div>
+    </div>
+
+    <div class="sec-head"><div class="sec-title">最近动态</div><div class="sec-more">实时推送</div></div>
+    <div class="card">
+      <div class="tl">
+        <div class="tl-i"><div class="tl-t">PC 端退回你的提交 v1<span class="tt">09:14</span></div>
+          <div class="tl-d">复核人 u-admin：照片不清晰、浊度未测量</div></div>
+        <div class="tl-i"><div class="tl-t">你提交了中游 B 现场记录<span class="tt">08:52</span></div>
+          <div class="tl-d">结论：无法确认 · 照片 2 张 · 复测 1 项</div></div>
+        <div class="tl-i ok"><div class="tl-t">系统派发新任务至下游 C<span class="tt">昨日 18:20</span></div>
+          <div class="tl-d">TW-002 范围扩展，关联 HIGH 任务</div></div>
+      </div>
+    </div>
+
+    <div class="pills" id="task-pills">
+      <div class="pill active" data-f="todo">待处理 1</div>
+      <div class="pill" data-f="doing">进行中 2</div>
+      <div class="pill" data-f="review">待复核 0</div>
+      <div class="pill" data-f="done">已完成 3</div>
+      <div class="pill" data-f="all">全部 6</div>
+    </div>
+
+    <div class="task-card urgent">
+      <div class="task-body">
+        <div class="task-top">
+          <div class="task-name">现场核查 reach-c 断面水质异常传播</div>
+          <span class="badge b-danger">待接收</span>
+        </div>
+        <div class="task-meta">
+          <span class="chip accent">下游 C · 余家湖方向</span><span class="chip">现场人工核查</span><span class="chip event">TW-002</span>
+        </div>
+        <div class="task-foot">
+          <span class="due red">⏰ 截止 10-28 14:00</span>
+          <span style="display:flex;gap:8px;align-items:center"><span class="badge b-outline">HIGH</span><span class="chev">›</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="task-card reject">
+      <div class="task-body">
+        <div class="task-top">
+          <div class="task-name">中游 B 断面持续观察与人工复测</div>
+          <span class="badge b-danger">需重提</span>
+        </div>
+        <div class="task-meta">
+          <span class="chip accent">中游 B</span><span class="chip">持续观察</span><span class="chip event">TW-002</span>
+        </div>
+        <div class="task-foot">
+          <span class="due">↺ 退回：照片不清晰，请补近景与浊度 · 22 分钟前</span><span class="chev">›</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-head" style="margin-top:14px"><div class="sec-title">快捷入口</div></div>
+    <div class="quick-grid">
+      <div class="quick" data-tab="s-events">
+        <div class="qi q1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E6FE0" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg></div>
+        <div><div class="qt">异常事件</div><div class="qd">活动中 1 · TW-002</div></div>
+      </div>
+      <div class="quick" data-tab="s-reaches">
+        <div class="qi q2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C99" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></div>
+        <div><div class="qt">水环境监测</div><div class="qd">3 断面 · 最后观测 2 天前</div></div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <div class="tab active" data-tab="s-tasks">
+      <span class="tdot">1</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      任务</div>
+    <div class="tab" data-tab="s-events">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>事件</div>
+    <div class="tab" data-tab="s-reaches">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12c4-3 6 3 9 0s5-3 9 0M3 18c4-3 6 3 9 0s5-3 9 0M3 6c4-3 6 3 9 0s5-3 9 0"/></svg>监测</div>
+    <div class="tab" data-tab="s-me">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>我的</div>
+  </nav>
+</section>
+
+<!-- ============ ② 水环境监测 ============ -->
+<section class="screen" id="s-reaches">
+  <div class="statusbar"><span>9:41</span><span class="sb-right">●●● 5G ▮</span></div>
+  <div class="hero">
+    <div class="hero-row">
+      <div>
+        <div class="eyebrow">WATER ENVIRONMENT</div>
+        <h1>水环境监测</h1>
+        <div class="sub">连续观测来自 MQTT 模拟链路（明确标注）· 官方站为快照数据</div>
+      </div>
+      <span class="ws-pill off"><i></i>链路中断 3</span>
+    </div>
+
+    <!-- 河流拓扑：呼应 PC 3D 河流走廊 -->
+    <div class="river-wrap">
+      <div class="rw-label"><span>HAN RIVER · WUHAN REACH</span><span>FLOW →</span></div>
+      <svg class="river-svg" viewBox="0 0 354 150">
+        <defs>
+          <linearGradient id="riverg" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2A6BA0"/><stop offset=".5" stop-color="#1E6FE0"/><stop offset="1" stop-color="#18B7C8"/>
+          </linearGradient>
+        </defs>
+        <path d="M-10,40 C40,8 70,118 130,96 C190,74 200,26 258,40 C310,52 330,100 366,74"
+          fill="none" stroke="rgba(127,178,224,.22)" stroke-width="22" stroke-linecap="round"/>
+        <path class="flow-anim" d="M-10,40 C40,8 70,118 130,96 C190,74 200,26 258,40 C310,52 330,100 366,74"
+          fill="none" stroke="url(#riverg)" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- 节点 A -->
+        <g><circle cx="38" cy="58" r="13" fill="#0B2A4A" stroke="#7FE0D2" stroke-width="2.5"/>
+          <text x="38" y="62" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">A</text>
+          <text x="38" y="88" text-anchor="middle" fill="#BCD7F0" font-size="9.5" font-weight="700">上游 A</text></g>
+        <!-- 节点 B：异常脉冲 -->
+        <circle class="node-pulse" cx="176" cy="86" r="20" fill="none" stroke="#FF8E8E" stroke-width="2"/>
+        <circle cx="176" cy="86" r="13" fill="#7A1F1F" stroke="#FF8E8E" stroke-width="2.5"/>
+        <text x="176" y="90" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">B</text>
+        <text x="176" y="116" text-anchor="middle" fill="#FFB9B9" font-size="9.5" font-weight="700">中游 B · 异常</text>
+        <!-- 盲区标记 -->
+        <g transform="translate(238,44)"><circle r="9" fill="rgba(216,76,76,.18)" stroke="#FF8E8E" stroke-width="1.4" stroke-dasharray="3 2"/>
+          <path d="M-4,-1.5 q4,-4 8 0M-4,1.5 q4,4 8 0M-5,-4l10 8" stroke="#FFB9B9" stroke-width="1.4" fill="none"/></g>
+        <!-- 节点 C -->
+        <g><circle cx="320" cy="66" r="13" fill="#0B2A4A" stroke="#FFC36E" stroke-width="2.5"/>
+          <text x="320" y="70" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">C</text>
+          <text x="320" y="96" text-anchor="middle" fill="#BCD7F0" font-size="9.5" font-weight="700">下游 C</text></g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <!-- 数据新鲜度 -->
+    <div class="fresh">
+      <div class="fresh-i"><i class="o"></i>A 观测 2 天前</div>
+      <div class="fresh-i"><i class="r"></i>B 关联 TW-002</div>
+      <div class="fresh-i"><i class="o"></i>C 盲区 1 处</div>
+    </div>
+
+    <!-- A 卡 -->
+    <div class="reach-card">
+      <div class="reach-head">
+        <div class="reach-id"><div class="reach-letter">A<span>UP</span></div>
+          <div><div class="reach-name">上游 A</div><div class="reach-sub">余家湖（官方候选站 · 待核实）· LOGICAL</div></div></div>
+        <span class="link-pill">◉ 链路中断</span>
+      </div>
+      <div class="metric-row">
+        <div class="metric-cell"><div class="mv">4.78<small>m</small></div><div class="mk">水位</div><div class="mt">2 天前</div></div>
+        <div class="metric-cell"><div class="mv">21.8<small>NTU</small></div><div class="mk">浊度</div><div class="mt">2 天前</div></div>
+        <div class="metric-cell"><div class="mv">1<small>级</small></div><div class="mk">水流</div><div class="mt">2 天前</div></div>
+      </div>
+      <div class="reach-foot">
+        <span>最后有效观测 10-25 19:00 · <span class="src sim">模拟数据</span></span>
+        <span style="color:var(--watch);font-weight:700">离线 ≠ 现场正常</span>
+      </div>
+    </div>
+
+    <!-- B 卡：展开 -->
+    <div class="reach-card expanded">
+      <div class="reach-head">
+        <div class="reach-id"><div class="reach-letter grad">B<span>MID</span></div>
+          <div><div class="reach-name">中游 B</div><div class="reach-sub">宗关（官方候选站 · 待核实）· LOGICAL</div></div></div>
+        <span class="link-pill">◉ 链路中断</span>
+      </div>
+      <div style="padding:0 14px">
+        <div class="chart-tabs">
+          <div class="chart-tab active">水位 m</div><div class="chart-tab">浊度 NTU</div><div class="chart-tab">水流 级</div>
+        </div>
+        <div class="chart-meta">
+          <div><span class="v">5.92<small> m</small></span><span class="badge b-watch" style="margin-left:8px">较基线 +2.0 ↑</span></div>
+          <span class="src sim">模拟数据</span>
+        </div>
+        <canvas class="spark" width="720" height="236"></canvas>
+        <div class="legend">
+          <span><i style="background:#7FA1C2"></i>正常段</span><span><i style="background:#1E6FE0"></i>异常抬升段</span>
+          <span style="margin-left:auto"><span class="gap-tag">缺测不连线</span></span>
+        </div>
+      </div>
+
+      <!-- 官方快照：深色 HUD 面板 -->
+      <div class="gov-panel" style="margin:12px 12px 4px">
+        <div class="gov-head">
+          <div>
+            <div class="gov-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5BE0C8" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
+              国家地表水自动站 · 快照（非连续实时）
+            </div>
+            <div class="gov-station">宗关站 · 国家地表水自动监测实时数据发布系统</div>
+          </div>
+          <div class="water-class">Ⅱ<small>水质类别</small></div>
+        </div>
+        <div class="gov-grid">
+          <div class="gov-item"><div class="v">6.70<small> mg/L</small></div><div class="k">溶解氧</div></div>
+          <div class="gov-item"><div class="v">7.73</div><div class="k">pH</div></div>
+          <div class="gov-item"><div class="v">0.072<small></small></div><div class="k">氨氮 mg/L</div></div>
+          <div class="gov-item"><div class="v">1.64<small></small></div><div class="k">高锰酸盐 mg/L</div></div>
+          <div class="gov-item"><div class="v">0.047<small></small></div><div class="k">总磷 mg/L</div></div>
+          <div class="gov-item"><div class="v">5.66<small> NTU</small></div><div class="k">浊度</div></div>
+        </div>
+        <div class="gov-foot"><span class="stale">数据已陈旧 · 发布于 42 小时前（STALE）</span><span class="src gov" style="color:#9DC0E2;border-color:rgba(157,192,226,.4)">官方公开</span></div>
+      </div>
+
+      <div class="reach-foot">
+        <span>最后有效观测 10-25 19:01 · <span class="badge b-danger" style="margin-left:5px">关联 TW-002</span></span>
+        <span class="link-blue">断面详情 ›</span>
+      </div>
+    </div>
+
+    <!-- C 卡 -->
+    <div class="reach-card">
+      <div class="reach-head">
+        <div class="reach-id"><div class="reach-letter">C<span>DN</span></div>
+          <div><div class="reach-name">下游 C</div><div class="reach-sub">龙王庙（官方候选站 · 待核实）· LOGICAL</div></div></div>
+        <span class="link-pill">◉ 链路中断</span>
+      </div>
+      <div class="metric-row">
+        <div class="metric-cell"><div class="mv">5.41<small>m</small></div><div class="mk">水位</div><div class="mt">2 天前</div></div>
+        <div class="metric-cell"><div class="mv">26.3<small>NTU</small></div><div class="mk">浊度</div><div class="mt">2 天前</div></div>
+        <div class="metric-cell"><div class="mv">2<small>级</small></div><div class="mk">水流</div><div class="mt">2 天前</div></div>
+      </div>
+      <div class="reach-foot">
+        <span>最后有效观测 10-25 19:00 · <span class="src sim">模拟数据</span> · <span style="color:var(--danger);font-weight:700">开放盲区 1</span></span>
+        <span class="link-blue">断面详情 ›</span>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <div class="tab" data-tab="s-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>任务</div>
+    <div class="tab" data-tab="s-events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>事件</div>
+    <div class="tab active" data-tab="s-reaches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12c4-3 6 3 9 0s5-3 9 0M3 18c4-3 6 3 9 0s5-3 9 0M3 6c4-3 6 3 9 0s5-3 9 0"/></svg>监测</div>
+    <div class="tab" data-tab="s-me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>我的</div>
+  </nav>
+</section>
+
+<!-- ============ ③ 任务详情（退回态） ============ -->
+<section class="screen" id="s-detail">
+  <div class="statusbar"><span class="back">‹ 任务详情</span><span class="sb-right">●●● 5G</span></div>
+  <div class="hero detail-hero" style="padding-top:40px">
+    <div style="display:flex;gap:7px">
+      <span class="badge b-danger" style="font-size:11.5px">需重提 · IN_PROGRESS</span>
+      <span class="badge" style="background:rgba(216,76,76,.25);color:#fff">HIGH</span>
+    </div>
+    <h2>中游 B 断面持续观察与人工复测</h2>
+    <div class="dh-chips">
+      <span class="dh-chip">中游 B · 宗关方向</span><span class="dh-chip">持续观察</span>
+      <span class="dh-chip">截止 10-28 18:00</span><span class="dh-chip num">tsk-3ae8…4a83</span>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <!-- FSM 步骤条 -->
+    <div class="card stepper-card">
+      <div class="stepper">
+        <div class="stp done"><div class="dot">✓</div><div class="lb">派发</div></div>
+        <div class="stp done"><div class="dot">✓</div><div class="lb">接收</div></div>
+        <div class="stp cur"><div class="dot">↺</div><div class="lb">执行·退回</div></div>
+        <div class="stp"><div class="dot">4</div><div class="lb">提交</div></div>
+        <div class="stp"><div class="dot">5</div><div class="lb">复核</div></div>
+        <div class="stp"><div class="dot">6</div><div class="lb">完成</div></div>
+      </div>
+    </div>
+
+    <div class="reject-banner">
+      <div class="rt">↺ 复核未通过，请补充后重新提交（任务仍为进行中，非独立状态）</div>
+      <div class="rc">「现场照片只有远景，看不清水尺读数；浊度项未填写。请补一张水尺近景并补测浊度。」</div>
+      <div class="rf"><span>复核人：u-admin（PC 端）</span><span>2026-10-27 09:14</span></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><div class="sec-title">异常背景</div></div>
+      <div class="kv-row"><span class="k">关联事件</span><span class="link-blue">TW-002 · 时间线与证据 ›</span></div>
+      <div class="kv-row"><span class="k">触发指标</span><span class="v">水位 ↑ +2.0m（reach-a 触发）</span></div>
+      <div class="kv-row"><span class="k">派发理由</span><span class="v">TW-002 范围收窄至中游，需要人工确认水位与浊度变化</span></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><div class="sec-title">本次任务要求</div><div class="sec-more">按任务逐项核验</div></div>
+      <div class="req-list">
+        <div class="req-i"><span class="ck">✓</span>人工复测：水位（水尺读数）</div>
+        <div class="req-i no"><span class="ck">!</span>人工复测：浊度（便携浊度仪）— 上一版缺失</div>
+        <div class="req-i no"><span class="ck">!</span>照片：水尺近景 ≥1 张 — 上一版仅远景</div>
+        <div class="req-i"><span class="ck">✓</span>现场观察记录与结论</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><div class="sec-title">我的提交记录</div><div class="sec-more">共 1 版 · 审核 1 次</div></div>
+      <div class="sub-item">
+        <div class="sub-head"><span class="sub-ver">第 1 次提交 · v1</span><span class="badge b-danger">需重提</span></div>
+        <div class="sub-line"><span class="muted">现场结论</span><span>无法确认（UNCERTAIN）</span></div>
+        <div class="sub-line"><span class="muted">提交时间</span><span class="num">2026-10-27 08:52</span></div>
+        <div class="sub-line"><span class="muted">照片 / 复测</span><span>2 张 · 水位 1 项</span></div>
+        <div class="sub-note">江面有水雾，水尺位置较远读数不确定，未发现明显排口与泡沫。<span class="src man" style="margin-left:6px">人工记录</span></div>
+        <div class="review-box danger">
+          <div class="rh"><span>退回意见（REJECTED）</span><span>u-admin · 09:14</span></div>
+          <div style="margin-top:3px">照片不清晰、浊度未测量，补充后重新提交。历史版本已保留。</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <div class="photo-thumb">🏞</div><div class="photo-thumb" style="background:linear-gradient(135deg,#B8C9D9,#829BB3)">📷</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actionbar"><button class="btn btn-primary">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg>
+    补充记录并重新提交</button></div>
+</section>
+
+<!-- ============ ④ 现场采集 ============ -->
+<section class="screen" id="s-record">
+  <div class="statusbar"><span class="back">‹ 现场采集</span><span class="sb-right">●●● 5G</span></div>
+  <div class="hero" style="padding:40px 18px 26px">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+      <div style="font-size:15.5px;font-weight:800;line-height:1.45">中游 B 断面持续观察与人工复测</div>
+      <span class="badge b-danger" style="flex-shrink:0">需重提 · v2</span>
+    </div>
+    <div class="req-chips">
+      <span class="req-chip">本任务要求：水位</span><span class="req-chip">浊度</span><span class="req-chip">水尺近景照片 ≥1</span>
+    </div>
+  </div>
+
+  <div style="padding:13px 14px 0">
+    <div class="reject-banner">
+      <div class="rt">↺ 上一版退回意见</div>
+      <div class="rc">补水尺近景照片，并补测浊度。</div>
+    </div>
+
+    <!-- 人工复测 -->
+    <div class="card">
+      <div class="sec-head"><div class="sec-title">人工复测</div><span class="src man">人工测量 · 非传感器</span></div>
+      <div class="measure-row">
+        <div class="m-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C99" stroke-width="2"><path d="M3 17l6-6 4 4 8-8M14 7h7v7"/></svg></div>
+        <div class="m-main">
+          <div class="m-name">水位<span class="req-tag">任务要求</span></div>
+          <div class="m-sub">水尺读数 · 格式：数值 &gt; 0（非业务判定）</div>
+        </div>
+        <input class="m-input" value="5.92"><span class="m-unit">m</span>
+      </div>
+      <div class="measure-row">
+        <div class="m-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C99" stroke-width="2"><path d="M12 3s6 7 6 11a6 6 0 11-12 0c0-4 6-11 6-11z"/></svg></div>
+        <div class="m-main">
+          <div class="m-name">浊度<span class="req-tag">任务要求</span></div>
+          <div class="m-sub">便携浊度仪 · 超参考区间仅软提示</div>
+        </div>
+        <input class="m-input" value="23.4"><span class="m-unit">NTU</span>
+      </div>
+      <div class="measure-row">
+        <div class="m-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C99" stroke-width="2"><path d="M3 8c3-2 5 2 8 0s5-2 10 0M3 13c3-2 5 2 8 0s5-2 10 0M3 18c3-2 5 2 8 0s5-2 10 0"/></svg></div>
+        <div class="m-main">
+          <div class="m-name">水流等级</div>
+          <div class="m-sub">目视 0–3 级整数 · 本任务不要求</div>
+        </div>
+        <div class="stepper-ui"><button>−</button><span class="sv">1</span><button>+</button></div>
+      </div>
+      <details class="unmeasured" open>
+        <summary class="ut" style="cursor:pointer">要求项无法测量？必须明确原因，不得静默留空</summary>
+        <div class="reason-pills" style="margin-top:4px">
+          <span class="reason-pill active">安全无法靠近</span><span class="reason-pill">设备故障</span>
+          <span class="reason-pill">点位被淹没</span><span class="reason-pill">天气能见度</span><span class="reason-pill">其他</span>
+        </div>
+      </details>
+    </div>
+
+    <!-- 观察记录 -->
+    <div class="card">
+      <div class="sec-head"><div class="sec-title">现场观察记录</div>
+        <span class="voice-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1E6FE0" stroke-width="2.2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
+          按住说话</span></div>
+      <textarea class="textarea">水尺近景已补拍，读数 5.92m；浊度仪三次读数 23.1 / 23.6 / 23.4 NTU。岸边有少量泡沫带，未发现明显排口。</textarea>
+      <div class="char-count"><span><span class="src man">手动输入</span> <span class="src" style="margin-left:4px">可语音转写</span></span><span class="tiny num">68/1000</span></div>
+    </div>
+
+    <!-- 照片 -->
+    <div class="card">
+      <div class="sec-head"><div class="sec-title">现场照片</div><div class="sec-more">水尺近景 ≥1 · 最多 6</div></div>
+      <div class="photo-grid">
+        <div class="pg-item">🏞<span class="ph-status">已上传</span></div>
+        <div class="pg-item">📏<span class="ph-status">已上传</span></div>
+        <div class="pg-item" style="background:linear-gradient(135deg,#C7D6E5,#9DB4C9)">⏳<span class="ph-status">上传中 62%</span></div>
+        <div class="pg-item fail"><div class="pg-retry">⚠️<div>点此重试</div></div></div>
+        <div class="pg-add"><span class="plus">＋</span>拍照/相册</div>
+      </div>
+      <div class="tiny" style="margin-top:9px">单张独立上传与重试；不做图像自动判级，结论由人工确认。</div>
+    </div>
+
+    <!-- 结论卡片化 -->
+    <div class="card">
+      <div class="sec-head"><div class="sec-title">现场结论</div></div>
+      <div class="radio-card"><span class="radio-dot"></span><div><div class="rc-title">未见明显异常</div><div class="rc-desc">NORMAL · 现场观测未发现异常特征</div></div></div>
+      <div class="radio-card checked"><span class="radio-dot"></span><div><div class="rc-title">发现异常，建议再评估</div><div class="rc-desc">ABNORMAL · 是否触发事件再评估由后端规则决定</div></div></div>
+      <div class="radio-card" style="margin-bottom:0"><span class="radio-dot"></span><div><div class="rc-title">无法确认</div><div class="rc-desc">UNCERTAIN · 证据不足或条件受限</div></div></div>
+    </div>
+
+    <!-- 校验清单 -->
+    <div class="card">
+      <div class="sec-head"><div class="sec-title">提交前检查</div></div>
+      <ul class="check-list">
+        <li>任务要求项：水位、浊度均已填写（必填来自任务要求，非全局硬编码）</li>
+        <li>观察记录已填写（68 字）· 现场结论已选择</li>
+        <li class="no">1 张照片上传失败，请重试后再提交</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="actionbar"><button class="btn btn-primary" disabled style="flex:2">有照片未完成，暂不可提交</button></div>
+</section>
+
+<!-- 占位 Tab -->
+<section class="screen" id="s-me">
+  <div class="statusbar"><span>9:41</span><span class="sb-right">●●● 5G ▮</span></div>
+  <div style="padding:130px 40px;text-align:center;color:var(--text-2)">
+    <div style="font-size:40px;margin-bottom:14px">👤</div>
+    <b style="color:var(--navy-800);font-size:15px">「我的」不在 M0 四页范围内</b>
+    <div class="muted" style="margin-top:8px">M5 实施：身份 / 我的任务 / 审核反馈 / 提交记录 / 连接与语音 / 帮助</div>
+  </div>
+  <nav class="tabbar">
+    <div class="tab" data-tab="s-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>任务</div>
+    <div class="tab" data-tab="s-events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>事件</div>
+    <div class="tab" data-tab="s-reaches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12c4-3 6 3 9 0s5-3 9 0M3 18c4-3 6 3 9 0s5-3 9 0M3 6c4-3 6 3 9 0s5-3 9 0"/></svg>监测</div>
+    <div class="tab active" data-tab="s-me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>我的</div>
+  </nav>
+</section>
+<section class="screen" id="s-events">
+  <div class="statusbar"><span>9:41</span><span class="sb-right">●●● 5G ▮</span></div>
+  <div style="padding:130px 40px;text-align:center;color:var(--text-2)">
+    <div style="font-size:40px;margin-bottom:14px">⚠️</div>
+    <b style="color:var(--navy-800);font-size:15px">异常事件中心不在 M0 四页范围内</b>
+    <div class="muted" style="margin-top:8px">按调整后顺序在 M4 实施，视觉沿用本套设计系统</div>
+  </div>
+  <nav class="tabbar">
+    <div class="tab" data-tab="s-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>任务</div>
+    <div class="tab active" data-tab="s-events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>事件</div>
+    <div class="tab" data-tab="s-reaches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12c4-3 6 3 9 0s5-3 9 0M3 18c4-3 6 3 9 0s5-3 9 0M3 6c4-3 6 3 9 0s5-3 9 0"/></svg>监测</div>
+    <div class="tab" data-tab="s-me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>我的</div>
+  </nav>
+</section>
+
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
+  const cur=document.getElementById(id); if(cur)cur.scrollTop=0;
+  if(!new URLSearchParams(location.search).has('overview')) location.hash=id;
+  if(id==='s-reaches') drawSpark();
+}
+document.addEventListener('click',e=>{
+  const tab=e.target.closest('[data-tab]'); if(tab){show(tab.dataset.tab);return;}
+});
+document.querySelectorAll('#task-pills .pill').forEach(p=>p.addEventListener('click',()=>{
+  document.querySelectorAll('#task-pills .pill').forEach(x=>x.classList.toggle('active',x===p));
+}));
+document.querySelectorAll('.chart-tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.chart-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+}));
+document.querySelectorAll('.reason-pill').forEach(p=>p.addEventListener('click',()=>p.classList.toggle('active')));
+document.querySelectorAll('.radio-card').forEach(r=>r.addEventListener('click',()=>{
+  r.parentElement.querySelectorAll('.radio-card').forEach(x=>x.classList.remove('checked'));r.classList.add('checked');
+}));
+function drawSpark(){
+  const c=document.querySelector('#s-reaches canvas'); if(!c||c.dataset.drawn)return;
+  const ctx=c.getContext('2d'),W=c.width,H=c.height,P=26;
+  ctx.clearRect(0,0,W,H);
+  // 基线带
+  ctx.fillStyle='rgba(18,165,148,.07)';ctx.fillRect(P,H-P-46,W-2*P,46);
+  ctx.strokeStyle='#EAF0F6';ctx.lineWidth=1;
+  for(let i=0;i<4;i++){const y=P+i*(H-2*P)/3;ctx.beginPath();ctx.moveTo(P,y);ctx.lineTo(W-P,y);ctx.stroke();}
+  const vals=[];for(let i=0;i<72;i++){let v=4.8+Math.sin(i/7)*.12;if(i>44)v+=(i-44)*.075;vals.push(v);}
+  const min=4.4,max=6.2,xy=i=>[P+i*(W-2*P)/(vals.length-1),H-P-(vals[i]-min)/(max-min)*(H-2*P)];
+  function seg(a,b,color,w){ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=w;
+    for(let i=a;i<=b;i++){const[x,y]=xy(i);i===a?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();}
+  // 缺测阴影
+  const[x1]=xy(31),[x2]=xy(43);
+  ctx.fillStyle='rgba(232,144,42,.10)';ctx.fillRect(x1,P-12,x2-x1,H-2*P+24);
+  seg(0,30,'#8FA9C4',3);seg(43,71,'#1E6FE0',3.5);
+  const[lx,ly]=xy(71);
+  ctx.fillStyle='#1E6FE0';ctx.beginPath();ctx.arc(lx,ly,7,0,7);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(lx,ly,3,0,7);ctx.fill();
+  c.dataset.drawn='1';
+}
+if(new URLSearchParams(location.search).has('overview')){
+  document.body.classList.add('overview');
+}else{
+  show(location.hash?location.hash.slice(1):'s-tasks');
+}
+</script>
+</body>
+</html>

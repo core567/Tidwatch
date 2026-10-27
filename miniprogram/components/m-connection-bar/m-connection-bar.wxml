@@ -1,0 +1,5 @@
+<view wx:if="{{tone === 'offline' || tone === 'stale'}}"
+      class="m-conn {{tone === 'offline' ? 'is-offline' : 'is-stale'}}">
+  <view class="m-conn-dot"></view>
+  <text class="m-conn-text">{{text}}</text>
+</view>

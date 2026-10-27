@@ -1,4 +1,6 @@
 {
-  "navigationBarTitleText": "巡检记录",
-  "usingComponents": {}
+  "navigationBarTitleText": "现场采集",
+  "usingComponents": {
+    "m-state": "/components/m-state/m-state"
+  }
 }

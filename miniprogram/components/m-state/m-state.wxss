@@ -1,0 +1,47 @@
+.m-state {
+  padding: 90rpx 48rpx;
+  text-align: center;
+}
+.m-state-emoji {
+  font-size: 72rpx;
+  line-height: 1;
+  margin-bottom: 20rpx;
+}
+.m-state-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--m-navy-800);
+}
+.m-state-desc {
+  font-size: 23rpx;
+  color: var(--m-text-2);
+  margin-top: 10rpx;
+  line-height: 1.6;
+}
+.m-state-btn {
+  width: 320rpx;
+  margin: 28rpx auto 0;
+}
+
+/* 骨架屏 */
+.m-state-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+  padding: 20rpx 0;
+}
+.sk-bar,
+.sk-line {
+  height: 36rpx;
+  border-radius: 10rpx;
+  background: linear-gradient(90deg, #e8edf3 25%, #f4f7fa 37%, #e8edf3 63%);
+  background-size: 400rpx 100%;
+  animation: m-shimmer 1.3s infinite linear;
+}
+.sk-bar { height: 64rpx; border-radius: 14rpx; }
+.sk-line.w80 { width: 80%; }
+.sk-line.w50 { width: 50%; }
+@keyframes m-shimmer {
+  0% { background-position: -400rpx 0; }
+  100% { background-position: 400rpx 0; }
+}

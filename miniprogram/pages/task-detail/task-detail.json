@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "任务详情",
-  "usingComponents": {}
+  "usingComponents": {
+    "m-state": "/components/m-state/m-state"
+  }
 }

@@ -1,0 +1,10 @@
+<view class="m-metric tone-{{tone}}">
+  <view class="m-metric-value m-num">
+    {{display}}<text wx:if="{{unit}}" class="m-metric-unit">{{unit}}</text>
+  </view>
+  <view class="m-metric-label">{{label}}</view>
+  <view wx:if="{{time || sourceText}}" class="m-metric-foot">
+    <text wx:if="{{time}}" class="m-metric-time">{{time}}</text>
+    <text wx:if="{{sourceText}}" class="m-src {{sourceClass}}">{{sourceText}}</text>
+  </view>
+</view>

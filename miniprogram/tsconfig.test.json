@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "noUnusedLocals": false,
+    "outDir": "dist-test"
+  },
+  "include": ["./tests/**/*.ts", "./utils/**/*.ts", "./services/**/*.ts", "./typings/**/*.d.ts", "./config/**/*.ts"]
+}

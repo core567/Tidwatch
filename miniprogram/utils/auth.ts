@@ -48,6 +48,15 @@ export function logout(): void {
   wx.reLaunch({ url: '/pages/login/login' });
 }
 
+/**
+ * 退出到演示模式：仅清除本地 JWT，不跳页（由调用方刷新数据）。
+ * 当前后端为本地演示模式（未登录请求返回演示用户），清除后请求落入
+ * demo fallback，前端据此显示「演示模式」；不删除任何业务数据。
+ */
+export function logoutToDemo(): void {
+  clearSession();
+}
+
 export function getStoredSession(): StoredSession | null {
   if (!isLoggedIn()) return null;
   return {
@@ -55,4 +64,14 @@ export function getStoredSession(): StoredSession | null {
     expiresAt: wx.getStorageSync(EXPIRES_KEY) as string,
     user: getCurrentUser() as User,
   };
+}
+
+/**
+ * 会话模式：
+ * - 'jwt'：通过 /auth/login 真实校验账号密码、本地有未过期 token
+ * - 'demo'：无有效登录态，依赖后端 demo 兜底；页面必须显式标注“演示模式”，
+ *   不得把兜底身份 u-admin 当作已登录用户展示
+ */
+export function getSessionMode(): 'jwt' | 'demo' {
+  return isLoggedIn() ? 'jwt' : 'demo';
 }

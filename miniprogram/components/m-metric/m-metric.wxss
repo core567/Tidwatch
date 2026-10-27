@@ -1,0 +1,39 @@
+.m-metric {
+  background: #fff;
+  border-radius: var(--m-radius-md);
+  border: 1rpx solid rgba(226, 232, 240, 0.7);
+  box-shadow: var(--m-shadow-card);
+  padding: 22rpx 24rpx;
+}
+.m-metric-value {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: var(--m-navy-800);
+  line-height: 1.15;
+}
+.m-metric-unit {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--m-text-2);
+  margin-left: 6rpx;
+}
+.m-metric-label {
+  font-size: 23rpx;
+  color: var(--m-text-2);
+  font-weight: 600;
+  margin-top: 6rpx;
+}
+.m-metric-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10rpx;
+  gap: 10rpx;
+}
+.m-metric-time {
+  font-size: 20rpx;
+  color: var(--m-text-3);
+}
+.tone-watch .m-metric-value { color: var(--m-watch); }
+.tone-danger .m-metric-value { color: var(--m-danger); }
+.tone-ok .m-metric-value { color: var(--m-ok); }

@@ -36,6 +36,22 @@
       {
         "value": "node_modules",
         "type": "folder"
+      },
+      {
+        "value": "dist-test",
+        "type": "folder"
+      },
+      {
+        "value": "scripts",
+        "type": "folder"
+      },
+      {
+        "value": "tests",
+        "type": "folder"
+      },
+      {
+        "value": "tsconfig.json",
+        "type": "file"
       }
     ],
     "include": []

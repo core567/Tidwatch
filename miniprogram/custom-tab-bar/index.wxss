@@ -1,0 +1,39 @@
+/* custom-tab-bar/index.wxss — 固定吸底导航（安全区适配） */
+.m-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  height: calc(100rpx + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #fff;
+  display: flex;
+  box-shadow: 0 -8rpx 36rpx rgba(11, 42, 74, 0.06);
+  border-top: 1rpx solid #e2e8f0;
+}
+
+.m-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  color: #8aa0b8;
+  font-size: 20rpx;
+}
+
+.m-tab-icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.m-tab-text {
+  line-height: 1;
+}
+
+.m-tab.is-active {
+  color: #1e6fe0;
+  font-weight: 700;
+}
