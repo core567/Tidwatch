@@ -1,6 +1,7 @@
 /* pages/tasks/tasks.wxss - 巡检工作台 V2 */
 .wk {
   min-height: 100vh;
+  background: #edf1f6;
   background: var(--m-bg);
   padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }
@@ -282,3 +283,23 @@
 .wk-quick-t { flex: 1; }
 .wk-quick-name { font-size: 25rpx; font-weight: 700; color: var(--m-navy-800); }
 .wk-quick-desc { font-size: 20rpx; color: var(--m-text-3); margin-top: 2rpx; }
+
+/* 首次加载骨架（Hero 常驻，内容区占位） */
+.wk-skeleton { padding-top: 4rpx; }
+.wk-sk-card {
+  background: #fff; border-radius: var(--m-radius-lg);
+  padding: 28rpx 30rpx; margin-bottom: 22rpx; box-shadow: var(--m-shadow-card);
+}
+.wk-sk-bar {
+  height: 24rpx; border-radius: 8rpx; margin-bottom: 18rpx;
+  background: linear-gradient(90deg,#e8edf3 25%,#f4f7fa 37%,#e8edf3 63%);
+  background-size: 400rpx 100%; animation: wk-sk-shimmer 1.3s infinite linear;
+}
+.wk-sk-bar:last-child { margin-bottom: 0; }
+.wk-sk-bar.w40 { width: 40%; }
+.wk-sk-bar.w90 { width: 90%; }
+.wk-sk-bar.w60 { width: 60%; }
+@keyframes wk-sk-shimmer {
+  0% { background-position: -400rpx 0; }
+  100% { background-position: 400rpx 0; }
+}

@@ -6,6 +6,7 @@
 import { listTasks, listReaches, listEvents } from '../../services/api';
 import { wsClient } from '../../utils/ws';
 import { connectionData } from '../../utils/connection';
+import { diag } from '../../utils/diag';
 import { logger } from '../../utils/logger';
 import { ACTION_NAMES } from '../../utils/taskLabels';
 import { syncTabSelected, TAB_INDEX } from '../../utils/tabbar';
@@ -132,6 +133,7 @@ Page({
   },
 
   handleRealtime(msg: StreamMessage<StreamTaskPayload>): void {
+    if (!diag.allowWs()) return; // 排查开关
     if (
       msg.messageType === 'task.created' ||
       msg.messageType === 'task.updated' ||
@@ -204,6 +206,7 @@ Page({
   },
 
   async loadTasks(opts: { silent?: boolean } = {}): Promise<void> {
+    if (!diag.allowRequest()) return; // 排查开关
     const seq = ++this.fetchSeq;
     if (!opts.silent && !this.loadedOnce) this.setData({ pageState: 'loading', errorMsg: '' });
     try {

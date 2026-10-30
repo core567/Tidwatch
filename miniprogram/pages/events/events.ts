@@ -9,6 +9,7 @@ import { simMetricName } from '../../utils/metrics';
 import { reachDisplayNames } from '../../utils/reachView';
 import { wsClient } from '../../utils/ws';
 import { connectionData } from '../../utils/connection';
+import { diag } from '../../utils/diag';
 
 type PageState = 'loading' | 'ready' | 'error';
 type EventFilter = 'all' | 'active' | 'recovery' | 'recovered';
@@ -63,6 +64,7 @@ Page({
     wsClient.connect();
     // 仅订阅一次；onUnload 取消，避免重复订阅
     this.unsubMsg = wsClient.onMessage((msg) => {
+      if (!diag.allowWs()) return; // 排查开关：禁用 WS 触发的更新
       if (
         msg.messageType === 'event.created' ||
         msg.messageType === 'event.updated' ||
@@ -125,6 +127,7 @@ Page({
   },
 
   async load(silent = false): Promise<void> {
+    if (!diag.allowRequest()) return; // 排查开关：禁用业务请求
     const seq = ++this.fetchSeq;
     if (!silent && !this.loadedOnce) this.setData({ pageState: 'loading', errorMsg: '' });
     try {

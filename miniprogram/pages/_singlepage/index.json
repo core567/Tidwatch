@@ -1,0 +1,13 @@
+{
+  "navigationBarBackgroundColor": "#0B2A4A",
+  "navigationBarTextStyle": "white",
+  "navigationBarTitleText": "单页面切换实验",
+  "disableScroll": true,
+  "usingComponents": {
+    "shell-monitor": "/components/shell-monitor/shell-monitor",
+    "shell-tasks": "/components/shell-tasks/shell-tasks",
+    "shell-events": "/components/shell-events/shell-events",
+    "shell-me": "/components/shell-me/shell-me",
+    "shell-notify": "/components/shell-notify/shell-notify"
+  }
+}

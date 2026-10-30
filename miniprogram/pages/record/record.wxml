@@ -1,26 +1,38 @@
 <!-- pages/record/record.wxml - 现场采集 V2 -->
 <view class="rc">
+  <!-- 任务上下文 Hero 常驻，避免进入时浅灰→深蓝闪白 -->
+  <view class="m-hero rc-hero">
+    <view class="m-hero-inner">
+      <view class="rc-hero-top">
+        <view class="rc-task-name">{{ctxState === 'ready' ? task.title : '正在加载任务…'}}</view>
+        <text wx:if="{{ctxState === 'ready'}}" class="m-badge m-badge-{{rejected ? 'danger' : 'watch'}}">{{rejected ? '需重提' : '进行中'}}</text>
+      </view>
+      <view class="rc-hero-chips" wx:if="{{ctxState === 'ready'}}">
+        <text class="rc-chip">第 {{nextVersion}} 次提交 · v{{nextVersion}}</text>
+        <text class="rc-chip">{{task.reachId}}</text>
+      </view>
+    </view>
+  </view>
 
-  <block wx:if="{{ctxState === 'loading'}}"><m-state type="loading" /></block>
-  <block wx:elif="{{ctxState === 'error'}}">
-    <m-state type="error" title="任务加载失败" desc="{{ctxError}}" bind:retry="loadContext" />
+  <block wx:if="{{ctxState === 'error'}}">
+    <view class="rc-sheet">
+      <m-state type="error" title="任务加载失败" desc="{{ctxError}}" bind:retry="loadContext" />
+    </view>
   </block>
 
-  <block wx:else>
-    <!-- 任务上下文 Hero -->
-    <view class="m-hero rc-hero">
-      <view class="m-hero-inner">
-        <view class="rc-hero-top">
-          <view class="rc-task-name">{{task.title}}</view>
-          <text class="m-badge m-badge-{{rejected ? 'danger' : 'watch'}}">{{rejected ? '需重提' : '进行中'}}</text>
-        </view>
-        <view class="rc-hero-chips">
-          <text class="rc-chip">第 {{nextVersion}} 次提交 · v{{nextVersion}}</text>
-          <text class="rc-chip">{{task.reachId}}</text>
+  <block wx:elif="{{ctxState === 'loading'}}">
+    <view class="rc-sheet">
+      <view class="rc-skeleton">
+        <view class="rc-sk-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+          <view class="rc-sk-bar w40"></view>
+          <view class="rc-sk-bar w90"></view>
+          <view class="rc-sk-bar w60"></view>
         </view>
       </view>
     </view>
+  </block>
 
+  <block wx:else>
     <view class="rc-sheet">
       <!-- 退回意见 -->
       <view wx:if="{{rejected}}" class="rc-reject">

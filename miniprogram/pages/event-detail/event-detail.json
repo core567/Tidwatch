@@ -1,4 +1,6 @@
 {
+  "navigationBarBackgroundColor": "#0B2A4A",
+  "navigationBarTextStyle": "white",
   "navigationBarTitleText": "事件协同详情",
   "enablePullDownRefresh": true,
   "usingComponents": {

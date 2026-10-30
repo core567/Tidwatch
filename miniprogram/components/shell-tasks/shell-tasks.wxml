@@ -1,0 +1,107 @@
+<!-- components/shell-tasks/shell-tasks.wxml -->
+<view class="st">
+  <!-- 首次加载骨架 -->
+  <view wx:if="{{loading}}" class="st-state">
+    <view class="st-sk-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+      <view class="st-sk-bar w30"></view>
+      <view class="st-sk-bar w80"></view>
+      <view class="st-sk-bar w50"></view>
+    </view>
+  </view>
+
+  <view wx:elif="{{errorMsg}}" class="st-state">
+    <view class="st-emoji">⚠️</view>
+    <view class="st-state-title">任务加载失败</view>
+    <view class="st-state-desc">{{errorMsg}}</view>
+    <view class="st-retry" bindtap="onRetry">重新加载</view>
+  </view>
+
+  <block wx:else>
+    <!-- 顶部任务协同总览（固定不滚；数字全部来自真实接口派生） -->
+    <view class="st-overview">
+      <view class="st-ov-row">
+        <view>
+          <view class="st-ov-title">巡检任务</view>
+          <view class="st-ov-sub">共 {{total}} 项 · 更新 {{updatedText || '—'}}</view>
+        </view>
+        <view class="st-ov-pill {{wsOpen ? 'on' : 'off'}}">
+          <view class="st-ov-dot"></view>{{wsOpen ? '实时在线' : '未连接'}}
+        </view>
+      </view>
+      <view class="st-stat-grid">
+        <view class="st-stat" data-key="todo" bindtap="onFilter">
+          <text class="st-stat-v sp-c-danger">{{summary.todo}}</text><text class="st-stat-k">待接收</text>
+        </view>
+        <view class="st-stat" data-key="doing" bindtap="onFilter">
+          <text class="st-stat-v sp-c-watch">{{summary.doing}}</text><text class="st-stat-k">进行中</text>
+        </view>
+        <view class="st-stat" data-key="review" bindtap="onFilter">
+          <text class="st-stat-v sp-c-cyan">{{summary.review}}</text><text class="st-stat-k">待复核</text>
+        </view>
+        <view class="st-stat" data-key="done" bindtap="onFilter">
+          <text class="st-stat-v sp-c-ok">{{summary.done}}</text><text class="st-stat-k">已完成</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 列表滚动区 -->
+    <scroll-view scroll-y class="st-scroll">
+      <!-- 最近动态：仅有真实记录时渲染（退回/提交/通过/新派发，取自任务字段） -->
+      <view wx:if="{{activities.length > 0}}" class="st-act">
+        <view class="st-sec-title">最近动态</view>
+        <view class="st-act-row st-act-{{item.kindClass}}" wx:for="{{activities}}" wx:key="taskId">
+          <view class="st-act-dot"></view>
+          <view class="st-act-main">
+            <view class="st-act-text">{{item.title}} · {{item.kindText}}</view>
+            <view class="st-act-desc">{{item.desc}}</view>
+          </view>
+          <view class="st-act-time">{{item.atText}}</view>
+        </view>
+      </view>
+
+      <!-- 筛选 -->
+      <scroll-view scroll-x class="st-filters" enhanced show-scrollbar="{{false}}">
+        <view
+          wx:for="{{filters}}"
+          wx:key="key"
+          class="st-filter {{activeFilter === item.key ? 'is-active' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onFilter"
+        >{{item.label}}</view>
+      </scroll-view>
+
+      <!-- 任务卡：真实名称/ID/关联事件/断面/状态/优先级/时间/指派人 -->
+      <view
+        wx:for="{{tasks}}"
+        wx:key="taskId"
+        class="st-card {{item.isRejected ? 'is-reject' : ''}}"
+        data-id="{{item.taskId}}"
+        bindtap="openTask"
+      >
+        <view class="st-card-top">
+          <view class="st-card-title">{{item.title}}</view>
+          <text class="st-badge st-badge-{{item.statusTone}}">{{item.statusText}}</text>
+        </view>
+        <view class="st-card-meta">
+          <text class="st-chip">{{item.reachName}}</text>
+          <text class="st-chip">{{item.actionText}}</text>
+          <text wx:if="{{item.eventId}}" class="st-chip st-chip-event">{{item.eventId}}</text>
+          <text wx:if="{{item.priority === 'HIGH'}}" class="st-chip st-chip-high">HIGH</text>
+          <text wx:if="{{item.isRejected}}" class="st-chip st-chip-reject">需重提</text>
+        </view>
+        <view class="st-card-foot">
+          <text class="st-id">{{item.taskId}}</text>
+          <text wx:if="{{item.assignee}}" class="st-assignee">👤 {{item.assignee}}</text>
+          <text class="st-due">{{item.dueText}}</text>
+          <text class="st-go">详情 ›</text>
+        </view>
+      </view>
+
+      <view wx:if="{{tasks.length === 0}}" class="st-empty">
+        <view class="st-empty-emoji">📋</view>
+        <view>该分类下暂无任务</view>
+      </view>
+      <view class="st-bottom-space"></view>
+    </scroll-view>
+  </block>
+</view>

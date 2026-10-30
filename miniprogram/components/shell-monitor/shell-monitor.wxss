@@ -1,0 +1,104 @@
+/* components/shell-monitor —— 竞赛级监测模块（嵌入单页面，外层负责高度） */
+.sm { display: flex; flex-direction: column; height: 100%; min-height: 0; background: #eef2f8; }
+
+/* 状态 */
+.sm-state { flex: 1; padding: 40rpx 32rpx; }
+.sm-sk-card { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 20rpx; }
+.sm-sk-bar { height: 24rpx; border-radius: 8rpx; margin-bottom: 18rpx;
+  background: linear-gradient(90deg,#e8edf3 25%,#f4f7fa 37%,#e8edf3 63%);
+  background-size: 400rpx 100%; }
+.sm-sk-bar.w30 { width: 30%; } .sm-sk-bar.w70 { width: 70%; } .sm-sk-bar.w50 { width: 50%; }
+.sm-emoji { font-size: 64rpx; text-align: center; }
+.sm-state-title { text-align: center; font-weight: 700; color: #0b2a4a; margin-top: 12rpx; }
+.sm-state-desc { text-align: center; color: #8aa0b8; font-size: 24rpx; margin-top: 8rpx; }
+.sm-retry { margin: 24rpx auto 0; width: 200rpx; text-align: center; background: #1e6fe0;
+  color: #fff; border-radius: 14rpx; padding: 16rpx 0; font-size: 26rpx; }
+
+/* 顶部总览（固定不滚） */
+.sm-overview {
+  flex-shrink: 0;
+  background: linear-gradient(155deg, #08233f 0%, #0b2a4a 52%, #123e68 100%);
+  padding: 24rpx 28rpx 26rpx; color: #fff;
+}
+.sm-ov-row { display: flex; align-items: flex-start; justify-content: space-between; }
+.sm-ov-title { font-size: 36rpx; font-weight: 800; }
+.sm-ov-sub { font-size: 21rpx; color: #9fb8d6; margin-top: 6rpx; letter-spacing: 1rpx; }
+.sm-ov-pill { display: inline-flex; align-items: center; gap: 8rpx; font-size: 20rpx;
+  border-radius: 999rpx; padding: 7rpx 18rpx; flex-shrink: 0; }
+.sm-ov-pill.on { background: rgba(15,168,150,.16); color: #6fe3d2; }
+.sm-ov-pill.off { background: rgba(216,76,76,.18); color: #ff9a9a; }
+.sm-ov-dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: currentColor; }
+.sm-ov-meta { display: flex; gap: 12rpx; margin-top: 16rpx; flex-wrap: wrap; }
+.sm-ov-chip { font-size: 19rpx; color: #cfe0f3; background: rgba(255,255,255,.08);
+  border: 1rpx solid rgba(255,255,255,.12); border-radius: 999rpx; padding: 5rpx 16rpx; }
+.sm-ov-chip.sm-src { color: #8fe0d6; }
+
+/* 弯曲河道 */
+.sm-river { margin-top: 18rpx; background: rgba(255,255,255,.05);
+  border: 1rpx solid rgba(127,176,232,.18); border-radius: 18rpx; padding: 14rpx 14rpx 8rpx; }
+.sm-river-cap { font-size: 18rpx; color: #7d97b6; margin: 0 6rpx 6rpx; }
+.sm-river-stage { position: relative; height: 180rpx; }
+.sm-river-svg { position: absolute; left: 0; top: 0; width: 100%; height: 180rpx; }
+.sm-node { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column;
+  align-items: center; z-index: 2; }
+.sm-node-0 { left: 14%; top: 78rpx; }
+.sm-node-1 { left: 50%; top: 96rpx; }
+.sm-node-2 { left: 86%; top: 30rpx; }
+.sm-node-dot { width: 56rpx; height: 56rpx; border-radius: 50%;
+  background: #12a594; border: 4rpx solid rgba(255,255,255,.85);
+  color: #fff; font-weight: 800; font-size: 26rpx;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6rpx 16rpx rgba(0,0,0,.25); transition: transform .15s, box-shadow .15s; }
+.sm-node.is-alert .sm-node-dot { background: #e8902a; }
+.sm-node-name { font-size: 18rpx; color: #dce9f8; margin-top: 6rpx; white-space: nowrap; }
+.sm-node.is-sel .sm-node-dot {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 10rpx rgba(30,111,224,.28), 0 6rpx 18rpx rgba(0,0,0,.3);
+  background: #1e6fe0;
+}
+.sm-node.is-sel.is-alert .sm-node-dot { background: #d84c4c; }
+
+/* 中间滚动区 */
+.sm-scroll { flex: 1; min-height: 0; padding: 18rpx 24rpx 0; box-sizing: border-box; }
+
+/* 断面指标卡 */
+.sm-card { background: #fff; border: 2rpx solid transparent; border-radius: 20rpx;
+  padding: 24rpx 26rpx; margin-bottom: 18rpx; box-shadow: 0 4rpx 16rpx rgba(11,42,74,.06);
+  transition: border-color .15s; }
+.sm-card.is-sel { border-color: #1e6fe0; box-shadow: 0 8rpx 24rpx rgba(30,111,224,.14); }
+.sm-card-head { display: flex; align-items: center; justify-content: space-between; }
+.sm-card-name { display: flex; align-items: center; gap: 12rpx; font-size: 29rpx; font-weight: 800; color: #0b2a4a; }
+.sm-card-letter { width: 48rpx; height: 48rpx; border-radius: 14rpx;
+  background: linear-gradient(135deg,#1e6fe0,#18b7c8); color: #fff; font-size: 24rpx;
+  display: flex; align-items: center; justify-content: center; }
+.sm-card-state { display: inline-flex; align-items: center; gap: 8rpx; font-size: 20rpx;
+  border-radius: 999rpx; padding: 6rpx 16rpx; }
+.sm-card-state.on { background: rgba(15,168,150,.12); color: #0c8f80; }
+.sm-card-state.off { background: rgba(216,76,76,.12); color: #c23a3a; }
+.sm-state-dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: currentColor; }
+
+.sm-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; margin: 20rpx 0; }
+.sm-metric { background: #f5f8fc; border-radius: 16rpx; padding: 20rpx 22rpx; }
+.sm-metric-v { display: block; font-size: 42rpx; font-weight: 800; color: #1e6fe0; line-height: 1.1; }
+.sm-metric-v.is-empty { color: #b4c2d4; font-size: 32rpx; }
+.sm-metric-k { display: block; font-size: 21rpx; color: #5d7186; margin-top: 6rpx; font-weight: 600; }
+.sm-metric-t { display: block; font-size: 18rpx; color: #94a3b8; margin-top: 4rpx; }
+
+.sm-card-foot { display: flex; align-items: center; gap: 14rpx; }
+.sm-src-tag { font-size: 19rpx; color: #0e8c99; background: rgba(24,183,200,.1);
+  border: 1rpx solid rgba(24,183,200,.3); border-radius: 8rpx; padding: 4rpx 14rpx; }
+.sm-blind { font-size: 19rpx; color: #d07a14; background: rgba(232,144,42,.12); border-radius: 8rpx; padding: 4rpx 14rpx; }
+.sm-detail { margin-left: auto; font-size: 22rpx; color: #1e6fe0; font-weight: 600; }
+
+/* 异常摘要 */
+.sm-section { background: #fff; border-radius: 20rpx; padding: 24rpx 26rpx; margin-bottom: 18rpx; }
+.sm-section-title { font-size: 28rpx; font-weight: 800; color: #0b2a4a; margin-bottom: 14rpx; }
+.sm-event-list { display: flex; flex-direction: column; gap: 14rpx; }
+.sm-event { display: flex; align-items: center; gap: 12rpx; font-size: 24rpx; }
+.sm-event-dot { width: 14rpx; height: 14rpx; border-radius: 50%; background: #e8902a;
+  box-shadow: 0 0 0 6rpx rgba(232,144,42,.14); flex-shrink: 0; }
+.sm-event-id { font-weight: 700; color: #16263a; }
+.sm-event-tag { font-size: 19rpx; color: #8aa0b8; }
+.sm-empty { font-size: 24rpx; color: #8aa0b8; }
+.sm-note { font-size: 19rpx; color: #94a3b8; line-height: 1.6; margin-top: 12rpx; }
+.sm-bottom-space { height: 20rpx; }

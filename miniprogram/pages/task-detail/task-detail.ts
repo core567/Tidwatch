@@ -1,5 +1,13 @@
 // pages/task-detail/task-detail.ts
-import { getTask, actTask, listSubmissions, listReviews, listReaches } from '../../services/api';
+import {
+  getTask,
+  actTask,
+  listSubmissions,
+  listReviews,
+  listReaches,
+  listTaskTimeline,
+  markNotificationsRead,
+} from '../../services/api';
 import { getToken } from '../../utils/auth';
 import { wsClient } from '../../utils/ws';
 import { ENV } from '../../config/env';
@@ -70,16 +78,31 @@ Page({
           (msg.messageType === 'task.updated' && msg.payload?.taskId === this.data.taskId) ||
           (msg.messageType === 'task.created' && msg.payload?.taskId === this.data.taskId)
         ) {
-          this.load();
+          this.load(true);
         }
       });
+      // 从采集页提交后返回：除 WS 推送外再静默拉一次兜底，保证状态/新版本立即可见
+      if (this.data.uiState === 'success') this.load(true);
     }
   },
 
-  async load(): Promise<void> {
-    this.setData({ uiState: 'loading', errorMsg: '' });
+  async load(silent = false): Promise<void> {
+    const isSilent = silent === true; // bind:retry 会传入事件对象，只认真布尔
+    // 已有数据时静默刷新（WS 推送/从采集页返回），不回退骨架，避免长页面闪动
+    if (!isSilent || this.data.uiState !== 'success') {
+      this.setData({ uiState: 'loading', errorMsg: '' });
+    }
     try {
-      const task = await getTask(this.data.taskId);
+      // 时间线与详情并行：步骤条只认真实 business_events 记录，不按最终状态反推
+      const [task, timelineRes] = await Promise.all([
+        getTask(this.data.taskId),
+        listTaskTimeline(this.data.taskId).catch(() => ({ items: [] })),
+      ]);
+      const items = timelineRes.items ?? [];
+      // 仅在拿到时间线时启用证据校验；接口失败/空响应退化为状态基线
+      const happened = items.length > 0
+        ? new Set(items.map((i) => i.actionType))
+        : undefined;
       const sv = taskStatusView(task.status, task.latestReview?.decision);
       const rejected =
         task.status === 'IN_PROGRESS' && task.latestReview?.decision === 'REJECTED';
@@ -92,7 +115,7 @@ Page({
         rejected,
         rejectedAtText: rejected ? formatDateTime(task.latestReview?.reviewedAt) : '',
         completedAtText: formatDateTime(task.completedAt),
-        steps: taskSteps(task.status, task.latestReview?.decision),
+        steps: taskSteps(task.status, task.latestReview?.decision, happened),
         suggestedMeasures: suggestedMetrics(task.actionType)
           .map((k) => MANUAL_METRICS.find((m) => m.key === k))
           .filter(Boolean) as ManualMetricDef[],
@@ -101,8 +124,13 @@ Page({
       this.loadReachName(task.reachId);
       if ((task.attachmentIds?.length ?? 0) > 0) this.loadSubmittedPhotos(task.attachmentIds);
       this.loadVersions();
+      // V2.2：进入任务详情即把该任务的复核通知标记已读（失败不阻塞详情）
+      markNotificationsRead({ taskId: this.data.taskId }).catch(() => undefined);
     } catch (e) {
-      this.setData({ uiState: 'error', errorMsg: e instanceof Error ? e.message : '未知错误' });
+      // 静默刷新失败保留已有内容；仅首次加载/手动重试进入错误态
+      if (!isSilent || this.data.uiState !== 'success') {
+        this.setData({ uiState: 'error', errorMsg: e instanceof Error ? e.message : '未知错误' });
+      }
     }
   },
 
@@ -206,7 +234,7 @@ Page({
       wx.showLoading({ title: '提交中' });
       await actTask(this.data.taskId, action);
       wx.showToast({ title: '操作成功', icon: 'success' });
-      this.load();
+      this.load(true);
     } catch (e) {
       wx.showModal({
         title: '操作被拒绝',

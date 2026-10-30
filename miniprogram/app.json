@@ -8,7 +8,8 @@
     "pages/task-detail/task-detail",
     "pages/record/record",
     "pages/profile/profile",
-    "pages/login/login"
+    "pages/login/login",
+    "pages/_singlepage/index"
   ],
   "window": {
     "navigationBarBackgroundColor": "#0B2A4A",
@@ -43,6 +44,5 @@
     ]
   },
   "style": "v2",
-  "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "sitemapLocation": "sitemap.json"
 }

@@ -1,29 +1,40 @@
 <view class="td">
-  <block wx:if="{{uiState === 'loading'}}">
-    <m-state type="loading" />
-  </block>
-  <block wx:elif="{{uiState === 'error'}}">
-    <m-state type="error" title="任务加载失败" desc="{{errorMsg}}" bind:retry="load" />
+  <!-- Hero 常驻：避免 loading 浅灰→深蓝 Hero 的闪白；loading 时显示占位 -->
+  <view class="m-hero td-hero">
+    <view class="m-hero-inner">
+      <view class="td-badges">
+        <text wx:if="{{uiState === 'success'}}" class="m-badge m-badge-{{statusTone === 'offline' ? 'offline' : statusTone}}">{{statusText}}</text>
+        <text wx:if="{{uiState === 'success' && task.priority === 'HIGH'}}" class="m-badge m-badge-on-dark">HIGH</text>
+      </view>
+      <view class="td-title">{{uiState === 'success' ? task.title : '正在加载任务…'}}</view>
+      <view class="td-chips" wx:if="{{uiState === 'success'}}">
+        <text class="td-chip">{{reachName || task.reachId}}</text>
+        <text class="td-chip">{{actionText}}</text>
+        <text class="td-chip">截止 {{dueAtText}}</text>
+        <text class="td-chip td-chip-id">{{task.taskId}}</text>
+      </view>
+    </view>
+  </view>
+
+  <block wx:if="{{uiState === 'error'}}">
+    <view class="td-sheet">
+      <m-state type="error" title="任务加载失败" desc="{{errorMsg}}" bind:retry="load" />
+    </view>
   </block>
 
-  <block wx:else>
-    <!-- Hero -->
-    <view class="m-hero td-hero">
-      <view class="m-hero-inner">
-        <view class="td-badges">
-          <text class="m-badge m-badge-{{statusTone === 'offline' ? 'offline' : statusTone}}">{{statusText}}</text>
-          <text wx:if="{{task.priority === 'HIGH'}}" class="m-badge m-badge-on-dark">HIGH</text>
-        </view>
-        <view class="td-title">{{task.title}}</view>
-        <view class="td-chips">
-          <text class="td-chip">{{reachName || task.reachId}}</text>
-          <text class="td-chip">{{actionText}}</text>
-          <text class="td-chip">截止 {{dueAtText}}</text>
-          <text class="td-chip td-chip-id">{{task.taskId}}</text>
+  <block wx:elif="{{uiState === 'loading'}}">
+    <view class="td-sheet">
+      <view class="td-skeleton">
+        <view class="td-sk-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+          <view class="td-sk-bar w40"></view>
+          <view class="td-sk-bar w90"></view>
+          <view class="td-sk-bar w60"></view>
         </view>
       </view>
     </view>
+  </block>
 
+  <block wx:else>
     <view class="td-sheet">
       <!-- FSM 步骤条 -->
       <view class="m-card td-steps-card" wx:if="{{steps}}">

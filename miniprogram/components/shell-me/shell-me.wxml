@@ -1,0 +1,125 @@
+<!-- components/shell-me/shell-me.wxml -->
+<view class="sme">
+  <!-- 首次加载骨架 -->
+  <view wx:if="{{loading}}" class="sme-state">
+    <view class="sme-sk-card" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+      <view class="sme-sk-bar w30"></view>
+      <view class="sme-sk-bar w80"></view>
+      <view class="sme-sk-bar w55"></view>
+    </view>
+  </view>
+
+  <view wx:elif="{{errorMsg}}" class="sme-state">
+    <view class="sme-emoji">⚠️</view>
+    <view class="sme-state-title">系统信息加载失败</view>
+    <view class="sme-state-desc">{{errorMsg}}</view>
+    <view class="sme-retry" bindtap="onRetry">重新加载</view>
+  </view>
+
+  <block wx:else>
+    <scroll-view scroll-y class="sme-scroll">
+      <!-- 品牌区 -->
+      <view class="sme-hero">
+        <view class="sme-hero-row">
+          <view class="sme-logo">TW</view>
+          <view class="sme-hero-main">
+            <view class="sme-title">系统与演示中心</view>
+            <view class="sme-sub">TideWatch 智慧河流水环境监测</view>
+          </view>
+          <view class="sme-mode">{{modeText}}</view>
+        </view>
+      </view>
+
+      <!-- 系统状态 -->
+      <view class="m-card sme-card">
+        <view class="sme-card-title">系统状态
+          <text class="sme-refresh" bindtap="onRefresh">{{refreshing ? '刷新中…' : '刷新'}}</text>
+        </view>
+        <view class="sme-row">
+          <text class="sme-k">后端服务（HTTP）</text>
+          <view class="sme-badge sme-badge-{{httpState === 'ok' ? 'ok' : httpState === 'checking' ? 'wait' : 'down'}}">{{httpText}}</view>
+        </view>
+        <view class="sme-row">
+          <text class="sme-k">数据库</text>
+          <view class="sme-badge {{dbState === '正常' ? 'sme-badge-ok' : 'sme-badge-down'}}">{{dbState}}</view>
+        </view>
+        <!-- WS 独立判定：HTTP 200 不代表 WS 在线 -->
+        <view class="sme-row">
+          <text class="sme-k">实时通道（WebSocket）</text>
+          <view class="sme-badge sme-badge-{{wsTone}}">{{wsText}}</view>
+        </view>
+        <view class="sme-row">
+          <text class="sme-k">最近业务数据时间</text>
+          <text class="sme-v">{{lastDataText}}</text>
+        </view>
+        <view class="sme-reaches">
+          <view class="sme-reach"><text class="sme-reach-v sme-c-ok">{{reachOnline}}</text><text class="sme-reach-k">在线断面</text></view>
+          <view class="sme-reach"><text class="sme-reach-v sme-c-watch">{{reachStale}}</text><text class="sme-reach-k">陈旧</text></view>
+          <view class="sme-reach"><text class="sme-reach-v sme-c-down">{{reachOffline}}</text><text class="sme-reach-k">离线</text></view>
+        </view>
+        <view wx:if="{{diagAvailable && ingestionErrors > 0}}" class="sme-warn">数据入库累计异常 {{ingestionErrors}} 条（详见 PC 管理端诊断）。</view>
+        <view class="sme-note">HTTP、数据库与实时通道分别检测；接口可达不等于实时通道已连接。最近业务数据为库内最新观测时间，不代表当前实时在线。</view>
+      </view>
+
+      <!-- 数据来源 -->
+      <view class="m-card sme-card">
+        <view class="sme-card-title">数据来源</view>
+        <view class="sme-src">
+          <view class="sme-src-head">
+            <text class="sme-src-name">官方自动监测站</text>
+            <view class="sme-badge sme-badge-{{officialState === 'on' ? 'ok' : officialState === 'off' ? 'off' : 'wait'}}">{{officialText}}</view>
+          </view>
+          <view class="sme-src-desc">{{officialState === 'on' ? officialLabel : officialState === 'off' ? '当前未接入官方自动监测实时数据，页面不展示官方实时数值。' : '状态接口不可达，无法确认是否启用。'}}</view>
+        </view>
+        <view class="sme-src">
+          <view class="sme-src-head">
+            <text class="sme-src-name">MQTT 实时采集链路</text>
+            <view class="sme-badge sme-badge-{{mqttState === 'on' ? 'ok' : mqttState === 'off' ? 'off' : 'wait'}}">{{mqttText}}</view>
+          </view>
+          <view class="sme-src-desc">{{mqttState === 'on' ? '传感器经 MQTT 实时入库。' : mqttState === 'off' ? '当前未启用 MQTT 采集，无实时传感器流；历史报文不标记为实时数据。' : '诊断接口不可达，无法确认采集状态。'}}</view>
+        </view>
+        <view class="sme-src">
+          <view class="sme-src-head">
+            <text class="sme-src-name">竞赛演示 / 模拟观测</text>
+            <view class="sme-badge sme-badge-info">{{diagAvailable ? observations + ' 条库内记录' : '计数不可用'}}</view>
+          </view>
+          <view class="sme-src-desc">用于场景演练与功能演示的模拟观测、场景脚本与回填数据，均非官方实测值。</view>
+          <view wx:if="{{ruleLabel}}" class="sme-src-rule">判级规则：{{ruleLabel}}</view>
+        </view>
+      </view>
+
+      <!-- 演示辅助 -->
+      <view class="m-card sme-card">
+        <view class="sme-card-title">演示辅助</view>
+        <view class="sme-row">
+          <text class="sme-k">演示场景（S1–S5）</text>
+          <view class="sme-badge sme-badge-{{scenarioState === 'running' ? 'wait' : scenarioState === 'stopped' ? 'off' : 'wait'}}">{{scenarioText}}</view>
+        </view>
+        <view class="sme-note">场景的启动与停止属于 PC 管理员控制台写操作，会注入异常并改变业务数据；现场端仅展示运行状态，不提供触发入口。</view>
+      </view>
+
+      <!-- 关于 -->
+      <view class="m-card sme-card">
+        <view class="sme-card-title">关于 TideWatch</view>
+        <view class="sme-about">面向河流水环境的智慧监测与协同处置平台，覆盖「监测感知 → 异常事件 → 巡检任务 → 现场反馈 → PC 复核 → 恢复评估」闭环。</view>
+        <view class="sme-feats">
+          <text class="sme-feat">水环境实时监测</text>
+          <text class="sme-feat">异常事件研判</text>
+          <text class="sme-feat">巡检任务闭环</text>
+          <text class="sme-feat">现场记录与复核</text>
+        </view>
+        <view class="sme-version-row">
+          <text class="sme-k">服务版本</text><text class="sme-v">{{version}}</text>
+        </view>
+        <view class="sme-version-row">
+          <text class="sme-k">规则版本</text><text class="sme-v">{{ruleVersion}}</text>
+        </view>
+        <view class="sme-version-row">
+          <text class="sme-k">状态更新</text><text class="sme-v">{{updatedText || '—'}}</text>
+        </view>
+      </view>
+
+      <view class="sme-bottom-space"></view>
+    </scroll-view>
+  </block>
+</view>

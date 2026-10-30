@@ -1,0 +1,94 @@
+<!-- components/shell-events/shell-events.wxml -->
+<view class="se">
+  <!-- 首次加载骨架 -->
+  <view wx:if="{{loading}}" class="se-state">
+    <view class="se-sk-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+      <view class="se-sk-bar w30"></view>
+      <view class="se-sk-bar w80"></view>
+      <view class="se-sk-bar w50"></view>
+    </view>
+  </view>
+
+  <view wx:elif="{{errorMsg}}" class="se-state">
+    <view class="se-emoji">⚠️</view>
+    <view class="se-state-title">事件加载失败</view>
+    <view class="se-state-desc">{{errorMsg}}</view>
+    <view class="se-retry" bindtap="onRetry">重新加载</view>
+  </view>
+
+  <block wx:else>
+    <!-- 顶部事件总览（固定不滚；数字全部来自真实接口派生） -->
+    <view class="se-overview">
+      <view class="se-ov-row">
+        <view>
+          <view class="se-ov-title">异常事件</view>
+          <view class="se-ov-sub">现场协同以查看为主 · 更新 {{updatedText || '—'}}</view>
+        </view>
+        <view class="se-ov-pill {{wsOpen ? 'on' : 'off'}}">
+          <view class="se-ov-dot"></view>{{wsOpen ? '实时在线' : '未连接'}}
+        </view>
+      </view>
+      <view class="se-stat-grid">
+        <view class="se-stat" data-key="active" bindtap="onFilter">
+          <text class="se-stat-v sp-c-danger">{{counts.active}}</text><text class="se-stat-k">活动中</text>
+        </view>
+        <view class="se-stat" data-key="recovery" bindtap="onFilter">
+          <text class="se-stat-v sp-c-watch">{{counts.recovery}}</text><text class="se-stat-k">待恢复</text>
+        </view>
+        <view class="se-stat" data-key="recovered" bindtap="onFilter">
+          <text class="se-stat-v sp-c-ok">{{counts.recovered}}</text><text class="se-stat-k">已恢复</text>
+        </view>
+        <view class="se-stat" data-key="all" bindtap="onFilter">
+          <text class="se-stat-v sp-c-cyan">{{counts.all}}</text><text class="se-stat-k">全部</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 列表滚动区 -->
+    <scroll-view scroll-y class="se-scroll">
+      <!-- 筛选 -->
+      <scroll-view scroll-x class="se-filters" enhanced show-scrollbar="{{false}}">
+        <view
+          wx:for="{{filters}}"
+          wx:key="key"
+          class="se-filter {{activeFilter === item.key ? 'is-active' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onFilter"
+        >{{item.label}}</view>
+      </scroll-view>
+
+      <!-- 事件卡：真实编号/名称/等级/状态/断面/更新时间/关联任务 -->
+      <view
+        wx:for="{{events}}"
+        wx:key="eventId"
+        class="se-card {{item.active ? '' : 'is-done'}}"
+        data-id="{{item.eventId}}"
+        bindtap="openEvent"
+      >
+        <view class="se-card-top">
+          <view class="se-card-id">
+            <text class="se-id">{{item.eventId}}</text>
+            <text wx:if="{{item.triggerText}}" class="se-trigger">{{item.triggerText}}</text>
+          </view>
+          <text class="se-badge se-badge-{{item.statusTone}}">{{item.statusText}}</text>
+        </view>
+        <view class="se-card-title">{{item.title}}</view>
+        <view class="se-card-meta">
+          <text wx:if="{{item.scopeText}}" class="se-chip">断面 {{item.scopeText}}</text>
+          <text class="se-chip">优先级 {{item.priorityText}}</text>
+          <text wx:if="{{item.relatedTaskId}}" class="se-chip se-chip-task">关联巡检任务</text>
+        </view>
+        <view class="se-card-foot">
+          <text class="se-updated">{{item.updatedText}}更新</text>
+          <text class="se-go">协同详情 ›</text>
+        </view>
+      </view>
+
+      <view wx:if="{{listEmpty}}" class="se-empty">
+        <view class="se-empty-emoji">🗂️</view>
+        <view>该分类下暂无事件</view>
+      </view>
+      <view class="se-bottom-space"></view>
+    </scroll-view>
+  </block>
+</view>

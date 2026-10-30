@@ -1,6 +1,7 @@
 /* pages/events/events.wxss V2 */
 .ev {
   min-height: 100vh;
+  background: #edf1f6;
   background: var(--m-bg);
 }
 

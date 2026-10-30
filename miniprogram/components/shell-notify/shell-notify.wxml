@@ -1,0 +1,48 @@
+<!-- components/shell-notify/shell-notify.wxml -->
+<view class="sntf">
+  <!-- 铃铛按钮（由 Shell 放在顶栏右侧） -->
+  <view class="sntf-bell {{open ? 'is-open' : ''}}" bindtap="togglePanel">
+    <view class="sntf-bell-ic">🔔</view>
+    <view wx:if="{{unread > 0}}" class="sntf-badge">{{unread > 99 ? '99+' : unread}}</view>
+  </view>
+
+  <!-- 遮罩 + 面板 -->
+  <block wx:if="{{open}}">
+    <view class="sntf-mask" bindtap="closePanel"></view>
+    <view class="sntf-panel">
+      <view class="sntf-head">
+        <text class="sntf-title">复核通知</text>
+        <text class="sntf-count" wx:if="{{unread > 0}}">{{unread}} 条未读</text>
+      </view>
+      <scroll-view scroll-y class="sntf-list">
+        <view wx:if="{{loading && notifications.length === 0}}" class="sntf-hint">加载中…</view>
+        <view wx:elif="{{notifications.length === 0}}" class="sntf-empty">
+          <view class="sntf-empty-emoji">🔔</view>
+          <view>暂无复核通知</view>
+        </view>
+        <view
+          wx:for="{{notifications}}"
+          wx:key="notificationId"
+          class="sntf-item {{item.isRead ? '' : 'is-unread'}} {{item.rejected ? 'is-reject' : 'is-ok'}}"
+          data-id="{{item.notificationId}}"
+          data-taskid="{{item.taskId}}"
+          bindtap="onTapNotification"
+        >
+          <view class="sntf-dot"></view>
+          <view class="sntf-main">
+            <view class="sntf-item-top">
+              <text class="sntf-item-title">{{item.title}}</text>
+              <text class="sntf-time">{{item.atText}}</text>
+            </view>
+            <view class="sntf-item-body">{{item.body}}</view>
+            <view class="sntf-item-foot">
+              <text class="sntf-tag">{{item.rejected ? '退回补充' : '复核通过'}}</text>
+              <text wx:if="{{item.version}}" class="sntf-ver">v{{item.version}}</text>
+              <text class="sntf-go">查看任务 ›</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </block>
+</view>

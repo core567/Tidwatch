@@ -1,0 +1,117 @@
+<!-- components/shell-monitor/shell-monitor.wxml -->
+<view class="sm">
+  <!-- 加载 -->
+  <view wx:if="{{loading}}" class="sm-state">
+    <view class="sm-sk-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+      <view class="sm-sk-bar w30"></view>
+      <view class="sm-sk-bar w70"></view>
+      <view class="sm-sk-bar w50"></view>
+    </view>
+  </view>
+
+  <view wx:elif="{{errorMsg}}" class="sm-state">
+    <view class="sm-emoji">⚠️</view>
+    <view class="sm-state-title">监测数据加载失败</view>
+    <view class="sm-state-desc">{{errorMsg}}</view>
+    <view class="sm-retry" bindtap="onRetry">重新加载</view>
+  </view>
+
+  <block wx:else>
+    <!-- 顶部监测总览 -->
+    <view class="sm-overview">
+      <view class="sm-ov-row">
+        <view>
+          <view class="sm-ov-title">水环境监测</view>
+          <view class="sm-ov-sub">汉江武汉段 · 示意拓扑</view>
+        </view>
+        <view class="sm-ov-pill {{offlineCount > 0 ? 'off' : 'on'}}">
+          <view class="sm-ov-dot"></view>{{offlineCount > 0 ? '异常 ' + offlineCount : '链路在线'}}
+        </view>
+      </view>
+      <view class="sm-ov-meta">
+        <view class="sm-ov-chip">更新 {{updatedText || '—'}}</view>
+        <view class="sm-ov-chip">活动事件 {{activeEventCount}}</view>
+        <view class="sm-ov-chip sm-src">MQTT 模拟</view>
+      </view>
+
+      <!-- 弯曲河道示意（SVG，viewBox 自适应，非地理测绘） -->
+      <view class="sm-river">
+        <view class="sm-river-cap">河道断面示意（非测绘比例）· 点击定位</view>
+        <view class="sm-river-stage">
+          <image class="sm-river-svg" src="{{riverSvg}}" mode="widthFix" />
+          <view
+            wx:for="{{cards}}"
+            wx:key="reachId"
+            class="sm-node sm-node-{{index}} {{selectedId === item.reachId ? 'is-sel' : ''}} {{item.isAlert ? 'is-alert' : ''}}"
+            data-id="{{item.reachId}}"
+            bindtap="onTapStation"
+          >
+            <view class="sm-node-dot">{{item.letter}}</view>
+            <view class="sm-node-name">{{item.name}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 独立滚动区：指标卡 + 趋势 + 异常 -->
+    <scroll-view
+      scroll-y
+      class="sm-scroll"
+      scroll-into-view="{{scrollToId}}"
+      scroll-with-animation
+    >
+      <!-- 三断面核心指标卡 -->
+      <view
+        wx:for="{{cards}}"
+        wx:key="reachId"
+        id="sm-card-{{item.reachId}}"
+        class="sm-card {{selectedId === item.reachId ? 'is-sel' : ''}}"
+      >
+        <view class="sm-card-head">
+          <view class="sm-card-name">
+            <view class="sm-card-letter">{{item.letter}}</view>
+            {{item.name}}
+          </view>
+          <view class="sm-card-state {{item.isOffline ? 'off' : 'on'}}">
+            <view class="sm-state-dot"></view>{{item.onlineStatus === 'ONLINE' ? '在线' : '链路中断'}}
+          </view>
+        </view>
+
+        <view class="sm-metrics">
+          <view class="sm-metric">
+            <text class="sm-metric-v {{item.waterValue === '—' ? 'is-empty' : ''}}">{{item.waterValue}}</text>
+            <text class="sm-metric-k">水位</text>
+            <text class="sm-metric-t">{{item.waterTime}}</text>
+          </view>
+          <view class="sm-metric">
+            <text class="sm-metric-v {{item.turbValue === '—' ? 'is-empty' : ''}}">{{item.turbValue}}</text>
+            <text class="sm-metric-k">浊度</text>
+            <text class="sm-metric-t">{{item.turbTime}}</text>
+          </view>
+        </view>
+
+        <view class="sm-card-foot">
+          <text class="sm-src-tag">模拟数据</text>
+          <text wx:if="{{item.blindCount > 0}}" class="sm-blind">开放盲区 {{item.blindCount}}</text>
+          <view class="sm-detail" data-id="{{item.reachId}}" catchtap="goDetail">断面详情 ›</view>
+        </view>
+      </view>
+
+      <!-- 异常摘要 -->
+      <view class="sm-section">
+        <view class="sm-section-title">异常摘要</view>
+        <view wx:if="{{events.length > 0}}" class="sm-event-list">
+          <view wx:for="{{events}}" wx:key="eventId" class="sm-event">
+            <view class="sm-event-dot"></view>
+            <text class="sm-event-id">{{item.eventId}}</text>
+            <text class="sm-event-tag">事件（演示/真实以来源为准）</text>
+          </view>
+        </view>
+        <view wx:else class="sm-empty">近 5 条无关联活动事件</view>
+        <view class="sm-note">事件数据来自事件接口；本模块仅展示摘要，详情页暂不改造。</view>
+      </view>
+
+      <view class="sm-bottom-space"></view>
+    </scroll-view>
+  </block>
+</view>

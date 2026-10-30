@@ -1,0 +1,202 @@
+/* 单页面常驻容器实验 —— 深海蓝科技风
+   三段式固定布局：fixed 全屏 flex column，页面级滚动已由 disableScroll 禁用，
+   仅中间 scroll-view 滚动，顶部/底部导航不随内容移动。 */
+.sp {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: #eef2f8;
+}
+
+/* ===== 常驻顶部品牌区（不收缩、不滚动）===== */
+.sp-header {
+  background: linear-gradient(155deg, #08233f 0%, #0b2a4a 55%, #123e68 100%);
+  padding: 0 32rpx;
+  flex-shrink: 0;
+}
+.sp-header-inner { padding: 28rpx 0 30rpx; }
+.sp-brand-row { display: flex; align-items: center; gap: 18rpx; }
+.sp-logo {
+  width: 72rpx; height: 72rpx; border-radius: 18rpx;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 28rpx; letter-spacing: 1rpx;
+  background: linear-gradient(135deg, #1e6fe0, #18b7c8);
+  box-shadow: 0 6rpx 18rpx rgba(30, 111, 224, 0.4);
+}
+.sp-brand { color: #fff; font-size: 38rpx; font-weight: 800; line-height: 1.15; }
+.sp-subtitle { color: #9fb8d6; font-size: 22rpx; margin-top: 4rpx; letter-spacing: 2rpx; }
+.sp-demo-badge {
+  font-size: 19rpx; color: #ffd9a0;
+  background: rgba(232, 144, 42, 0.16);
+  border: 1rpx solid rgba(232, 144, 42, 0.4);
+  border-radius: 999rpx; padding: 6rpx 16rpx;
+}
+.sp-header-right { margin-left: auto; display: flex; align-items: center; gap: 10rpx; }
+
+/* ===== 内容区：flex:1 + min-height:0，内部各模块自行滚动 ===== */
+.sp-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 0;
+}
+/* 监测组件宿主：占满内容区（组件内部已有 scroll-view） */
+.sp-monitor-host {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+/* 任务组件宿主：同样占满内容区（组件内部自带滚动） */
+.sp-tasks-host {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+/* 事件组件宿主：同样占满内容区（组件内部自带滚动） */
+.sp-events-host {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+/* 我的（系统与演示中心）组件宿主 */
+.sp-me-host {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+/* 三个静态模块各自独立滚动 */
+.sp-panel-scroll {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  box-sizing: border-box;
+}
+.sp-panel { padding: 22rpx 24rpx; animation: sp-fade 0.16s ease; }
+@keyframes sp-fade { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* 卡片 */
+.sp-card-title {
+  font-size: 26rpx; font-weight: 700; color: #0b2a4a;
+  margin: 22rpx 4rpx 14rpx;
+}
+.sp-card {
+  background: #fff; border: 1rpx solid #e6ebf3;
+  border-radius: 20rpx; padding: 26rpx 28rpx;
+  margin-bottom: 18rpx; box-shadow: 0 4rpx 16rpx rgba(11, 42, 74, 0.05);
+}
+
+/* 统计四宫格 */
+.sp-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14rpx; margin-bottom: 6rpx; }
+.sp-stat {
+  background: #fff; border: 1rpx solid #e6ebf3; border-radius: 18rpx;
+  padding: 22rpx 8rpx; text-align: center;
+  box-shadow: 0 4rpx 14rpx rgba(11,42,74,.05);
+}
+.sp-stat-v { display: block; font-size: 40rpx; font-weight: 800; }
+.sp-stat-k { display: block; font-size: 20rpx; color: #7c8aa0; margin-top: 6rpx; }
+.sp-c-danger { color: #d84c4c; }
+.sp-c-watch { color: #e8902a; }
+.sp-c-cyan { color: #12a594; }
+.sp-c-ok { color: #0fa896; }
+.sp-c-muted { color: #94a3b8; }
+
+/* 任务行 */
+.sp-task { display: flex; align-items: center; justify-content: space-between; }
+.sp-task-main { min-width: 0; }
+.sp-task-title { font-size: 28rpx; font-weight: 600; color: #16263a; }
+.sp-task-meta { font-size: 21rpx; color: #8aa0b8; margin-top: 6rpx; }
+.sp-level { font-size: 21rpx; padding: 6rpx 18rpx; border-radius: 999rpx; font-weight: 700; flex-shrink: 0; }
+.sp-level-high { background: rgba(216,76,76,.12); color: #d84c4c; }
+.sp-level-mid { background: rgba(232,144,42,.14); color: #d07a14; }
+.sp-tag { font-size: 21rpx; color: #1e6fe0; background: rgba(30,111,224,.1); padding: 6rpx 18rpx; border-radius: 999rpx; flex-shrink: 0; }
+
+/* 事件行 */
+.sp-event { display: flex; align-items: center; gap: 18rpx; }
+.sp-event-dot { width: 18rpx; height: 18rpx; border-radius: 50%; flex-shrink: 0; }
+.sp-dot-danger { background: #d84c4c; box-shadow: 0 0 0 6rpx rgba(216,76,76,.12); }
+.sp-dot-watch { background: #e8902a; box-shadow: 0 0 0 6rpx rgba(232,144,42,.12); }
+.sp-dot-muted { background: #94a3b8; box-shadow: 0 0 0 6rpx rgba(148,163,184,.14); }
+.sp-event-main { flex: 1; min-width: 0; }
+.sp-risk { font-size: 22rpx; font-weight: 700; flex-shrink: 0; }
+.sp-risk-danger { color: #d84c4c; }
+.sp-risk-watch { color: #e8902a; }
+.sp-risk-muted { color: #94a3b8; }
+
+/* 监测站 */
+.sp-station-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18rpx; }
+.sp-station-name { font-size: 29rpx; font-weight: 700; color: #0b2a4a; }
+.sp-online { display: inline-flex; align-items: center; gap: 8rpx; font-size: 21rpx; border-radius: 999rpx; padding: 6rpx 18rpx; }
+.sp-online-dot { width: 12rpx; height: 12rpx; border-radius: 50%; }
+.sp-online-ok { background: rgba(15,168,150,.12); color: #0fa896; }
+.sp-online-ok .sp-online-dot { background: #0fa896; }
+.sp-station-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14rpx; }
+.sp-metric {
+  background: #f5f8fc; border-radius: 14rpx; padding: 20rpx 22rpx;
+}
+.sp-metric-v { display: block; font-size: 38rpx; font-weight: 800; color: #1e6fe0; }
+.sp-metric-k { display: block; font-size: 20rpx; color: #7c8aa0; margin-top: 4rpx; }
+.sp-note { font-size: 20rpx; color: #8aa0b8; line-height: 1.7; padding: 6rpx 6rpx 0; }
+
+/* 我的 */
+.sp-me-head { display: flex; align-items: center; gap: 20rpx; }
+.sp-avatar {
+  width: 88rpx; height: 88rpx; border-radius: 50%;
+  background: linear-gradient(135deg, #1e6fe0, #12a594);
+  color: #fff; font-size: 34rpx; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.sp-me-name { font-size: 32rpx; font-weight: 800; color: #0b2a4a; }
+.sp-info-row { display: flex; justify-content: space-between; padding: 18rpx 0; border-bottom: 1rpx solid #f0f3f8; font-size: 26rpx; }
+.sp-info-row:last-child { border-bottom: none; }
+.sp-info-k { color: #7c8aa0; }
+.sp-info-v { color: #16263a; font-weight: 600; }
+.sp-entry { display: flex; justify-content: space-between; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #f0f3f8; font-size: 27rpx; color: #16263a; }
+.sp-entry:last-child { border-bottom: none; }
+.sp-chev { color: #b4c2d4; font-size: 34rpx; }
+
+/* ===== 常驻底部自绘导航 ===== */
+.sp-tabbar {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: rgba(255,255,255,0.96);
+  border-top: 1rpx solid #e6ebf3;
+  padding: 12rpx 0 calc(12rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 20rpx rgba(11,42,74,.06);
+}
+.sp-tab { display: flex; flex-direction: column; align-items: center; gap: 7rpx; padding: 8rpx 0; }
+.sp-tab-label { font-size: 20rpx; color: #8aa0b8; }
+.sp-tab.is-active .sp-tab-label { color: #1e6fe0; font-weight: 700; }
+/* 纯 CSS 线性图标 */
+.sp-tab-ic-wrap { position: relative; width: 40rpx; height: 40rpx; }
+.sp-tab-ic { width: 40rpx; height: 40rpx; position: relative; }
+.sp-tab-dot {
+  position: absolute; top: -12rpx; right: -22rpx; min-width: 26rpx; height: 26rpx;
+  padding: 0 5rpx; border-radius: 999rpx; background: #d84c4c; color: #fff;
+  font-size: 17rpx; font-weight: 700; line-height: 26rpx; text-align: center;
+  border: 2rpx solid #fff; box-sizing: border-box; z-index: 2;
+}
+.sp-tab-ic::before {
+  content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+  -webkit-mask-size: contain; mask-size: contain;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  background: #9db0c6;
+}
+.sp-tab.is-active .sp-tab-ic::before { background: #1e6fe0; }
+/* 简化的几何图标（无图片依赖） */
+.sp-ic-tasks::before {
+  background: none;
+  border: 4rpx solid #9db0c6; border-radius: 6rpx;
+}
+.sp-tab.is-active .sp-ic-tasks::before { border-color: #1e6fe0; background: transparent; }
+.sp-ic-events::before {
+  background: none; border-radius: 50%; border: 4rpx solid #9db0c6;
+}
+.sp-tab.is-active .sp-ic-events::before { border-color: #1e6fe0; background: transparent; }
+.sp-ic-monitor::before {
+  background: none; border: 4rpx solid #9db0c6; border-radius: 10rpx;
+}
+.sp-tab.is-active .sp-ic-monitor::before { border-color: #1e6fe0; background: transparent; }
+.sp-ic-me::before {
+  background: none; border-radius: 50%; border: 4rpx solid #9db0c6;
+}
+.sp-tab.is-active .sp-ic-me::before { border-color: #1e6fe0; background: transparent; }

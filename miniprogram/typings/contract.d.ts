@@ -298,6 +298,7 @@ declare interface StreamMessage<T = unknown> {
     | 'blindspot.resolved'
     | 'task.created'
     | 'task.updated'
+    | 'notification.created'
     | 'reach.status-changed'
     | 'ping';
   scenarioId: string | null;

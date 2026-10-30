@@ -1,6 +1,7 @@
 /* pages/profile/profile.wxss V2 - 巡检人员个人工作中心 */
 .pf {
   min-height: 100vh;
+  background: #edf1f6;
   background: var(--m-bg);
   padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }

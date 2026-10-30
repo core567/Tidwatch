@@ -394,12 +394,21 @@ Page({
         requestReevaluate: this.data.conclusion === 'ABNORMAL',
         measurements: buildMeasurementsPayload(states),
       });
-      wx.showToast({ title: '提交成功', icon: 'success' });
-      setTimeout(() => wx.navigateBack(), 800);
+      // 后端确认成功后才提示并返回；不用固定延时掩盖问题。
+      // navigateBack 带 success/fail 回调：成功回上一页由 task-detail onShow 静默刷新；
+      // 极端情况下导航栈为空则 fail 真实报错并停留在本页（输入仍保留）。
+      wx.showToast({ title: '提交成功', icon: 'success', duration: 1500 });
+      wx.navigateBack({
+        fail: (err) => {
+          this.setData({
+            submitting: false,
+            errorMsg: `提交已保存，但返回任务详情失败：${err?.errMsg ?? '未知错误'}，请点左上角返回`,
+          });
+        },
+      });
     } catch (e) {
-      this.setData({ errorMsg: e instanceof Error ? e.message : '提交失败' });
-    } finally {
-      this.setData({ submitting: false });
+      // 提交失败：停留本页，复测值/照片/观察记录均保留，解除提交锁允许重试
+      this.setData({ submitting: false, errorMsg: e instanceof Error ? e.message : '提交失败' });
     }
   },
 });

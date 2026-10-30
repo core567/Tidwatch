@@ -1,6 +1,7 @@
 /* pages/reaches/reaches.wxss V2 */
 .rv {
   min-height: 100vh;
+  background: #edf1f6;
   background: var(--m-bg);
   padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }
@@ -116,4 +117,24 @@
 .rv-note {
   font-size: 20rpx; color: var(--m-text-3); line-height: 1.7;
   background: #f7fafd; border-radius: 16rpx; padding: 18rpx 22rpx;
+}
+
+/* 首次加载骨架（Hero 常驻，卡片区占位） */
+.rv-skeleton { padding-top: 4rpx; }
+.rv-sk-card {
+  background: #fff; border-radius: var(--m-radius-lg);
+  padding: 28rpx 30rpx; margin-bottom: 22rpx; box-shadow: var(--m-shadow-card);
+}
+.rv-sk-bar {
+  height: 24rpx; border-radius: 8rpx; margin-bottom: 18rpx;
+  background: linear-gradient(90deg,#e8edf3 25%,#f4f7fa 37%,#e8edf3 63%);
+  background-size: 400rpx 100%; animation: rv-sk-shimmer 1.3s infinite linear;
+}
+.rv-sk-bar:last-child { margin-bottom: 0; }
+.rv-sk-bar.w30 { width: 30%; }
+.rv-sk-bar.w70 { width: 70%; }
+.rv-sk-bar.w50 { width: 50%; }
+@keyframes rv-sk-shimmer {
+  0% { background-position: -400rpx 0; }
+  100% { background-position: 400rpx 0; }
 }

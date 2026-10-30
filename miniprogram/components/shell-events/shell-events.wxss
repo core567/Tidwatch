@@ -1,0 +1,72 @@
+.se { display: flex; flex-direction: column; height: 100%; min-height: 0; background: #eef2f8; }
+
+/* 状态 */
+.se-state { flex: 1; padding: 40rpx 32rpx; }
+.se-sk-card { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 20rpx; }
+.se-sk-bar { height: 24rpx; border-radius: 8rpx; margin-bottom: 18rpx;
+  background: linear-gradient(90deg,#e8edf3 25%,#f4f7fa 37%,#e8edf3 63%); background-size: 400rpx 100%; }
+.se-sk-bar.w30 { width: 30%; } .se-sk-bar.w80 { width: 80%; } .se-sk-bar.w50 { width: 50%; }
+.se-emoji { font-size: 64rpx; text-align: center; }
+.se-state-title { text-align: center; font-weight: 700; color: #0b2a4a; margin-top: 12rpx; }
+.se-state-desc { text-align: center; color: #8aa0b8; font-size: 24rpx; margin-top: 8rpx; }
+.se-retry { margin: 24rpx auto 0; width: 200rpx; text-align: center; background: #1e6fe0;
+  color: #fff; border-radius: 14rpx; padding: 16rpx 0; font-size: 26rpx; }
+
+/* 顶部总览（固定不滚） */
+.se-overview { flex-shrink: 0;
+  background: linear-gradient(155deg,#08233f 0%,#0b2a4a 52%,#123e68 100%);
+  padding: 24rpx 28rpx 26rpx; color: #fff; }
+.se-ov-row { display: flex; align-items: flex-start; justify-content: space-between; }
+.se-ov-title { font-size: 36rpx; font-weight: 800; }
+.se-ov-sub { font-size: 21rpx; color: #9fb8d6; margin-top: 6rpx; }
+.se-ov-pill { display: inline-flex; align-items: center; gap: 8rpx; font-size: 20rpx;
+  border-radius: 999rpx; padding: 7rpx 18rpx; flex-shrink: 0; }
+.se-ov-pill.on { background: rgba(15,168,150,.16); color: #6fe3d2; }
+.se-ov-pill.off { background: rgba(148,163,184,.18); color: #c5d2e2; }
+.se-ov-dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: currentColor; }
+
+.se-stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12rpx; margin-top: 20rpx; }
+.se-stat { background: rgba(255,255,255,.08); border: 1rpx solid rgba(255,255,255,.12);
+  border-radius: 16rpx; padding: 18rpx 6rpx; text-align: center; }
+.se-stat-v { display: block; font-size: 38rpx; font-weight: 800; }
+.se-stat-k { display: block; font-size: 19rpx; color: #a9c4de; margin-top: 6rpx; }
+/* sp-c-* 数字色沿用页面样式（apply-shared），不在组件内重复定义 */
+
+/* 列表滚动 */
+.se-scroll { flex: 1; min-height: 0; }
+.se-filters { white-space: nowrap; padding: 18rpx 24rpx 8rpx; }
+.se-filter { display: inline-block; padding: 12rpx 30rpx; margin-right: 14rpx;
+  border-radius: 999rpx; background: #fff; color: #5d7186; font-size: 24rpx;
+  border: 1rpx solid #e2e8f0; }
+.se-filter.is-active { background: #1e6fe0; color: #fff; border-color: #1e6fe0; font-weight: 700; }
+
+/* 事件卡 */
+.se-card { position: relative; background: #fff; border: 2rpx solid rgba(226,232,240,.7);
+  border-radius: 20rpx; padding: 24rpx 26rpx 22rpx 30rpx; margin: 16rpx 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(11,42,74,.06); }
+.se-card::before { content: ''; position: absolute; left: 0; top: 28rpx; bottom: 28rpx;
+  width: 8rpx; border-radius: 0 6rpx 6rpx 0; background: #d84c4c; }
+.se-card.is-done::before { background: #0fa896; }
+.se-card-top { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.se-card-id { display: flex; align-items: center; gap: 14rpx; min-width: 0; }
+.se-id { font-size: 25rpx; font-weight: 800; color: #d84c4c; }
+.se-trigger { font-size: 19rpx; color: #64748b; background: #f1f5f9;
+  border-radius: 8rpx; padding: 4rpx 14rpx; }
+.se-badge { font-size: 20rpx; padding: 6rpx 18rpx; border-radius: 999rpx; flex-shrink: 0; }
+.se-badge-danger { background: rgba(216,76,76,.12); color: #c23a3a; }
+.se-badge-watch { background: rgba(232,144,42,.14); color: #d07a14; }
+.se-badge-ok { background: rgba(15,168,150,.12); color: #0c8f80; }
+.se-badge-offline { background: rgba(148,163,184,.16); color: #5b7088; }
+.se-card-title { font-size: 29rpx; font-weight: 700; color: #16263a; margin: 15rpx 0;
+  line-height: 1.45; }
+.se-card-meta { display: flex; flex-wrap: wrap; gap: 10rpx; }
+.se-chip { font-size: 20rpx; background: #f1f5f9; color: #475569; border-radius: 8rpx; padding: 6rpx 16rpx; }
+.se-chip-task { background: rgba(30,111,224,.08); color: #1e6fe0; }
+.se-card-foot { display: flex; align-items: center; justify-content: space-between;
+  margin-top: 16rpx; padding-top: 14rpx; border-top: 1rpx solid #f1f5f9; }
+.se-updated { font-size: 20rpx; color: #94a3b8; }
+.se-go { color: #1e6fe0; font-weight: 700; font-size: 22rpx; }
+
+.se-empty { text-align: center; color: #8aa0b8; padding: 80rpx 0; }
+.se-empty-emoji { font-size: 64rpx; margin-bottom: 14rpx; }
+.se-bottom-space { height: 20rpx; }

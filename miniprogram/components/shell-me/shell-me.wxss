@@ -1,0 +1,79 @@
+.sme { display: flex; flex-direction: column; height: 100%; min-height: 0; background: #eef2f8; }
+
+/* 状态/骨架 */
+.sme-state { flex: 1; padding: 40rpx 32rpx; }
+.sme-sk-card { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 20rpx; }
+.sme-sk-bar { height: 24rpx; border-radius: 8rpx; margin-bottom: 18rpx;
+  background: linear-gradient(90deg,#e8edf3 25%,#f4f7fa 37%,#e8edf3 63%); background-size: 400rpx 100%; }
+.sme-sk-bar.w30 { width: 30%; } .sme-sk-bar.w80 { width: 80%; } .sme-sk-bar.w55 { width: 55%; }
+.sme-emoji { font-size: 64rpx; text-align: center; }
+.sme-state-title { text-align: center; font-weight: 700; color: #0b2a4a; margin-top: 12rpx; }
+.sme-state-desc { text-align: center; color: #8aa0b8; font-size: 24rpx; margin-top: 8rpx; }
+.sme-retry { margin: 24rpx auto 0; width: 200rpx; text-align: center; background: #1e6fe0;
+  color: #fff; border-radius: 14rpx; padding: 16rpx 0; font-size: 26rpx; }
+
+.sme-scroll { flex: 1; min-height: 0; }
+
+/* 品牌区（固定在滚动内顶部） */
+.sme-hero { background: linear-gradient(155deg,#08233f 0%,#0b2a4a 52%,#123e68 100%);
+  padding: 28rpx 28rpx 30rpx; color: #fff; }
+.sme-hero-row { display: flex; align-items: center; gap: 18rpx; }
+.sme-logo { width: 72rpx; height: 72rpx; border-radius: 18rpx; flex-shrink: 0;
+  background: rgba(255,255,255,.12); border: 1rpx solid rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 30rpx; }
+.sme-hero-main { flex: 1; min-width: 0; }
+.sme-title { font-size: 34rpx; font-weight: 800; }
+.sme-sub { font-size: 21rpx; color: #9fb8d6; margin-top: 6rpx; }
+.sme-mode { font-size: 19rpx; color: #c5d2e2; background: rgba(255,255,255,.1);
+  border: 1rpx solid rgba(255,255,255,.16); border-radius: 999rpx; padding: 7rpx 16rpx; flex-shrink: 0; }
+
+/* 卡片 */
+.sme-card { margin: 20rpx 24rpx 0; padding: 26rpx 28rpx; }
+.sme-card-title { font-size: 27rpx; font-weight: 800; color: #16263a;
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8rpx; }
+.sme-refresh { font-size: 22rpx; font-weight: 700; color: #1e6fe0; }
+
+/* 状态行 */
+.sme-row { display: flex; align-items: center; justify-content: space-between;
+  gap: 20rpx; padding: 18rpx 0; border-bottom: 1rpx dashed #edf1f6; }
+.sme-row:last-child { border-bottom: 0; }
+.sme-k { font-size: 25rpx; color: #5d7186; flex-shrink: 0; }
+.sme-v { font-size: 24rpx; color: #16263a; font-weight: 600; text-align: right; }
+
+.sme-badge { font-size: 20rpx; padding: 6rpx 18rpx; border-radius: 999rpx; flex-shrink: 0; }
+.sme-badge-ok { background: rgba(15,168,150,.12); color: #0c8f80; }
+.sme-badge-wait { background: rgba(232,144,42,.14); color: #d07a14; }
+.sme-badge-down { background: rgba(216,76,76,.12); color: #c23a3a; }
+.sme-badge-off { background: rgba(148,163,184,.16); color: #5b7088; }
+.sme-badge-info { background: rgba(30,111,224,.1); color: #1e6fe0; }
+
+/* 断面三态 */
+.sme-reaches { display: grid; grid-template-columns: repeat(3,1fr); gap: 12rpx; margin-top: 18rpx; }
+.sme-reach { background: #f6f9fc; border-radius: 14rpx; padding: 18rpx 0; text-align: center; }
+.sme-reach-v { display: block; font-size: 36rpx; font-weight: 800; }
+.sme-reach-k { display: block; font-size: 19rpx; color: #8aa0b8; margin-top: 6rpx; }
+.sme-c-ok { color: #0fa896; } .sme-c-watch { color: #e8902a; } .sme-c-down { color: #d84c4c; }
+
+.sme-note { font-size: 20rpx; color: #94a3b8; line-height: 1.6; margin-top: 16rpx; }
+.sme-warn { font-size: 21rpx; color: #c23a3a; background: rgba(216,76,76,.07);
+  border: 1rpx solid rgba(216,76,76,.25); border-radius: 12rpx;
+  padding: 14rpx 18rpx; margin-top: 16rpx; line-height: 1.5; }
+
+/* 数据来源 */
+.sme-src { padding: 18rpx 0; border-bottom: 1rpx dashed #edf1f6; }
+.sme-src:last-child { border-bottom: 0; }
+.sme-src-head { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.sme-src-name { font-size: 25rpx; font-weight: 700; color: #16263a; }
+.sme-src-desc { font-size: 21rpx; color: #64748b; line-height: 1.6; margin-top: 10rpx; }
+.sme-src-rule { font-size: 20rpx; color: #1e6fe0; margin-top: 10rpx; line-height: 1.6; }
+
+/* 关于 */
+.sme-about { font-size: 24rpx; color: #475569; line-height: 1.7; margin-top: 10rpx; }
+.sme-feats { display: flex; flex-wrap: wrap; gap: 12rpx; margin: 18rpx 0; }
+.sme-feat { font-size: 21rpx; color: #1e6fe0; background: rgba(30,111,224,.08);
+  border-radius: 10rpx; padding: 8rpx 18rpx; }
+.sme-version-row { display: flex; justify-content: space-between;
+  padding: 14rpx 0; border-top: 1rpx dashed #edf1f6; }
+
+.sme-bottom-space { height: 24rpx; }

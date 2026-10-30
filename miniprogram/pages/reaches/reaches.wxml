@@ -1,49 +1,68 @@
 <!-- pages/reaches/reaches.wxml - 水环境监测 V2 -->
 <view class="rv">
 
-  <block wx:if="{{pageState === 'loading'}}"><m-state type="loading" /></block>
-  <block wx:elif="{{pageState === 'error'}}">
-    <m-state type="error" title="监测数据加载失败" desc="{{errorMsg}}" bind:retry="load" />
+  <!-- Hero 常驻：首次加载/切 Tab 也保持深蓝拓扑，避免浅灰骨架→深蓝头部闪白 -->
+  <view class="m-hero rv-hero">
+    <view class="m-hero-inner">
+      <view class="rv-hero-row">
+        <view>
+          <view class="m-hero-eyebrow">WATER ENVIRONMENT</view>
+          <view class="rv-title">水环境监测</view>
+          <view class="rv-sub">连续观测为 MQTT 模拟链路（明确标注）· 官方站为快照数据</view>
+        </view>
+        <view class="rv-link-pill {{linkOfflineCount > 0 ? 'off' : 'on'}}">
+          <view class="rv-link-dot"></view>{{linkOfflineCount > 0 ? '链路中断 ' + linkOfflineCount : (pageState === 'ready' ? '链路在线' : '连接中')}}
+        </view>
+      </view>
+
+      <!-- 汉江拓扑（呼应 PC 3D 河流走廊） -->
+      <view class="rv-river-wrap">
+        <view class="rv-river-label">
+          <text>HAN RIVER · WUHAN REACH</text><text>FLOW →</text>
+        </view>
+        <view class="rv-river">
+          <view class="rv-river-line"></view>
+          <view
+            wx:for="{{cards}}"
+            wx:key="reachId"
+            class="rv-node-wrap"
+            style="left: {{index === 0 ? '4%' : index === 1 ? '44%' : '84%'}}"
+          >
+            <view class="rv-node {{item.eventId ? 'alert' : (item.onlineStatus === 'ONLINE' ? 'online' : 'off')}}">{{item.letter}}</view>
+            <view class="rv-node-label">{{item.name}}</view>
+          </view>
+          <!-- 加载中占位节点（保持拓扑稳定，不跳动） -->
+          <block wx:if="{{cards.length === 0}}">
+            <view class="rv-node-wrap" style="left:4%"><view class="rv-node off">A</view><view class="rv-node-label">上游 A</view></view>
+            <view class="rv-node-wrap" style="left:44%"><view class="rv-node off">B</view><view class="rv-node-label">中游 B</view></view>
+            <view class="rv-node-wrap" style="left:84%"><view class="rv-node off">C</view><view class="rv-node-label">下游 C</view></view>
+          </block>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <block wx:if="{{pageState === 'error'}}">
+    <view class="rv-sheet">
+      <m-state type="error" title="监测数据加载失败" desc="{{errorMsg}}" bind:retry="load" />
+    </view>
   </block>
 
   <block wx:else>
-    <view class="m-hero rv-hero">
-      <view class="m-hero-inner">
-        <view class="rv-hero-row">
-          <view>
-            <view class="m-hero-eyebrow">WATER ENVIRONMENT</view>
-            <view class="rv-title">水环境监测</view>
-            <view class="rv-sub">连续观测为 MQTT 模拟链路（明确标注）· 官方站为快照数据</view>
-          </view>
-          <view class="rv-link-pill {{linkOfflineCount > 0 ? 'off' : 'on'}}">
-            <view class="rv-link-dot"></view>{{linkOfflineCount > 0 ? '链路中断 ' + linkOfflineCount : '链路在线'}}
-          </view>
-        </view>
+    <m-connection-bar tone="{{connTone}}" text="{{connText}}" />
 
-        <!-- 汉江拓扑（呼应 PC 3D 河流走廊） -->
-        <view class="rv-river-wrap">
-          <view class="rv-river-label">
-            <text>HAN RIVER · WUHAN REACH</text><text>FLOW →</text>
-          </view>
-          <view class="rv-river">
-            <view class="rv-river-line"></view>
-            <view
-              wx:for="{{cards}}"
-              wx:key="reachId"
-              class="rv-node-wrap"
-              style="left: {{index === 0 ? '4%' : index === 1 ? '44%' : '84%'}}"
-            >
-              <view class="rv-node {{item.eventId ? 'alert' : (item.onlineStatus === 'ONLINE' ? 'online' : 'off')}}">{{item.letter}}</view>
-              <view class="rv-node-label">{{item.name}}</view>
-            </view>
-          </view>
+    <!-- 首次加载骨架（Hero/拓扑已常驻，仅卡片区占位） -->
+    <view wx:if="{{pageState === 'loading'}}" class="rv-sheet">
+      <view class="rv-skeleton">
+        <view class="rv-sk-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+          <view class="rv-sk-bar w30"></view>
+          <view class="rv-sk-bar w70"></view>
+          <view class="rv-sk-bar w50"></view>
         </view>
       </view>
     </view>
 
-    <m-connection-bar tone="{{connTone}}" text="{{connText}}" />
-
-    <view class="rv-sheet">
+    <view class="rv-sheet" wx:if="{{pageState === 'ready'}}">
       <!-- 新鲜度/风险概览 -->
       <view class="rv-fresh">
         <view class="rv-fresh-i">

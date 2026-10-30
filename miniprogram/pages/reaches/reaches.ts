@@ -11,6 +11,7 @@ import { formatRelative } from '../../utils/util';
 import { logger } from '../../utils/logger';
 import { syncTabSelected, TAB_INDEX } from '../../utils/tabbar';
 import { latestMetricViews } from '../../utils/reachView';
+import { diag } from '../../utils/diag';
 import { wsClient } from '../../utils/ws';
 import { connectionData } from '../../utils/connection';
 
@@ -58,6 +59,7 @@ Page({
       });
     });
     this.privateUnsubMsg = wsClient.onMessage((msg) => {
+      if (!diag.allowWs()) return; // 排查开关
       if (msg.messageType === 'reach.status-changed' || msg.messageType === 'observation.created') {
         if ((this as unknown as { loadedOnce?: boolean }).loadedOnce) this.load(true);
       }
@@ -79,8 +81,12 @@ Page({
   },
 
   async load(silent = false): Promise<void> {
+    if (!diag.allowRequest()) return; // 排查开关
     const seq = ++this.fetchSeq;
-    if (!silent) this.setData({ pageState: 'loading', errorMsg: '' });
+    // 仅首次加载显示骨架；已有数据后静默刷新不清空（避免切回 Tab 闪骨架）
+    if (!silent && !(this as unknown as { loadedOnce?: boolean }).loadedOnce) {
+      this.setData({ pageState: 'loading', errorMsg: '' });
+    }
     try {
       const [reaches, blinds, eventsRes] = await Promise.all([
         listReaches(),

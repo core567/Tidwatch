@@ -91,6 +91,23 @@ export function listReviews(taskId: string): Promise<unknown[]> {
   return request<unknown[]>(`/api/inspection-tasks/${encodeURIComponent(taskId)}/reviews`);
 }
 
+/** 任务统一时间线条目（只读 business_events；节点真实性依据，非按最终状态反推） */
+export interface TaskTimelineItem {
+  actionType: string;
+  actor?: string | null;
+  fromStatus?: string | null;
+  toStatus?: string | null;
+  description?: string | null;
+  occurredAt: string;
+  source?: string;
+}
+
+export function listTaskTimeline(taskId: string): Promise<{ items: TaskTimelineItem[] }> {
+  return request<{ items: TaskTimelineItem[] }>(
+    `/api/inspection-tasks/${encodeURIComponent(taskId)}/timeline`,
+  );
+}
+
 /** 任务流转：ACCEPT / START / CANCEL，由后端校验状态并写 Run Trace */
 export function actTask(
   taskId: string,
@@ -269,8 +286,80 @@ export function getMe(): Promise<User> {
   return request<User>('/api/auth/me');
 }
 
-export function healthCheck(): Promise<{ status: string }> {
-  return request<{ status: string }>('/api/health', { anonymous: true });
+export function healthCheck(): Promise<{ status: string; version?: string; database?: string }> {
+  return request<{ status: string; version?: string; database?: string }>('/api/health', {
+    anonymous: true,
+  });
+}
+
+// ---------- 系统与演示中心（只读） ----------
+
+/** 运行诊断（在线/陈旧/离线断面、观测计数、规则版本、MQTT 配置）。公网部署可能 403，调用方需容错 */
+export interface SystemDiagnostics {
+  appVersion?: string;
+  ruleVersion?: string;
+  ruleLabel?: string | null;
+  mqtt?: { enabled: boolean; host: string; port: number; topicPrefix: string; staleSeconds: number };
+  counts?: {
+    reachesOnline: number;
+    reachesStale: number;
+    reachesOffline: number;
+    observations: number;
+    processedMessages: number;
+    duplicateMessages: number;
+    ingestionErrors: number;
+  };
+}
+
+export function getDiagnostics(): Promise<SystemDiagnostics> {
+  return request<SystemDiagnostics>('/api/admin/diagnostics');
+}
+
+/** 演示场景运行状态（只读；启停属管理员写操作，现场端不调用） */
+export function getScenarioStatus(): Promise<{ running: boolean; scenario: string | null }> {
+  return request<{ running: boolean; scenario: string | null }>('/api/admin/scenarios/status');
+}
+
+/** 官方自动监测数据开关与来源说明（只读） */
+export interface OfficialStatus {
+  enabled: boolean;
+  sourceLabel?: string;
+  cacheMinutes?: number;
+  staleMinutes?: number;
+}
+
+export function getOfficialStatus(): Promise<OfficialStatus> {
+  return request<OfficialStatus>('/api/official/auto/status');
+}
+
+// ---------- 站内通知（V2.2 PC 复核 → 小程序） ----------
+
+export interface TaskNotification {
+  notificationId: string;
+  type: 'TASK_REJECTED' | 'TASK_APPROVED' | string;
+  title: string;
+  body: string;
+  taskId: string;
+  submissionId?: string | null;
+  version?: number;
+  reviewId?: string | null;
+  isRead: boolean;
+  createdAt?: string | null;
+}
+
+export function listNotifications(unreadOnly = false): Promise<{ items: TaskNotification[] }> {
+  return request<{ items: TaskNotification[] }>(
+    `/api/notifications${unreadOnly ? '?unreadOnly=true' : ''}`,
+  );
+}
+
+export function getUnreadCount(): Promise<{ unread: number }> {
+  return request<{ unread: number }>('/api/notifications/unread-count');
+}
+
+/** 进入任务详情时按任务批量已读；返回更新条数与最新未读数 */
+export function markNotificationsRead(query: { notificationId?: string; taskId?: string }): Promise<{ updated: number; unread: number }> {
+  return request('/api/notifications/mark-read', { method: 'POST', data: query });
 }
 
 /** M3 由 app 启动时调用；M0 仅导出不自动连接 */

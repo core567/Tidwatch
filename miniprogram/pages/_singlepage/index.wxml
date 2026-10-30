@@ -1,0 +1,67 @@
+<!--
+  单页面常驻容器：四个模块始终在 DOM 中，用 hidden 显隐（不销毁重建）。
+  监测模块为正式业务组件（内部自带 scroll-view）；其余三个为独立滚动的静态面板。
+-->
+<view class="sp">
+
+  <!-- 常驻顶部品牌区 -->
+  <view class="sp-header">
+    <view class="sp-header-inner">
+      <view class="sp-brand-row">
+        <view class="sp-logo">TW</view>
+        <view>
+          <view class="sp-brand">TideWatch</view>
+          <view class="sp-subtitle">智慧河流监测</view>
+        </view>
+        <view class="sp-header-right">
+          <view class="sp-demo-badge">{{demoFlag}}</view>
+          <!-- 复核通知铃铛（V2.2）：未读红点 + 通知中心面板 -->
+          <shell-notify id="notify" bind:unread="onNotifyUnread" bind:open-task="onOpenTaskFromNotify" />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 内容区（flex:1, min-height:0）：各模块自行处理滚动 -->
+  <view class="sp-body">
+
+    <!-- 监测（正式业务组件，常驻；内部独立滚动，首次进入拉数，之后复用） -->
+    <view class="sp-monitor-host" hidden="{{activeTab !== 'monitor'}}">
+      <shell-monitor active="{{activeTab === 'monitor'}}" bind:navigate="onNavigate" />
+    </view>
+
+    <!-- 任务（正式业务组件，常驻；首次激活拉数，之后复用；内部独立滚动） -->
+    <view class="sp-tasks-host" hidden="{{activeTab !== 'tasks'}}">
+      <shell-tasks active="{{activeTab === 'tasks'}}" bind:navigate="onNavigate" />
+    </view>
+
+    <!-- 事件（正式业务组件，常驻；首次激活拉数，之后复用；内部独立滚动） -->
+    <view class="sp-events-host" hidden="{{activeTab !== 'events'}}">
+      <shell-events active="{{activeTab === 'events'}}" bind:navigate="onNavigate" />
+    </view>
+
+    <!-- 我的（系统与演示中心，正式组件；首次激活拉数，之后复用；内部独立滚动） -->
+    <view class="sp-me-host" hidden="{{activeTab !== 'me'}}">
+      <shell-me active="{{activeTab === 'me'}}" />
+    </view>
+
+  </view>
+
+  <!-- 常驻底部自绘导航 -->
+  <view class="sp-tabbar">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="key"
+      class="sp-tab {{activeTab === item.key ? 'is-active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onTabTap"
+    >
+      <view class="sp-tab-ic-wrap">
+        <view class="sp-tab-ic sp-ic-{{item.key}}"></view>
+        <view wx:if="{{item.key === 'tasks' && notifyUnread > 0}}" class="sp-tab-dot">{{notifyUnread > 99 ? '99+' : notifyUnread}}</view>
+      </view>
+      <text class="sp-tab-label">{{item.label}}</text>
+    </view>
+  </view>
+
+</view>

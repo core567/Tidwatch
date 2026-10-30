@@ -1,4 +1,6 @@
 {
+  "navigationBarBackgroundColor": "#0B2A4A",
+  "navigationBarTextStyle": "white",
   "navigationBarTitleText": "巡检工作台",
   "enablePullDownRefresh": true,
   "usingComponents": {

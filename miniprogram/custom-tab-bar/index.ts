@@ -20,11 +20,32 @@ Component({
     ] as TabItem[],
   },
 
+  lifetimes: {
+    attached() {
+      // 自定义 tabBar 实例随 tab 页创建，首帧先按当前路由同步选中项，
+      // 避免默认 0（任务）闪一下再被目标页 onShow 修正
+      this.syncFromRoute();
+    },
+  },
+
   methods: {
+    /** 根据当前页面栈顶部路由设置选中 index */
+    syncFromRoute() {
+      const pages = getCurrentPages();
+      const cur = pages[pages.length - 1];
+      const route = cur ? `/${cur.route}` : '';
+      const idx = this.data.list.findIndex((it) => it.pagePath === route);
+      if (idx >= 0 && idx !== this.data.selected) {
+        this.setData({ selected: idx });
+      }
+    },
+
     onTap(e: WechatMiniprogram.TouchEvent) {
       const idx = Number((e.currentTarget.dataset as { idx: number }).idx);
       const item = this.data.list[idx];
       if (!item || idx === this.data.selected) return;
+      // 立即更新本实例选中态（无需等目标页 onShow），消除高亮延迟
+      this.setData({ selected: idx });
       wx.switchTab({ url: item.pagePath });
     },
   },

@@ -206,3 +206,23 @@
   box-shadow: 0 -8rpx 30rpx rgba(11, 42, 74, 0.07);
 }
 .rc-bar button { width: 100%; }
+
+/* 首次加载骨架（Hero 常驻） */
+.rc-skeleton { padding-top: 4rpx; }
+.rc-sk-card {
+  background: #fff; border-radius: var(--m-radius-lg);
+  padding: 28rpx 30rpx; margin-bottom: 22rpx; box-shadow: var(--m-shadow-card);
+}
+.rc-sk-bar {
+  height: 24rpx; border-radius: 8rpx; margin-bottom: 18rpx;
+  background: linear-gradient(90deg,#e8edf3 25%,#f4f7fa 37%,#e8edf3 63%);
+  background-size: 400rpx 100%; animation: rc-sk-shimmer 1.3s infinite linear;
+}
+.rc-sk-bar:last-child { margin-bottom: 0; }
+.rc-sk-bar.w40 { width: 40%; }
+.rc-sk-bar.w90 { width: 90%; }
+.rc-sk-bar.w60 { width: 60%; }
+@keyframes rc-sk-shimmer {
+  0% { background-position: -400rpx 0; }
+  100% { background-position: 400rpx 0; }
+}
