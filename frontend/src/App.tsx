@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, BrowserRouter as Router, Routes, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppLayout from './app/layout/AppLayout';
@@ -16,7 +17,22 @@ import MobilePage from './pages/P10Mobile/MobilePage';
 import FieldVoicePage from './pages/P11FieldVoice/FieldVoicePage';
 import AdminPage from './pages/Admin/AdminPage';
 // 旧 P12 管理页源文件保留（pages/P12Admin），G2 后 /admin 使用分类管理页
-import MonitorPage from './pages/Monitor/MonitorPage';
+// 3D 页（含 three.js 与 PBR 纹理）体积大，懒加载使其他页面不承担其首屏成本。
+const MonitorPage = lazy(() => import('./pages/Monitor/MonitorPage'));
+
+function MonitorRoute() {
+  return (
+    <Suspense
+      fallback={
+        <div className="state-box" style={{ height: 'calc(100vh - var(--tw-topbar-h) - 48px)' }}>
+          3D 监测页加载中…
+        </div>
+      }
+    >
+      <MonitorPage />
+    </Suspense>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -46,7 +62,7 @@ export default function App() {
           <Route element={<AppLayout />}>
             {/* 01 智慧监测总览：卡片式总览为首页；3D 数字空间在 /monitor（独立开发） */}
             <Route path="/" element={<OverviewPage />} />
-            <Route path="/monitor" element={<MonitorPage />} />
+            <Route path="/monitor" element={<MonitorRoute />} />
 
             {/* 02 水环境分析（阶段 G 上线真实页面） */}
             {/* 02 水环境分析正式页；旧 P02 单断面详情保留 */}
@@ -60,7 +76,7 @@ export default function App() {
             <Route path="/events/:eventId/workbench" element={<WorkbenchPage />} />
             <Route path="/evidence" element={<EvidencePage />} />
             {/* 3D 数字空间：新旧入口统一到 MonitorPage；旧 P07 文件保留待验收后清理 */}
-            <Route path="/river-3d" element={<MonitorPage />} />
+            <Route path="/river-3d" element={<MonitorRoute />} />
 
             {/* 04 巡检协同中心（阶段 E 上线） */}
             <Route path="/inspection" element={<Navigate to="/tasks" replace />} />

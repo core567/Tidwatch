@@ -1,137 +1,60 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import * as THREE from 'three';
-import type { NodeAnchor } from './riverGeometry';
+import { BufferGeometry, Float32BufferAttribute, LineBasicMaterial } from 'three';
+import StationModel from './StationModel';
+import { useSceneSettings } from './sceneSettings';
+import { sampleTerrainHeight, type NodeAnchor } from './riverGeometry';
 import { useCameraStore } from './cameraStore';
+import { SCENE_STATUS_COLORS as COLORS, SCENE_STATUS_LABELS as LABELS } from './scenePalette';
 import type { ReachOnlineStatus } from '@/types/contract';
 
-const COLOR: Record<string, string> = {
-  ONLINE: '#12a594',
-  STALE: '#e8902a',
-  OFFLINE: '#94a3b8',
-};
-const TEXT: Record<string, string> = {
-  ONLINE: '在线',
-  STALE: '陈旧',
-  OFFLINE: '离线',
-};
-
-interface Props {
-  anchor: NodeAnchor;
-  onlineStatus: ReachOnlineStatus | 'UNKNOWN';
-  abnormal: boolean; // 是否有活动异常事件
-  onClick: (reachId: string) => void;
-}
-
-/** 监测桩：柱体 + 状态球 + 地面状态环（异常脉冲）+ 光柱 + 文字标签。 */
-export default function MonitorNode({ anchor, onlineStatus, abnormal, onClick }: Props) {
-  const selected = useCameraStore((s) => s.view === anchor.reachId);
-  const ringRef = useRef<THREE.Mesh>(null);
-  const baseColor = abnormal ? '#d84c4c' : COLOR[onlineStatus] ?? COLOR.OFFLINE;
-
-  const mat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: baseColor, emissive: baseColor, emissiveIntensity: abnormal ? 0.7 : 0.35 }),
-    [baseColor],
-  );
-  const ringMat = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        color: baseColor,
-        transparent: true,
-        opacity: abnormal ? 0.8 : 0.55,
-        side: THREE.DoubleSide,
-      }),
-    [baseColor],
-  );
-
-  useFrame(({ clock }) => {
-    if (!ringRef.current) return;
-    if (abnormal) {
-      const t = (clock.elapsedTime * 2.2) % 1;
-      const s = 1 + t * 0.9;
-      ringRef.current.scale.setScalar(s);
-      (ringRef.current.material as THREE.MeshBasicMaterial).opacity = 0.8 * (1 - t);
-    } else if (selected) {
-      ringRef.current.scale.setScalar(1.25);
-      (ringRef.current.material as THREE.MeshBasicMaterial).opacity = 0.7;
-    } else {
-      ringRef.current.scale.setScalar(1);
-      (ringRef.current.material as THREE.MeshBasicMaterial).opacity = 0.5;
+interface Props { anchor: NodeAnchor; name?: string; onlineStatus: ReachOnlineStatus | 'UNKNOWN'; abnormal: boolean; onClick: (id: string) => void; }
+function GroundMarker({ anchor, color, selected, animate }: {anchor: NodeAnchor; color: string; selected: boolean; animate: boolean}) {
+  const material = useRef<LineBasicMaterial>(null);
+  const geometry = useMemo(() => {
+    const points: number[] = [];
+    for (let i=0;i<64;i++) {
+      const angle=i/64*Math.PI*2, x=Math.cos(angle)*1.12, z=Math.sin(angle)*1.12;
+      points.push(x, Math.max(.015,sampleTerrainHeight(anchor.position.x+x,anchor.position.z+z)-anchor.position.y+.025),z);
     }
-  });
-
-  return (
-    <group position={anchor.position}>
-      {/* 选中/异常时的地面高亮盘 */}
-      {(selected || abnormal) && (
-        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[1.9, 40]} />
-          <meshBasicMaterial color={abnormal ? '#d84c4c' : '#1e6fe0'} transparent opacity={0.12} />
-        </mesh>
-      )}
-
-      {/* 混凝土基座台 */}
-      <mesh position={[0, 0.12, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[0.52, 0.66, 0.24, 24]} />
-        <meshStandardMaterial color="#c7d0d8" roughness={0.9} metalness={0.05} />
-      </mesh>
-
-      {/* 监测桩体 */}
-      <mesh position={[0, 0.95, 0]} material={mat} castShadow
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick(anchor.reachId);
-        }}
-        onPointerOver={() => (document.body.style.cursor = 'pointer')}
-        onPointerOut={() => (document.body.style.cursor = 'default')}
-      >
-        <cylinderGeometry args={[selected ? 0.13 : 0.1, selected ? 0.17 : 0.13, 1.5, 20]} />
-      </mesh>
-
-      {/* 桩顶状态球 */}
-      <mesh position={[0, 1.85, 0]} material={mat} castShadow>
-        <sphereGeometry args={[abnormal ? 0.34 : 0.28, 24, 24]} />
-      </mesh>
-      {/* 状态球内芯高光 */}
-      <mesh position={[0.09, 1.94, 0.09]}>
-        <sphereGeometry args={[abnormal ? 0.1 : 0.085, 12, 12]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.55} />
-      </mesh>
-
-      {/* 地面脉冲环（异常扩散 / 选中呼吸） */}
-      <mesh ref={ringRef} position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} material={ringMat}>
-        <ringGeometry args={[0.85, 1.25, 44]} />
-      </mesh>
-
-      {/* 仅异常时保留告警光柱 */}
-      {abnormal && (
-        <mesh position={[0, 3.3, 0]}>
-          <cylinderGeometry args={[0.05, 0.05, 3.0, 10]} />
-          <meshBasicMaterial color={baseColor} transparent opacity={0.28} />
-        </mesh>
-      )}
-
-      <Html position={[0, 2.55, 0]} center distanceFactor={17} zIndexRange={[20, 0]}>
-        <div
-          onClick={() => onClick(anchor.reachId)}
-          style={{
-            whiteSpace: 'nowrap',
-            background: selected ? 'rgba(30,111,224,.96)' : 'rgba(255,255,255,.95)',
-            color: selected ? '#fff' : '#183650',
-            fontSize: 12,
-            fontWeight: 600,
-            padding: '4px 10px',
-            borderRadius: 7,
-            border: `1px solid ${abnormal ? '#d84c4c' : 'rgba(37,99,166,.28)'}`,
-            cursor: 'pointer',
-            userSelect: 'none',
-            boxShadow: '0 2px 10px rgba(8,31,56,.18)',
-          }}
-        >
-          {anchor.name} · {abnormal ? '异常' : TEXT[onlineStatus] ?? '未知'}
-        </div>
-      </Html>
-    </group>
-  );
+    const g=new BufferGeometry();g.setAttribute('position',new Float32BufferAttribute(points,3));return g;
+  },[anchor]);
+  useEffect(()=>()=>geometry.dispose(),[geometry]);
+  useFrame(({clock})=>{if(material.current)material.current.opacity=(selected?.28:.13)+(animate?.035*Math.sin(clock.elapsedTime*1.4):0)});
+  return <lineLoop geometry={geometry}><lineBasicMaterial ref={material} color={color} transparent opacity={.2} depthWrite={false}/></lineLoop>;
 }
+
+export default function MonitorNode({ anchor, name, onlineStatus, abnormal, onClick }: Props) {
+  const view = useCameraStore(s => s.view);
+  const selected = view === anchor.reachId;
+  const animate = useSceneSettings(s => s.motion);
+  const letter = anchor.reachId.slice(-1).toUpperCase();
+  const status=Object.prototype.hasOwnProperty.call(LABELS,onlineStatus)?onlineStatus:'UNKNOWN';
+  const label=name || anchor.name;
+  return <group name={'station-' + letter} position={anchor.position}
+    onClick={event => { event.stopPropagation(); onClick(anchor.reachId); }}
+    onPointerOver={event => { event.stopPropagation(); document.body.style.cursor = 'pointer'; }}
+    onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
+    <GroundMarker anchor={anchor} color={abnormal?COLORS.ABNORMAL:selected?COLORS.SELECTED:COLORS[status]} selected={selected} animate={animate}/>
+    <StationModel anchor={anchor} selected={selected} statusColor={COLORS[status]} abnormal={abnormal} animate={animate} />
+    <mesh name={'station-hit-' + letter} position={[0, 1.1, 0]}>
+      <boxGeometry args={[2, 2.9, 2]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+    </mesh>
+    <Html position={[0, 3.1, 0]} center zIndexRange={[20, 0]}>
+      <button className={'station-label' + (selected ? ' is-selected' : '') + (view !== 'overview' && !selected ? ' is-muted' : '')}
+        data-reach={anchor.reachId} aria-label={'聚焦' + label + '，' + LABELS[status] + (abnormal?'，存在异常':'')} aria-pressed={selected}
+        onClick={event => { event.stopPropagation(); onClick(anchor.reachId); }}>
+        <span className="station-letter">{letter}</span>
+        <span className="station-copy"><strong>{label}</strong><span>
+          <i className="status-dot" style={{background: COLORS[status]}} />
+          {LABELS[status]}{abnormal && <em> · 异常</em>}
+        </span></span>
+      </button>
+    </Html>
+  </group>;
+}
+
+
+

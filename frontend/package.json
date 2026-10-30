@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:3d": "node --test src/features/threeD/__tests__/*.mjs src/features/threeD/*.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",

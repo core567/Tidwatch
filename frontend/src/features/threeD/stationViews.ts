@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { NODE_ANCHORS, OVERVIEW_CAMERA, RIVER_CURVE, type NodeAnchor } from './riverGeometry.ts';
+import { NODE_ANCHORS, OVERVIEW_CAMERA, RIVER_CURVE, sampleTerrainHeight, type NodeAnchor } from './riverGeometry.ts';
 
 export interface CameraView {
   position: THREE.Vector3;
@@ -12,19 +12,17 @@ export const OVERVIEW_VIEW: CameraView = {
   target: OVERVIEW_CAMERA.target.clone(),
 };
 
-/**
- * 节点局部视角：相机位于节点侧前方（上游方向）并抬高，看向节点。
- * 从曲线切向自动计算，真实坐标核实后只需替换曲线，视角自动跟随。
- */
+/** 相机从河岸节点的上游侧俯视，取景随实际岸上锚点移动。 */
 function stationView(anchor: NodeAnchor): CameraView {
-  const p = RIVER_CURVE.getPointAt(anchor.t);
+  const p = anchor.position;
   const tan = RIVER_CURVE.getTangentAt(anchor.t).normalize();
   const side = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
   const position = p
     .clone()
-    .addScaledVector(tan, -4.2) // 偏向上游
-    .addScaledVector(side, 5.2) // 侧向拉开
-    .add(new THREE.Vector3(0, 5.2, 0)); // 抬高俯视
+    .addScaledVector(tan, -4.2)
+    .addScaledVector(side, 7.5)
+    .add(new THREE.Vector3(0, 6.5, 0));
+  position.y = Math.max(position.y, sampleTerrainHeight(position.x, position.z) + 3);
   const target = p.clone().add(new THREE.Vector3(0, 1.2, 0));
   return { position, target };
 }
@@ -34,5 +32,5 @@ export const STATION_VIEWS: Record<string, CameraView> = Object.fromEntries(
 );
 
 export function viewFor(view: string): CameraView {
-  return STATION_VIEWS[view] ?? OVERVIEW_VIEW;
+  return Object.prototype.hasOwnProperty.call(STATION_VIEWS, view) ? STATION_VIEWS[view] : OVERVIEW_VIEW;
 }

@@ -1,16 +1,18 @@
-import { useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
 import { useStreamState } from '@/store/stream';
 import { Tag } from '@/components/ui';
 import { OnlineBadge } from '@/components/StatusBits';
 import { ScenarioConsole } from '@/components/ScenarioConsole';
-import RiverScene from '@/features/threeD/RiverScene';
 import NodeDetailPanel from '@/features/threeD/NodeDetailPanel';
-import WebGLErrorBoundary from '@/features/threeD/WebGLErrorBoundary';
 import { useCameraStore } from '@/features/threeD/cameraStore';
 import type { ActiveEvent, Reach } from '@/types/contract';
 import './monitor.css';
+
+// 3D 场景体积较大（three.js + 4 张 PBR 纹理），懒加载避免非 3D 页面为首屏 3D 买单。
+// 新 RiverScene 内部自带 WebGLErrorBoundary，无需在外层重复包裹。
+const RiverScene = lazy(() => import('@/features/threeD/RiverScene'));
 
 /**
  * 01 智慧监测总览（3D 数字孪生为主体）。
@@ -53,17 +55,18 @@ export default function MonitorPage() {
 
   return (
     <div className="tw-monitor">
-      <WebGLErrorBoundary>
-        {reachesQ.isLoading ? (
-          <div className="state-box">3D 场景加载中…</div>
-        ) : (
+      {reachesQ.isLoading ? (
+        <div className="state-box">3D 场景加载中…</div>
+      ) : (
+        <Suspense fallback={<div className="state-box">3D 场景加载中…</div>}>
+          {/* V2 RiverScene 点击时内部已完成 flyTo，这里只同步宿主选择（当前选择由 view 派生，无需额外动作）。 */}
           <RiverScene
             reaches={reaches}
             abnormalReachIds={abnormalReachIds}
-            onSelectNode={(id) => flyTo(id as 'reach-a' | 'reach-b' | 'reach-c')}
+            onSelectNode={() => {}}
           />
-        )}
-      </WebGLErrorBoundary>
+        </Suspense>
+      )}
 
       {/* 顶部状态条 */}
       <div className="tw-monitor-topbar">

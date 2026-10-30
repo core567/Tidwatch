@@ -70,10 +70,11 @@ export default function River3DPage() {
           <div className="state-box">3D 场景加载中…</div>
         ) : (
           <>
+            {/* V2 RiverScene 点击时内部已 flyTo，回调只做选择同步，避免重复飞行。 */}
             <RiverScene
               reaches={reaches}
               abnormalReachIds={abnormalReachIds}
-              onSelectNode={(id) => flyTo(id as 'reach-a' | 'reach-b' | 'reach-c')}
+              onSelectNode={() => {}}
             />
 
             {/* 左侧节点列表：与点击节点共用 flyTo 动作 */}

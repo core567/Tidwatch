@@ -2,60 +2,83 @@ import { useEffect, useRef } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { viewFor } from './stationViews';
-import { useCameraStore } from './cameraStore';
+import { viewFor } from './stationViews.ts';
+import { useCameraStore } from './cameraStore.ts';
+import { createCameraFlight, easeInOutCubic } from './cameraPath.ts';
+import { sceneObstacleHeight } from './landscapeLayout.ts';
+import { useSceneSettings } from './sceneSettings';
 
-const FLY_DURATION = 1.15;
+const FLY_DURATION = 1.35;
 
-function easeInOutCubic(t: number): number {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-/**
- * 监听 view 变化，在当前位姿与目标位姿间平滑插值。
- * 飞行期间禁用 OrbitControls，结束后交还控制权（target 已同步）。
- */
+/** 每次请求从当前位姿出发；飞行期间禁用操作，完成或卸载后交还控制权。 */
 export default function CameraRig({ controls }: { controls: React.RefObject<OrbitControlsImpl | null> }) {
   const { camera } = useThree();
   const view = useCameraStore((s) => s.view);
+  const requestId = useCameraStore((s) => s.requestId);
   const setFlying = useCameraStore((s) => s.setFlying);
-
   const anim = useRef<{
-    fromPos: THREE.Vector3;
-    toPos: THREE.Vector3;
+    path: ReturnType<typeof createCameraFlight>;
     fromTarget: THREE.Vector3;
     toTarget: THREE.Vector3;
     elapsed: number;
   } | null>(null);
+  const lookTarget = useRef(new THREE.Vector3());
+  const activeControls = useRef<OrbitControlsImpl | null>(null);
 
   useEffect(() => {
+    if (requestId === 0) return;
     const targetView = viewFor(view);
     const ctrl = controls.current;
-    const fromTarget = ctrl ? ctrl.target.clone() : new THREE.Vector3(0, 0, 0);
+    const fromPos = camera.position.clone();
+    const fromTarget = ctrl ? ctrl.target.clone() : lookTarget.current.clone();
+    if (ctrl) {
+      activeControls.current = ctrl;
+      ctrl.enabled = false;
+      // 清掉用户旋转的剩余阻尼，防止飞行完成后继续漂移。
+      const damping = ctrl.enableDamping;
+      ctrl.enableDamping = false;
+      ctrl.update();
+      ctrl.enableDamping = damping;
+      camera.position.copy(fromPos);
+      ctrl.target.copy(fromTarget);
+      camera.lookAt(fromTarget);
+    }
     anim.current = {
-      fromPos: camera.position.clone(),
-      toPos: targetView.position.clone(),
+      path: createCameraFlight(fromPos, targetView.position, sceneObstacleHeight),
       fromTarget,
       toTarget: targetView.target.clone(),
       elapsed: 0,
     };
-    if (ctrl) ctrl.enabled = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+    setFlying(true);
+  }, [view, requestId, camera, controls, setFlying]);
+
+  useEffect(() => () => {
+    anim.current = null;
+    const ctrl = activeControls.current ?? controls.current;
+    if (ctrl) ctrl.enabled = true;
+    setFlying(false);
+  }, [controls, setFlying]);
 
   useFrame((_, delta) => {
     const a = anim.current;
+    if (!a) return;
     const ctrl = controls.current;
-    if (!a || !ctrl) return;
-    a.elapsed += Math.min(delta, 0.05);
-    const t = Math.min(1, a.elapsed / FLY_DURATION);
-    const k = easeInOutCubic(t);
-    camera.position.lerpVectors(a.fromPos, a.toPos, k);
-    ctrl.target.lerpVectors(a.fromTarget, a.toTarget, k);
-    ctrl.update();
+    a.elapsed += delta;
+    const t = useSceneSettings.getState().motion ? Math.min(1, a.elapsed / FLY_DURATION) : 1;
+    camera.position.copy(a.path.positionAt(t));
+    lookTarget.current.lerpVectors(a.fromTarget, a.toTarget, easeInOutCubic(t));
+    if (ctrl) {
+      activeControls.current = ctrl;
+      ctrl.enabled = false;
+      ctrl.target.copy(lookTarget.current);
+    }
+    camera.lookAt(lookTarget.current);
     if (t >= 1) {
       anim.current = null;
-      ctrl.enabled = true;
+      if (ctrl) {
+        ctrl.update();
+        ctrl.enabled = true;
+      }
       setFlying(false);
     }
   });
