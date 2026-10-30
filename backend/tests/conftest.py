@@ -146,9 +146,11 @@ def clean_event_tables(client):
     from app.models.observation import Attachment, Observation
     from app.models.event import ActiveEvent
     from app.models.audit import BusinessEvent
+    from app.models.notification import Notification
 
     # 子表（含指向 inspection_tasks 的硬外键）先于父表删除
     tables = (
+        Notification,
         TaskSubmission, TaskReview, BusinessEvent,
         TemporalRelation, ChangeEvent, EventStatusTransition, EventScope,
         Evidence, Hypothesis, Assessment, BlindSpot, ObservationFocus,

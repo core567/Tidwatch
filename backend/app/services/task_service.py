@@ -264,6 +264,11 @@ def review_task(db: Session, task_id: str, *, decision: str, actor: str,
         description=(comment or None), review_ref=review.review_id,
         evidence_refs=[sub.submission_id] if sub else [],
     )
+    # V2.2：同事务生成唯一一条复核通知（按 review_id 幂等），路由提交后经 hub 实时推送
+    from app.services import notification_service
+    notification_service.create_review_notification(
+        db, task=task, review=review, submission=sub,
+    )
     db.flush()
     return task
 

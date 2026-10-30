@@ -44,7 +44,7 @@ def list_observations(
     to: datetime | None = None,
     order: str = Query(default="desc", pattern="^(asc|desc)$"),
     page: int = Query(default=1, ge=1),
-    pageSize: int = Query(default=50, ge=1, le=500),
+    pageSize: int = Query(default=50, ge=1, le=5000),
     db: Session = Depends(get_db),
 ) -> PageResult[ObservationOut]:
     reach_service.get_reach(db, reach_id)  # 404 on unknown reach

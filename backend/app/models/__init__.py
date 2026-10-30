@@ -27,6 +27,7 @@ from app.models.system import (
     ScenarioRun,
     User,
 )
+from app.models.notification import Notification
 from app.models.workflow import (
     Assessment,
     EventReview,
@@ -70,4 +71,5 @@ __all__ = [
     "ScenarioRun",
     "ModelOutput",
     "KnowledgeEntry",
+    "Notification",
 ]

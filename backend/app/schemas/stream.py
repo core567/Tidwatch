@@ -21,6 +21,7 @@ MessageType = Literal[
     "blindspot.resolved",
     "task.created",
     "task.updated",
+    "notification.created",
     "reach.status-changed",
     "ping",
 ]

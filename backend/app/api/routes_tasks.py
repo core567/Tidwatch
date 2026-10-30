@@ -157,8 +157,21 @@ def task_action(
         db, task_id, body.action, actor=user.user_id, assignee=user.user_id,
         comment=body.comment,
     )
+    # V2.2：复核动作可能在同事务产生一条通知，commit 前取出以便实时推送
+    review_ntf = None
+    if body.action in ("APPROVE", "REJECT"):
+        from app.models.notification import Notification
+        review_ntf = db.execute(
+            select(Notification)
+            .where(Notification.task_id == task_id,
+                   Notification.type.in_(["TASK_APPROVED", "TASK_REJECTED"]))
+            .order_by(Notification.created_at.desc())
+            .limit(1)
+        ).scalar_one_or_none()
     db.commit()
     _notify_task(task, "task.updated")
+    if review_ntf is not None:
+        _notify_review(review_ntf)
     return _out_detail(db, task)
 
 
@@ -228,6 +241,26 @@ def _notify_task(task, message_type: str = "task.updated") -> None:
             "taskId": task.task_id, "eventId": task.event_id,
             "reachId": task.reach_id, "status": task.status,
             "assignee": task.assignee,
+        },
+    )
+
+
+def _notify_review(ntf) -> None:
+    """复核结果通知实时推送（与 task.updated 同帧通道，通知另走持久化接口补拉）。"""
+    from app.realtime.hub import hub
+
+    hub.publish_threadsafe(
+        "notification.created",
+        {
+            "notificationId": ntf.notification_id,
+            "type": ntf.type,
+            "taskId": ntf.task_id,
+            "version": ntf.version,
+            "reviewId": ntf.review_id,
+            "title": ntf.title,
+            "body": ntf.body,
+            "recipientId": ntf.recipient_id,
+            "createdAt": ntf.created_at.isoformat() if ntf.created_at else None,
         },
     )
 
