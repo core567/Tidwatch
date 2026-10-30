@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import * as echarts from 'echarts';
 import { api } from '@/services/apiClient';
 import { Card, EmptyState, Segmented, Tag } from '@/components/ui';
 import SourceTag from '@/components/SourceTag';
 import { formatTime } from '@/components/EventBits';
 import { OFFICIAL_METRICS, formatOfficialValue, waterClassTone } from '@/lib/metrics';
+import { buildReachTrends } from '@/lib/reachTrends';
+import ReachTrendChart from '@/components/TrendChart';
 import type { Observation, OfficialAutoLatest } from '@/types/contract';
 
 type Kind = 'sim' | 'official';
@@ -114,15 +115,17 @@ function SimTrend({
   reachIds: string[];
   from: string | undefined;
 }) {
+  const [viewMode, setViewMode] = useState<'full' | 'focus'>('focus');
   const results = useQueries({
     queries: reachIds.map((rid) => ({
       queryKey: ['observations', rid, metricKey, from],
-      queryFn: () => api.observations(rid, { metric: metricKey, from, order: 'asc', pageSize: 500 }),
+      queryFn: () => api.observations(rid, { metric: metricKey, from, order: 'asc', pageSize: 2000 }),
       refetchInterval: 15000,
     })),
   });
 
   const loading = results.some((r) => r.isLoading);
+  const isError = results.some((r) => r.isError);
   const byReach = results.map((r, i) => ({
     reachId: reachIds[i],
     rows: (r.data?.items ?? []) as Observation[],
@@ -130,19 +133,40 @@ function SimTrend({
   const allRows = byReach.flatMap((b) => b.rows);
   const meta = SIM_META[metricKey];
 
+  useEffect(() => { setViewMode('focus'); }, [metricKey, from]);
+
+  const trend = useMemo(() => {
+    const inputs = byReach.map((b) => ({
+      reachId: b.reachId,
+      name: REACH_LABEL[b.reachId] ?? b.reachId,
+      color: REACH_COLORS[b.reachId] ?? '#666',
+      rows: b.rows,
+    }));
+    return buildReachTrends(inputs, 15 * 60 * 1000, metricKey === 'waterLevel' ? [7.0, 8.5] : [], {
+      queryStart: from ? new Date(from).getTime() : null,
+      queryEnd: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metricKey, from, ...results.map((r) => r.data)]);
+
   if (loading) return <div className="state-box">历史加载中…</div>;
+  if (isError && allRows.length === 0) {
+    return (
+      <EmptyState
+        title={`「${meta.name}」数据请求失败`}
+        description="后端服务可能不可用；不会用旧数据伪装为实时结果。"
+      />
+    );
+  }
   if (allRows.length === 0) {
     return (
       <EmptyState
-        title={`所选时间范围无「${meta.name}」数据`}
-        description="可运行 S2 场景发布器产生模拟数据（见 simulator/README.md）；无数据时不绘制曲线。"
+        title={`所选时间范围无「${meta.name}」有效观测`}
+        description="可运行 S2 场景产生模拟数据；无数据时不绘制水平假线。"
       />
     );
   }
 
-  const times = allRows
-    .map((r) => r.observedAt)
-    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   const scenarios = [...new Set(allRows.map((r) => r.scenarioId).filter(Boolean))];
   const badCount = allRows.filter((r) => r.qualityFlag !== 'GOOD').length;
 
@@ -153,18 +177,18 @@ function SimTrend({
   const peak = breaches.length
     ? breaches.reduce((a, b) => (b.value > a.value ? b : a))
     : null;
+  const totalOutliers = trend.stats.reduce((n, s) => n + s.outlierCount, 0);
 
   return (
     <>
       <div className="tw-row tw-small" style={{ gap: 10, marginBottom: 8, color: 'var(--tw-text-secondary)', flexWrap: 'wrap' }}>
         <SourceTag source="SIMULATED" />
         <span>
-          数据时间 {formatTime(times[0])} ~ {formatTime(times[times.length - 1])}
+          有效数据 {trend.spanStart ? formatTime(new Date(trend.spanStart).toISOString()) : '—'} ~{' '}
+          {trend.spanEnd ? formatTime(new Date(trend.spanEnd).toISOString()) : '—'}
         </span>
         <span>·</span>
-        <span>
-          单位 <b>{meta.unit}</b>
-        </span>
+        <span>单位 <b>{meta.unit}</b></span>
         <span>·</span>
         <span>{allRows.length} 个观测点</span>
         {scenarios.length > 0 && (
@@ -173,15 +197,30 @@ function SimTrend({
           </Tag>
         )}
         {badCount > 0 && <Tag tone="danger">{badCount} 个异常/可疑质量点</Tag>}
+        <Segmented
+          ariaLabel="视图范围"
+          value={viewMode}
+          onChange={(v) => setViewMode(v as 'full' | 'focus')}
+          options={[
+            { value: 'full', label: '完整范围' },
+            { value: 'focus', label: '聚焦数据' },
+          ]}
+        />
       </div>
       {peak ? (
         <div className="tw-trend-breach">
           模拟异常：最高 {peak.value} {meta.unit}（{formatTime(peak.observedAt)}）超过教学警戒 7.0 m，
           来自 MQTT <b>{breachScenarios.join('、') || peak.sourceName || '模拟场景'}</b>，
-          非官方真实异常。阈值线为 demo-rules-v1 教学规则，非官方防汛标准。
+          非官方真实异常。共 {totalOutliers} 个越限点。阈值线为 demo-rules-v1 教学规则，非官方防汛标准。
         </div>
       ) : null}
-      <TrendChart byReach={byReach} unit={meta.unit} thresholds={THRESHOLDS[metricKey] ?? []} />
+      <ReachTrendChart
+        data={trend}
+        unit={meta.unit}
+        height={248}
+        viewMode={viewMode}
+        thresholds={THRESHOLDS[metricKey] ?? []}
+      />
     </>
   );
 }
@@ -244,77 +283,4 @@ function OfficialSnapshot({ metricKey, reachIds }: { metricKey: string; reachIds
       </div>
     </>
   );
-}
-
-function TrendChart({
-  byReach,
-  unit,
-  thresholds,
-}: {
-  byReach: { reachId: string; rows: Observation[] }[];
-  unit: string;
-  thresholds: { value: number; label: string; color: string }[];
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!ref.current) return;
-    const chart = echarts.init(ref.current, undefined, { renderer: 'canvas' });
-    chart.setOption({
-      grid: { left: 52, right: 20, top: 30, bottom: 36 },
-      tooltip: { trigger: 'axis' },
-      legend: {
-        top: 0,
-        right: 8,
-        itemWidth: 14,
-        itemHeight: 8,
-        textStyle: { fontSize: 11, color: '#5d7186' },
-      },
-      xAxis: { type: 'time', axisLabel: { fontSize: 11 } },
-      yAxis: { type: 'value', name: unit, scale: true, nameTextStyle: { fontSize: 11 } },
-      series: [
-        ...byReach.map(({ reachId, rows }) => ({
-          name: REACH_LABEL[reachId] ?? reachId,
-          type: 'line' as const,
-          showSymbol: false,
-          smooth: true,
-          lineStyle: { width: 2, color: REACH_COLORS[reachId] },
-          itemStyle: { color: REACH_COLORS[reachId] },
-          data: rows.map((r) => [new Date(r.observedAt).getTime(), r.value]),
-          markLine: {
-            silent: true,
-            symbol: 'none',
-            data: thresholds.map((t) => ({
-              yAxis: t.value,
-              name: t.label,
-              lineStyle: { color: t.color, type: 'dashed' as const, width: 1 },
-              label: { color: t.color, fontSize: 10 },
-            })),
-          },
-        })),
-        ...byReach
-          .filter(({ rows }) => rows.some((r) => r.qualityFlag !== 'GOOD'))
-          .map(({ reachId, rows }) => ({
-            name: `${REACH_LABEL[reachId] ?? reachId} 异常点`,
-            type: 'scatter' as const,
-            symbolSize: 8,
-            itemStyle: { color: '#d84c4c' },
-            data: rows
-              .filter((r) => r.qualityFlag !== 'GOOD')
-              .map((r) => [new Date(r.observedAt).getTime(), r.value, r.qualityFlag]),
-          })),
-      ],
-    });
-    const onResize = () => chart.resize();
-    window.addEventListener('resize', onResize);
-    const ro = new ResizeObserver(() => chart.resize());
-    ro.observe(ref.current);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      ro.disconnect();
-      chart.dispose();
-    };
-  }, [byReach, unit, thresholds]);
-
-  return <div ref={ref} style={{ width: '100%', height: 248 }} />;
 }

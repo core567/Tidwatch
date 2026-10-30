@@ -20,3 +20,86 @@
   gap: 10px;
   margin-top: 10px;
 }
+
+/* 有效数据覆盖 */
+.tw-empty-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0;
+}
+.tw-cov {
+  border: 1px solid var(--tw-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: #fbfdff;
+}
+.tw-cov-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--tw-primary-800, #0b2a4a);
+}
+.tw-cov-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.tw-cov-cell {
+  border-left: 3px solid var(--tw-accent, #1e6fe0);
+  padding-left: 10px;
+}
+.tw-cov-cell:nth-child(2) { border-left-color: #12a594; }
+.tw-cov-cell:nth-child(3) { border-left-color: #e8902a; }
+.tw-cov-name { font-weight: 700; font-size: 13px; margin-bottom: 3px; color: #1d2b3a; }
+.tw-cov-cell .tw-tiny { display: block; line-height: 1.7; }
+@media (max-width: 1100px) {
+  .tw-cov-grid { grid-template-columns: 1fr; }
+}
+
+/* 统计摘要 */
+.tw-stats-sum {
+  margin-top: 16px;
+  border: 1px solid var(--tw-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fff;
+}
+.tw-stats-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--tw-primary-800, #0b2a4a);
+}
+.tw-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.tw-stats-table th,
+.tw-stats-table td {
+  text-align: right;
+  padding: 7px 8px;
+  border-bottom: 1px solid #eef2f7;
+  white-space: nowrap;
+}
+.tw-stats-table th:first-child,
+.tw-stats-table td:first-child {
+  text-align: left;
+  font-weight: 600;
+}
+.tw-stats-table thead th {
+  color: #5d7186;
+  font-weight: 600;
+  background: #f8fafc;
+}
+.tw-stats-table tbody tr:last-child td { border-bottom: none; }
+@media (max-width: 900px) {
+  .tw-stats-table { font-size: 12px; }
+}

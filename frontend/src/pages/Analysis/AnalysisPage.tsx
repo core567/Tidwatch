@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/apiClient';
 import {
@@ -13,6 +13,7 @@ import {
   Tag,
 } from '@/components/ui';
 import TrendChart from '@/components/TrendChart';
+import { buildReachTrends } from '@/lib/reachTrends';
 import { exportObservationsCsv } from '@/lib/exportCsv';
 import { formatTime, reachName } from '@/components/EventBits';
 import SourceTag from '@/components/SourceTag';
@@ -22,6 +23,7 @@ import type { Observation } from '@/types/contract';
 import './analysis.css';
 
 const REACHES = ['reach-a', 'reach-b', 'reach-c'];
+const REACH_COLORS = ['#1e6fe0', '#12a594', '#e8902a'];
 const RANGES = [
   { value: '60', label: '近 1 小时' },
   { value: '360', label: '近 6 小时' },
@@ -36,19 +38,35 @@ const SIM_METRICS = [
   { key: 'flowLevel', name: '水流等级', unit: '级' },
 ];
 
-/** 教学阈值（demo-rules-v1），非真实防汛/预警标准。 */
-const THRESHOLDS: Record<string, { value: number; label: string; color: string }[]> = {
-  waterLevel: [
-    { value: 7.0, label: '高水位警戒 7.0', color: '#e8902a' },
-    { value: 8.5, label: '洪水预警 8.5', color: '#d84c4c' },
-  ],
-  turbidity: [{ value: 60, label: '浑浊阈值 60', color: '#e8902a' }],
+/**
+ * 越限阈值镜像自后端 app/rules/thresholds.py（DEMO_RULES_V1）。
+ * 教学演示规则，非真实防汛/官方预警标准；改后端规则时需同步此处。
+ * 前端不提供规则接口，故以此常量保持一致，不臆造其它阈值。
+ */
+const RULE_THRESHOLDS: Record<string, number[]> = {
+  waterLevel: [7.0, 8.5],
+  turbidity: [60],
   flowLevel: [],
 };
+const THRESHOLD_LINES: Record<string, { value: number; label: string; color: string }[]> = {
+  waterLevel: [
+    { value: 8.5, label: '洪水预警 ≥ 8.5', color: '#d84c4c' },
+    { value: 7.0, label: '高水位警戒 ≥ 7.0', color: '#e8902a' },
+  ],
+  turbidity: [{ value: 60, label: '水质浑浊 ≥ 60', color: '#e8902a' }],
+  flowLevel: [],
+};
+/** 缺测断线阈值：相邻点间隔超过 15 分钟视为缺测 */
+const GAP_MS = 15 * 60 * 1000;
 
 function isoAgo(minutes: number): string {
   return new Date(Date.now() - minutes * 60000).toISOString();
 }
+
+function fmt(n: number | null, unit: string): string {
+  return n === null ? '—' : `${Number.isInteger(n) ? n : n.toFixed(2)} ${unit}`;
+}
+
 
 export default function AnalysisPage() {
   const stream = useStreamState();
@@ -66,20 +84,23 @@ export default function AnalysisPage() {
   const unit = metricDef.unit;
   const rangeFrom = useMemo(() => isoAgo(Number(rangeMin)), [rangeMin]);
 
+  // 视图模式：完整查询窗口（保留右侧缺测） / 聚焦有效数据
+  const [viewMode, setViewMode] = useState<'full' | 'focus'>('full');
+
   // 多断面趋势（固定 3 断面，hooks 顺序稳定）
   const trendA = useQuery({
     queryKey: ['analysis-trend', 'reach-a', metric, rangeFrom],
-    queryFn: () => api.observations('reach-a', { metric, from: rangeFrom, order: 'asc', pageSize: 500 }),
+    queryFn: () => api.observations('reach-a', { metric, from: rangeFrom, order: 'asc', pageSize: 2000 }),
     refetchInterval: 30000,
   });
   const trendB = useQuery({
     queryKey: ['analysis-trend', 'reach-b', metric, rangeFrom],
-    queryFn: () => api.observations('reach-b', { metric, from: rangeFrom, order: 'asc', pageSize: 500 }),
+    queryFn: () => api.observations('reach-b', { metric, from: rangeFrom, order: 'asc', pageSize: 2000 }),
     refetchInterval: 30000,
   });
   const trendC = useQuery({
     queryKey: ['analysis-trend', 'reach-c', metric, rangeFrom],
-    queryFn: () => api.observations('reach-c', { metric, from: rangeFrom, order: 'asc', pageSize: 500 }),
+    queryFn: () => api.observations('reach-c', { metric, from: rangeFrom, order: 'asc', pageSize: 2000 }),
     refetchInterval: 30000,
   });
   const trendQ = [trendA, trendB, trendC];
@@ -110,17 +131,61 @@ export default function AnalysisPage() {
   const series = trendQ.map((q, i) => ({
     reachId: REACHES[i],
     name: reachName(REACHES[i]),
-    color: ['#1e6fe0', '#12a594', '#e8902a'][i],
+    color: REACH_COLORS[i],
     rows: (q.data?.items ?? []) as Observation[],
   }));
 
-  // 缺测断面（无任何数据）
-  const emptyReaches = REACHES.filter((_, i) => trendQ[i].data && (trendQ[i].data?.items?.length ?? 0) === 0);
-  const totalPoints = series.reduce((n, s) => n + s.rows.length, 0);
-  const stalePoints = series.reduce(
-    (n, s) => n + s.rows.filter((r) => r.qualityFlag !== 'GOOD').length,
-    0,
+  // 真实数据构建：排序/去重/缺测断线/异常点/覆盖与统计（纯函数，便于测试）
+  const trend = useMemo(
+    () =>
+      buildReachTrends(series, GAP_MS, RULE_THRESHOLDS[metric] ?? [], {
+        queryStart: new Date(rangeFrom).getTime(),
+        queryEnd: Date.now(),
+      }),
+    // series 由 trendQ 数据派生；以各查询返回数据、指标、窗口起点为依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [metric, rangeFrom, ...trendQ.map((q) => q.data)],
   );
+
+  // 缺测断面（当前时间窗内无点）
+  const emptyReaches = REACHES.filter(
+    (r) => (trend.coverage.find((c) => c.reachId === r)?.count ?? 0) === 0,
+  );
+  const totalPoints = trend.coverage.reduce((n, c) => n + c.count, 0);
+  const totalOutliers = trend.stats.reduce((n, s) => n + s.outlierCount, 0);
+  const totalGaps = trend.stats.reduce((n, s) => n + s.gaps.length, 0);
+
+  const rangeLabel = RANGES.find((x) => x.value === rangeMin)?.label ?? '';
+
+  // 切换指标或时间范围时，默认回到“完整范围”模式（视图切换显式、可预期）
+  useEffect(() => {
+    setViewMode('full');
+  }, [metric, rangeMin]);
+
+  // 空态用：三断面在该指标上的最后一条有效观测（即使不在所选窗口内）
+  const latestMetricObs = useMemo(() => {
+    let latest: Observation | null = null;
+    for (const r of REACHES) {
+      const items = (latestQ[r].data ?? []) as Observation[];
+      const m = items.find((o) => o.metric === metric);
+      if (m && (latest === null || new Date(m.observedAt).getTime() > new Date(latest.observedAt).getTime())) {
+        latest = m;
+      }
+    }
+    return latest;
+  }, [latestA, latestB, latestC, metric]);
+
+  /** 空态“查看最近有效数据”：切到 7 天并聚焦实际数据 */
+  function showRecentData() {
+    setRangeMin('10080');
+    setViewMode('focus');
+  }
+
+  function refreshTrend() {
+    trendA.refetch();
+    trendB.refetch();
+    trendC.refetch();
+  }
 
   async function doExport() {
     setExporting(true);
@@ -206,27 +271,123 @@ export default function AnalysisPage() {
             options={SIM_METRICS.map((m) => ({ value: m.key, label: simMetricName(m.key) }))} />
           <Segmented ariaLabel="时间范围" value={rangeMin} onChange={setRangeMin}
             options={RANGES.map((r) => ({ value: r.value, label: r.label }))} />
-        </div>
-        {trendQ.some((q) => q.isError) && (
-          <EmptyState title="趋势数据加载失败" description="请检查后端服务后重试。" />
-        )}
-        {totalPoints === 0 && !trendQ.some((q) => q.isLoading) ? (
-          <EmptyState title="所选范围无观测数据" description="可能未接入该指标或时间窗内缺测；未补零、未连线。" />
-        ) : (
-          <>
-            <TrendChart
-              series={series}
-              unit={unit}
-              thresholds={(THRESHOLDS[metric] ?? []).map((t) => ({ value: t.value, label: t.label, color: t.color }))}
+          {totalPoints > 0 && (
+            <Segmented
+              ariaLabel="视图范围"
+              value={viewMode}
+              onChange={(v) => setViewMode(v as 'full' | 'focus')}
+              options={[
+                { value: 'full', label: '完整范围' },
+                { value: 'focus', label: '聚焦数据' },
+              ]}
             />
-            {emptyReaches.length > 0 && (
-              <div className="tw-tiny" style={{ marginTop: 6 }}>
-                缺测断面：{emptyReaches.map(reachName).join('、')}（断点处不连线）
+          )}
+        </div>
+
+        {trendQ.some((q) => q.isLoading) && <div className="tw-muted" style={{ padding: '24px 0' }}>历史加载中…</div>}
+        {!trendQ.some((q) => q.isLoading) && trendQ.some((q) => q.isError) && (
+          <div className="tw-empty-actions">
+            <EmptyState title="趋势数据请求失败" description="可能是后端服务不可用；不会用旧数据伪装为实时结果。" />
+            <Button size="sm" onClick={refreshTrend}>重新加载</Button>
+          </div>
+        )}
+        {!trendQ.some((q) => q.isLoading || q.isError) && totalPoints === 0 && (
+          <div className="tw-empty-actions">
+            <EmptyState
+              title="该时间范围内无有效观测"
+              description={
+                latestMetricObs
+                  ? `最近一条有效观测：${formatTime(latestMetricObs.observedAt)}，已超出所选范围（数据可能已过期，非实时）。`
+                  : '该指标暂无任何观测记录；未补零、未绘制水平假线。'
+              }
+            />
+            <div className="tw-row" style={{ gap: 10, justifyContent: 'center' }}>
+              {latestMetricObs && (
+                <Button size="sm" onClick={showRecentData}>查看最近有效数据</Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={refreshTrend}>刷新数据</Button>
+            </div>
+          </div>
+        )}
+        {totalPoints > 0 && !trendQ.some((q) => q.isLoading || q.isError) && (
+          <>
+            {/* 有效数据覆盖情况：查询范围 vs 实际覆盖 */}
+            <div className="tw-cov">
+              <div className="tw-cov-head">
+                <b>数据覆盖</b>
+                <span className="tw-tiny">
+                  {viewMode === 'full'
+                    ? '完整范围：保留真实缺测，右侧空白＝该时段无观测'
+                    : '聚焦数据：按实际首末观测确定横轴（两端留白）'}
+                </span>
               </div>
-            )}
-            {stalePoints > 0 && (
-              <div className="tw-tiny" style={{ marginTop: 4 }}>非 GOOD 质量点：{stalePoints} 个（已包含在序列中并可在质量列筛选）</div>
-            )}
+              <div className="tw-tiny" style={{ marginBottom: 8 }}>
+                查询范围：{rangeLabel} · 实际有效数据 {trend.spanStart ? formatTime(new Date(trend.spanStart).toISOString()) : '—'} ~ {trend.spanEnd ? formatTime(new Date(trend.spanEnd).toISOString()) : '—'}
+              </div>
+              <div className="tw-cov-grid">
+                {trend.coverage.map((c) => (
+                  <div key={c.reachId} className="tw-cov-cell">
+                    <div className="tw-cov-name">{c.reachName}</div>
+                    <div className="tw-tiny">有效点 {c.count}{c.duplicated > 0 ? `（去重 ${c.duplicated}）` : ''}</div>
+                    <div className="tw-tiny">{c.firstAt ? formatTime(c.firstAt) : '—'} 起</div>
+                    <div className="tw-tiny">{c.lastAt ? formatTime(c.lastAt) : '—'} 止</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <TrendChart
+              data={trend}
+              unit={unit}
+              thresholds={THRESHOLD_LINES[metric] ?? []}
+              viewMode={viewMode}
+            />
+
+            {/* 统计摘要：基于当前时间窗的真实有效数据 */}
+            <div className="tw-stats-sum">
+              <div className="tw-stats-title">
+                <b>统计摘要</b>
+                <span className="tw-tiny">{rangeLabel} · 越限按 demo-rules 阈值（{
+                  (THRESHOLD_LINES[metric] ?? []).map((t) => t.value).join(' / ') || '无'
+                } {unit}）</span>
+              </div>
+              <table className="tw-stats-table">
+                <thead>
+                  <tr>
+                    <th>断面</th><th>有效点</th><th>最小</th><th>最大</th>
+                    <th>异常点</th><th>覆盖率</th><th>缺测区间</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trend.stats.map((s) => (
+                    <tr key={s.reachId}>
+                      <td>{s.reachName}</td>
+                      <td>{s.count}</td>
+                      <td>{fmt(s.min, unit)}</td>
+                      <td>{fmt(s.max, unit)}</td>
+                      <td>{s.outlierCount > 0
+                        ? <span style={{ color: '#d84c4c', fontWeight: 700 }}>{s.outlierCount}</span>
+                        : 0}</td>
+                      <td>{s.coveragePct}%</td>
+                      <td>{s.gaps.length}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {totalOutliers > 0 && (
+                <div className="tw-tiny" style={{ marginTop: 6, color: '#d84c4c' }}>
+                  共 {totalOutliers} 个真实越限点（来自 S2/S3 模拟场景注入，原始值保留、未平滑）。
+                </div>
+              )}
+              {totalGaps === 0 && totalPoints > 0 && (
+                <div className="tw-tiny" style={{ marginTop: 6 }}>当前窗口各断面观测连续，无缺测缺口。</div>
+              )}
+              {emptyReaches.length > 0 && (
+                <div className="tw-tiny" style={{ marginTop: 6 }}>
+                  窗口内缺测断面：{emptyReaches.map(reachName).join('、')}（不补点、不连线）。
+                </div>
+              )}
+            </div>
           </>
         )}
       </Card>
