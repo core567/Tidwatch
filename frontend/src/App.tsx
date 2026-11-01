@@ -19,6 +19,9 @@ import AdminPage from './pages/Admin/AdminPage';
 // 旧 P12 管理页源文件保留（pages/P12Admin），G2 后 /admin 使用分类管理页
 // 3D 页（含 three.js 与 PBR 纹理）体积大，懒加载使其他页面不承担其首屏成本。
 const MonitorPage = lazy(() => import('./pages/Monitor/MonitorPage'));
+// F1：新版视觉组件隔离预览（v2 样式仅随该路由加载）
+const V2PreviewRoute = lazy(() => import('./v2/V2PreviewRoute'));
+const V2PreviewPage = lazy(() => import('./v2/V2PreviewPage'));
 
 function MonitorRoute() {
   return (
@@ -95,6 +98,24 @@ export default function App() {
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/mobile" element={<MobilePage />} />
             <Route path="/field-voice" element={<FieldVoicePage />} />
+          </Route>
+          {/* F1：新版视觉隔离预览（位于主布局之外，样式零污染） */}
+          <Route
+            path="/v2-preview"
+            element={
+              <Suspense fallback={<div className="state-box">新版视觉预览加载中…</div>}>
+                <V2PreviewRoute />
+              </Suspense>
+            }
+          >
+            <Route
+              index
+              element={
+                <Suspense fallback={<div className="state-box">组件预览加载中…</div>}>
+                  <V2PreviewPage />
+                </Suspense>
+              }
+            />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -1,0 +1,45 @@
+.v2-scope {
+  color-scheme: dark;
+
+  /* 深水底层 */
+  --bg-0: #02090d;
+  --bg-1: #04121a;
+  --bg-2: #071e28;
+  --panel: rgba(8, 27, 36, 0.66);
+  --panel-strong: rgba(10, 34, 44, 0.84);
+
+  /* 墨色层级 */
+  --ink-hi: #e9f6f5;
+  --ink-1: #a8c4c9;
+  --ink-2: #7fa4ab;
+  --ink-3: #628891;
+
+  /* 线条 */
+  --line: rgba(120, 205, 210, 0.12);
+  --line-2: rgba(120, 205, 210, 0.2);
+  --line-3: rgba(120, 205, 210, 0.34);
+
+  /* 潮青为主色 */
+  --tide: #4fe6d2;
+  --tide-soft: rgba(79, 230, 210, 0.12);
+  --tide-glow: rgba(79, 230, 210, 0.45);
+  --blue: #5aa9ff;
+  --good: #5fe3a0;
+  --warn: #ffc46b;
+  --danger: #ff6f5e;
+
+  --font-sans: "Microsoft YaHei UI", "PingFang SC", "HarmonyOS Sans SC",
+    "Source Han Sans SC", system-ui, sans-serif;
+  --font-display: "Bahnschrift", "DIN Alternate", "Roboto Condensed",
+    "Microsoft YaHei UI", sans-serif;
+  --font-mono: "Cascadia Code", "JetBrains Mono", "SFMono-Regular", Consolas,
+    monospace;
+
+  --ease: cubic-bezier(0.22, 0.8, 0.28, 1);
+  --rail-w: 84px;
+  --rail-w-open: 232px;
+  --topbar-h: 72px;
+  --page-pad: 30px;
+  --gap: 16px;
+  --radius: 2px;
+}
