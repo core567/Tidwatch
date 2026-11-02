@@ -43,15 +43,15 @@ export function Drawer({
   if (!open) return null;
 
   return createPortal(
-    <div className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
-      <div className="drawer__backdrop" onClick={onClose} aria-hidden="true" />
+    <div className="v2-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <div className="v2-drawer__backdrop" onClick={onClose} aria-hidden="true" />
       <aside
         className={`v2-drawer__panel ${
           size === 'wide' ? 'v2-drawer__panel--wide' : ''
         }`.trim()}
       >
-        <header className="drawer__head">
-          <div className="drawer__heading">
+        <header className="v2-drawer__head">
+          <div className="v2-drawer__heading">
             <span className="v2-eyebrow v2-eyebrow--bare">{eyebrow}</span>
             <h2 id="drawer-title">{title}</h2>
             {subtitle && <p>{subtitle}</p>}
@@ -66,7 +66,7 @@ export function Drawer({
             <Icon name="close" size={16} />
           </button>
         </header>
-        <div className="drawer__body">{children}</div>
+        <div className="v2-drawer__body">{children}</div>
         {footer && <footer className="v2-drawer__footer">{footer}</footer>}
       </aside>
     </div>,

@@ -1,0 +1,606 @@
+/* ============================================================
+   TideWatch V2 · Phase 1 · Overview visual layer
+   Scoped to the overview; no data, route or service changes.
+   ============================================================ */
+
+/* ---------- 河流态势面板：增加一处极轻的场内辉光 ---------- */
+.v2-river-panel {
+  background:
+    radial-gradient(620px 300px at 50% 48%, rgba(79, 230, 210, 0.06), transparent 72%),
+    linear-gradient(180deg, rgba(18, 52, 63, 0.66) 0%, rgba(7, 25, 33, 0.56) 100%);
+}
+.v2-river-stage::before {
+  content: "";
+  position: absolute;
+  inset: 8% 18%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(79, 230, 210, 0.08), transparent 70%);
+  filter: blur(12px);
+}
+
+/* ---------- 顶部遥测条 ---------- */
+.v2-river-telemetry {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 4px 12px;
+  border: 1px solid rgba(121, 233, 255, 0.12);
+  background: linear-gradient(180deg, rgba(5, 22, 29, 0.84), rgba(5, 22, 29, 0.5));
+  backdrop-filter: blur(8px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.v2-river-telemetry__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+.v2-river-telemetry__item em {
+  font-style: normal;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+}
+.v2-river-telemetry__item b {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ink-1);
+}
+.v2-river-telemetry__item small {
+  font-family: var(--font-sans);
+  font-size: 6.5px;
+  letter-spacing: 0;
+  color: var(--ink-3);
+}
+.v2-river-telemetry__item.v2-is-alert b {
+  color: var(--danger);
+  text-shadow: 0 0 10px rgba(255, 111, 94, 0.32);
+}
+.v2-river-telemetry__sep {
+  width: 1px;
+  height: 10px;
+  background: var(--line-2);
+}
+
+/* ---------- 河道流动光迹 ---------- */
+.v2-river-stage__comet {
+  opacity: 0.58;
+  filter: drop-shadow(0 0 6px rgba(196, 255, 248, 0.35));
+  animation: river-comet 16s linear infinite;
+}
+@keyframes river-comet {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -1040;
+  }
+}
+
+/* ---------- 断面节点与标签 ---------- */
+.v2-station__focus {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border: 1px dashed rgba(255, 111, 94, 0.42);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: station-focus-spin 9s linear infinite;
+}
+@keyframes station-focus-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.v2-station__risk {
+  padding: 1px 4px;
+  border: 1px solid rgba(255, 196, 107, 0.3);
+  border-radius: 1px;
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.04em;
+  color: var(--warn);
+  background: rgba(255, 196, 107, 0.05);
+}
+.v2-station__risk--alert {
+  color: var(--danger);
+  border-color: rgba(255, 111, 94, 0.35);
+  background: rgba(255, 111, 94, 0.07);
+}
+.v2-station.v2-is-selected .v2-station__focus {
+  border-color: rgba(255, 140, 124, 0.7);
+}
+
+/* ---------- 底部里程轴 ---------- */
+.v2-river-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) minmax(0, 1fr);
+  align-items: end;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.v2-river-foot__note {
+  white-space: nowrap;
+}
+.v2-river-foot__sync {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+.v2-river-scale {
+  position: relative;
+  height: 21px;
+}
+.v2-river-scale__line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 7px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(121, 233, 255, 0.22) 8%,
+    rgba(121, 233, 255, 0.22) 92%,
+    transparent
+  );
+}
+.v2-river-scale__tick {
+  position: absolute;
+  top: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.v2-river-scale__tick i {
+  width: 1px;
+  height: 5px;
+  background: rgba(121, 233, 255, 0.32);
+}
+.v2-river-scale__tick em {
+  font-size: 7px;
+  font-style: normal;
+  letter-spacing: 0.03em;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* ---------- 指标带 ---------- */
+.v2-metric {
+  transition: background 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+.v2-metric:hover {
+  background: rgba(79, 230, 210, 0.026);
+}
+.v2-metric.v2-is-alert {
+  background: linear-gradient(180deg, rgba(255, 111, 94, 0.055), transparent 72%);
+  box-shadow: inset 2px 0 0 rgba(255, 111, 94, 0.45);
+}
+.v2-metric__flag {
+  margin-left: auto;
+  padding: 1px 5px;
+  border: 1px solid rgba(255, 196, 107, 0.28);
+  border-radius: 1px;
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--warn);
+  background: rgba(255, 196, 107, 0.05);
+}
+.v2-metric__flag--alert {
+  color: var(--danger);
+  border-color: rgba(255, 111, 94, 0.34);
+  background: rgba(255, 111, 94, 0.07);
+}
+
+/* ---------- Sparkline 入场与阈值线 ---------- */
+.v2-spark__threshold {
+  stroke: rgba(255, 196, 107, 0.42);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.v2-spark--animate .v2-spark__line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: spark-draw 0.9s var(--ease) 0.08s forwards;
+  filter: drop-shadow(0 0 3px var(--spark-glow));
+}
+.v2-spark--animate .v2-spark__area-fill {
+  opacity: 0;
+  animation: spark-area 0.6s ease 0.2s forwards;
+}
+.v2-spark--animate .v2-spark__dot {
+  opacity: 0;
+  animation: spark-dot 0.3s ease 0.95s forwards;
+}
+@keyframes spark-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes spark-area {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes spark-dot {
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- 预警卡 ---------- */
+.v2-alert-primary {
+  box-shadow: inset 0 0 36px -26px rgba(255, 111, 94, 0.55);
+}
+.v2-alert-primary__id {
+  font-size: 7.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.v2-alert-primary__progress {
+  height: 2px;
+  margin-top: 11px;
+  overflow: hidden;
+  background: rgba(255, 111, 94, 0.12);
+}
+.v2-alert-primary__progress i {
+  display: block;
+  width: 34%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 140, 122, 0.95), transparent);
+  animation: alert-progress 2.8s var(--ease) infinite;
+}
+@keyframes alert-progress {
+  0% {
+    transform: translateX(-110%);
+  }
+  70%,
+  100% {
+    transform: translateX(330%);
+  }
+}
+
+/* ---------- 处置流水线 ---------- */
+.v2-pipeline {
+  position: relative;
+}
+.v2-pipeline__beam {
+  position: absolute;
+  left: 6px;
+  top: 0;
+  z-index: 2;
+  width: 3px;
+  height: 34px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, transparent, rgba(79, 230, 210, 0.5), transparent);
+  filter: drop-shadow(0 0 6px rgba(79, 230, 210, 0.4));
+  pointer-events: none;
+  animation: pipeline-beam 6.5s linear infinite;
+}
+@keyframes pipeline-beam {
+  0% {
+    top: -12%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+.v2-stage:hover .v2-stage__label {
+  color: var(--ink-hi);
+}
+.v2-stage:hover .v2-stage__count {
+  color: var(--ink-1);
+}
+
+/* ---------- 窄屏收敛 ---------- */
+@media (max-width: 1240px) {
+  .v2-river-foot {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 260px) minmax(0, 1fr);
+  }
+  .v2-river-foot__note {
+    display: none;
+  }
+  .v2-river-telemetry {
+    gap: 10px;
+    padding: 4px 10px;
+  }
+}
+@media (max-width: 1024px) {
+  .v2-river-foot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .v2-river-foot__sync {
+    display: none;
+  }
+  .v2-river-scale {
+    width: 220px;
+    margin: 0 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-river-stage__comet,
+  .v2-station__focus,
+  .v2-alert-primary__progress i,
+  .v2-pipeline__beam,
+  .v2-spark--animate .v2-spark__line,
+  .v2-spark--animate .v2-spark__area-fill,
+  .v2-spark--animate .v2-spark__dot {
+    animation: none !important;
+  }
+  .v2-spark--animate .v2-spark__line {
+    stroke-dashoffset: 0;
+  }
+  .v2-spark--animate .v2-spark__area-fill,
+  .v2-spark--animate .v2-spark__dot {
+    opacity: 1;
+  }
+}
+
+/* ================= Phase 1 refinement ================= */
+
+/* ---------- 信息层级：健康与风险为主，站点与任务为辅 ---------- */
+.v2-overview-page .v2-readout--primary .v2-readout__value {
+  font-size: 31px;
+  line-height: 1;
+}
+.v2-overview-page .v2-readout--risk .v2-readout__value {
+  color: var(--danger);
+  text-shadow: 0 0 26px rgba(255, 111, 94, 0.3);
+}
+.v2-overview-page .v2-readout--risk .v2-readout__value small {
+  color: rgba(255, 166, 152, 0.85);
+  font-size: 9px;
+}
+.v2-overview-page .v2-readout--secondary {
+  opacity: 0.78;
+}
+.v2-overview-page .v2-readout--secondary .v2-readout__value {
+  font-size: 20px;
+  color: var(--ink-1);
+}
+.v2-overview-page .v2-readout--secondary .v2-readout__label {
+  color: var(--ink-3);
+}
+.v2-overview-page .v2-readout--primary + .v2-readout--secondary {
+  margin-left: 8px;
+}
+.v2-overview-page .v2-readout__sub {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+/* ---------- 辅助文字可读性（仅首页） ---------- */
+.v2-overview-page .v2-panel__en {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--ink-2);
+  opacity: 0.82;
+}
+.v2-overview-page .v2-panel__code {
+  font-size: 9.5px;
+  color: var(--ink-2);
+}
+.v2-overview-page .v2-legend span {
+  font-size: 9.5px;
+  color: var(--ink-2);
+}
+.v2-overview-page .v2-station__name {
+  font-size: 12.5px;
+}
+.v2-overview-page .v2-station__class {
+  font-size: 8.5px;
+}
+.v2-overview-page .v2-station__meta {
+  font-size: 10px;
+  color: var(--ink-1);
+}
+.v2-overview-page .v2-station__risk {
+  font-size: 8px;
+}
+.v2-overview-page .v2-metric__en {
+  font-size: 8px;
+  color: var(--ink-2);
+  opacity: 0.78;
+}
+.v2-overview-page .v2-task__title {
+  font-size: 12px;
+}
+.v2-overview-page .v2-task__station {
+  font-size: 9px;
+}
+.v2-overview-page .v2-task__assignee {
+  font-size: 9.5px;
+  color: var(--ink-2);
+}
+.v2-overview-page .v2-task__time {
+  font-size: 9px;
+  color: var(--ink-2);
+}
+.v2-overview-page .v2-event-row__time {
+  font-size: 9px;
+  color: var(--ink-2);
+}
+.v2-overview-page .v2-event-row__meta {
+  font-size: 8.5px;
+}
+.v2-overview-page .v2-river-telemetry__item {
+  font-size: 8px;
+}
+.v2-overview-page .v2-river-foot {
+  font-size: 8.5px;
+}
+.v2-overview-page .v2-river-scale__tick em {
+  font-size: 7.5px;
+}
+
+/* ---------- 河道空间层次：低强度河岸与水纹 ---------- */
+.v2-river-stage__bank {
+  fill: none;
+  stroke: rgba(121, 233, 255, 0.12);
+  stroke-width: 1;
+}
+.v2-river-stage__bank--outer {
+  stroke: rgba(121, 233, 255, 0.055);
+  stroke-dasharray: 2 9;
+}
+.v2-river-stage__ripple {
+  fill: none;
+  stroke: rgba(207, 255, 249, 0.16);
+  stroke-width: 1;
+  animation: dash-flow 32s linear infinite;
+}
+.v2-river-stage__ripple--alt {
+  animation-duration: 38s;
+  animation-delay: -14s;
+}
+
+/* ---------- 流水线口径与活跃阶段 ---------- */
+.v2-overview-page .v2-pipeline__legend {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 7px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+.v2-overview-page .v2-pipeline__legend span:last-child {
+  text-align: right;
+}
+.v2-overview-page .v2-stage.v2-is-active {
+  background: linear-gradient(90deg, rgba(79, 230, 210, 0.065), transparent 72%);
+  box-shadow: inset 2px 0 0 rgba(79, 230, 210, 0.45);
+}
+.v2-overview-page .v2-stage__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid rgba(79, 230, 210, 0.25);
+  border-radius: 1px;
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.05em;
+  color: var(--tide);
+  white-space: nowrap;
+}
+.v2-overview-page .v2-stage__live i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--tide);
+  box-shadow: 0 0 6px var(--tide-glow);
+  animation: blink 2.4s ease-in-out infinite;
+}
+
+/* ---------- 异常区间 → 关联研判 ---------- */
+.v2-overview-page .v2-trend-panel__note {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.v2-overview-page .v2-trend-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+.v2-overview-page .v2-trend-panel__source {
+  margin-left: 0;
+}
+.v2-overview-page .v2-trend-event-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 111, 94, 0.25);
+  border-radius: 1px;
+  background: rgba(255, 111, 94, 0.04);
+  font-size: 8.5px;
+  letter-spacing: 0.03em;
+  color: #ffb3a8;
+  white-space: nowrap;
+  transition: border-color 0.2s var(--ease), color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+.v2-overview-page .v2-trend-event-link:hover {
+  border-color: rgba(255, 111, 94, 0.5);
+  background: rgba(255, 111, 94, 0.08);
+  color: #ffd2cb;
+}
+
+/* ---------- 1920 × 1080 首屏密度 ---------- */
+@media (min-width: 1800px) and (min-height: 900px) {
+  .v2-overview-page {
+    padding-top: 18px;
+    padding-bottom: 48px;
+  }
+  .v2-overview-page .v2-page-intro {
+    margin-bottom: 14px;
+  }
+  .v2-overview-page .v2-overview-grid {
+    gap: 14px;
+  }
+  .v2-overview-page .v2-river-panel,
+  .v2-overview-page .v2-alert-panel {
+    min-height: 404px;
+  }
+  .v2-overview-page .v2-trend-panel,
+  .v2-overview-page .v2-pipeline-panel {
+    min-height: 388px;
+  }
+  .v2-overview-page .v2-metric-strip__head {
+    padding-top: 12px;
+    padding-bottom: 6px;
+  }
+  .v2-overview-page .v2-metric-strip__grid {
+    padding-bottom: 12px;
+  }
+}
+
+.v2-overview-page .v2-readout__label {
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  color: var(--ink-2);
+}
+.v2-overview-page .v2-readout__sub {
+  font-size: 9.5px;
+}

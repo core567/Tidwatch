@@ -1,0 +1,156 @@
+/* ================= 阶段占位页 ================= */
+.v2-placeholder-page .v2-page-title {
+  font-size: 29px;
+}
+
+.v2-roadmap-panel {
+  min-height: 430px;
+}
+.v2-roadmap-panel__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-top: 6px;
+}
+.v2-roadmap-mark {
+  position: absolute;
+  right: 18px;
+  bottom: 52px;
+  color: rgba(79, 230, 210, 0.05);
+  pointer-events: none;
+  line-height: 0;
+}
+.v2-roadmap {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+}
+.v2-roadmap__item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 17px 0;
+  border-bottom: 1px solid var(--line);
+}
+.v2-roadmap__item:last-child {
+  border-bottom: 0;
+}
+.v2-roadmap__idx {
+  width: 24px;
+  flex: none;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+.v2-roadmap__name {
+  font-size: 13px;
+  color: var(--ink-hi);
+  letter-spacing: 0.02em;
+}
+.v2-roadmap__line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line-2), transparent);
+}
+.v2-roadmap__state {
+  flex: none;
+  padding: 2px 6px;
+  border: 1px dashed var(--line-2);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+}
+.v2-roadmap-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  color: var(--ink-3);
+}
+
+.v2-phase-panel {
+  min-height: 430px;
+}
+.v2-phase-panel .v2-panel__body {
+  display: flex;
+  flex-direction: column;
+}
+.v2-phase-track {
+  display: flex;
+  flex-direction: column;
+}
+.v2-phase-step {
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+.v2-phase-step:last-child {
+  border-bottom: 0;
+}
+.v2-phase-step__node {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--ink-3);
+  transition: all 0.25s var(--ease);
+}
+.v2-phase-step--done .v2-phase-step__node {
+  border-color: rgba(95, 227, 160, 0.35);
+  background: rgba(95, 227, 160, 0.07);
+  color: var(--good);
+}
+.v2-phase-step--current .v2-phase-step__node {
+  border-color: rgba(79, 230, 210, 0.5);
+  background: rgba(79, 230, 210, 0.08);
+  color: var(--tide);
+  box-shadow: 0 0 18px -4px var(--tide-glow);
+}
+.v2-phase-step__label {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.v2-phase-step--current .v2-phase-step__label {
+  color: var(--ink-hi);
+}
+.v2-phase-step__state {
+  font-size: 7.5px;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+.v2-phase-step--done .v2-phase-step__state {
+  color: var(--good);
+}
+.v2-phase-step--current .v2-phase-step__state {
+  color: var(--tide);
+}
+.v2-phase-note {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: auto;
+  padding-top: 20px;
+}
+.v2-phase-note p {
+  font-size: 11px;
+  line-height: 1.85;
+  color: var(--ink-2);
+}

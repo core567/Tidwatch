@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { findNavItem } from '../../config/nav';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
@@ -13,7 +13,19 @@ function useClock() {
   return now;
 }
 
-export function TopBar() {
+export interface TopBarStatus {
+  /** 实时通道状态（来自全局 SSE store） */
+  streamState: string;
+  /** 断面在线数（来自真实 reaches 数据） */
+  onlineCount: number;
+  totalCount: number;
+}
+
+/**
+ * 新版顶栏：分区标题 + 时钟 + 实时连接状态（真实数据）。
+ * 原 TidewatchWeb 的固定演示徽章与硬编码在线数已移除。
+ */
+export function TopBar({ status }: { status?: TopBarStatus }) {
   const { pathname } = useLocation();
   const current = findNavItem(pathname);
   const now = useClock();
@@ -30,13 +42,22 @@ export function TopBar() {
     weekday: 'short',
   });
 
+  const streamOnline = status?.streamState === 'open';
+
   return (
     <header className="v2-topbar">
       <div className="v2-topbar__where">
         <b>汉江 · 武汉段</b>
         <span>
-          <span className="v2-status-dot" style={{ width: 5, height: 5 }} />
-          监测站网 3/3 在线
+          <span
+            className={`v2-status-dot ${streamOnline ? '' : 'v2-status-dot--idle'}`}
+            style={{ width: 5, height: 5 }}
+          />
+          {streamOnline
+            ? '实时通道已连接'
+            : status?.streamState === 'connecting'
+              ? '实时通道连接中'
+              : '实时通道未连接'}
         </span>
       </div>
       <div className="v2-topbar__rule" />
@@ -46,16 +67,23 @@ export function TopBar() {
       </div>
 
       <div className="v2-topbar__right">
-        <Badge tone="demo">DEMO · 模拟数据</Badge>
+        <Badge tone={streamOnline ? 'live' : 'mid'}>
+          {streamOnline ? 'LIVE' : 'OFFLINE'}
+        </Badge>
+        <span className="v2-topbar__stations v2-mono">
+          {status && status.totalCount > 0
+            ? `站点 ${status.onlineCount}/${status.totalCount} 在线`
+            : '站点状态加载中'}
+        </span>
         <div className="v2-topbar__clock">
           <b>{time}</b>
           <span>{date} · UTC+8</span>
         </div>
-        <Link to="/assistant" className="v2-ai-btn">
+        <span className="v2-ai-btn" title="AI 助手入口位于右下角悬浮按钮" aria-hidden="true">
           <span className="v2-ai-btn__glow" />
           <Icon name="assistant" size={15} />
           AI 助手
-        </Link>
+        </span>
       </div>
     </header>
   );

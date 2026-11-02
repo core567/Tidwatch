@@ -52,6 +52,39 @@ export function Sparkline({
 }: SparklineProps) {
   const rawId = useId();
   const gradId = `spark-${rawId.replace(/[^a-zA-Z0-9-]/g, '')}`;
+  if (values.length === 0) {
+    // 精致空态占位：装饰性淡虚线 + 端点，明显区别于真实数据曲线，不伪造序列。
+    const midY = height / 2;
+    return (
+      <svg
+        className="v2-spark v2-spark--empty"
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        role="img"
+        aria-label="暂无历史序列"
+      >
+        <line
+          x1={4}
+          x2={width - 4}
+          y1={midY - 3}
+          y2={midY - 3}
+          stroke="rgba(120,205,210,0.16)"
+          strokeDasharray="1.5 5"
+        />
+        <line
+          x1={4}
+          x2={width - 4}
+          y1={midY + 3}
+          y2={midY + 3}
+          stroke="rgba(120,205,210,0.16)"
+          strokeDasharray="1.5 5"
+        />
+        <circle cx={width - 5} cy={midY} r={1.6} fill="rgba(120,205,210,0.3)" />
+        <circle cx={5} cy={midY} r={1.6} fill="rgba(120,205,210,0.3)" />
+      </svg>
+    );
+  }
   const pad = 3;
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -84,10 +117,10 @@ export function Sparkline({
           <stop offset="100%" stopColor={palette.area} stopOpacity="0" />
         </linearGradient>
       </defs>
-      {fill && <path className="spark__area-fill" d={area} fill={`url(#${gradId})`} />}
+      {fill && <path className="v2-spark__area-fill" d={area} fill={`url(#${gradId})`} />}
       {thresholdY !== null && (
         <line
-          className="spark__threshold"
+          className="v2-spark__threshold"
           x1={pad}
           x2={width - pad}
           y1={thresholdY}
@@ -108,7 +141,7 @@ export function Sparkline({
       />
       {showEnd && (
         <circle
-          className="spark__dot"
+          className="v2-spark__dot"
           cx={points[points.length - 1][0]}
           cy={points[points.length - 1][1]}
           r="2.2"

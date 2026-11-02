@@ -34,7 +34,7 @@ export function SideRail() {
             key={item.path}
             to={item.path}
             end={item.path === '/'}
-            className={({ isActive }) => `rail__item ${isActive ? 'is-active' : ''}`.trim()}
+            className={({ isActive }) => `v2-rail__item ${isActive ? 'v2-is-active' : ''}`.trim()}
             aria-label={item.label}
           >
             <span className="v2-rail__item-num">{item.index}</span>

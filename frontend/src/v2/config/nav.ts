@@ -38,7 +38,7 @@ export const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    path: '/assessment',
+    path: '/events',
     index: '03',
     label: '异常研判与处置',
     en: 'ASSESSMENT',
@@ -53,7 +53,7 @@ export const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    path: '/inspection',
+    path: '/tasks',
     index: '04',
     label: '巡检协同中心',
     en: 'INSPECTION',
@@ -83,7 +83,7 @@ export const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    path: '/system',
+    path: '/admin',
     index: '06',
     label: '数据与系统管理',
     en: 'SYSTEM',
@@ -98,7 +98,7 @@ export const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    path: '/twin',
+    path: '/monitor',
     index: '07',
     label: '数字孪生',
     en: 'TWIN',
@@ -110,21 +110,6 @@ export const NAV_ITEMS: NavItem[] = [
       '断面切换与监测点面板',
       '关键指标与风险提示浮层',
       '场景工具栏与全景复位',
-    ],
-  },
-  {
-    path: '/assistant',
-    index: '08',
-    label: 'AI 智能助手',
-    en: 'ASSISTANT',
-    icon: 'assistant',
-    phase: 4,
-    summary: '数据问答、异常分析与系统导航',
-    modules: [
-      '数据问答对话界面',
-      '异常事件分析辅助',
-      '系统功能导航',
-      '语音入口与快捷提问',
     ],
   },
 ];

@@ -22,6 +22,20 @@ const MonitorPage = lazy(() => import('./pages/Monitor/MonitorPage'));
 // F1：新版视觉组件隔离预览（v2 样式仅随该路由加载）
 const V2PreviewRoute = lazy(() => import('./v2/V2PreviewRoute'));
 const V2PreviewPage = lazy(() => import('./v2/V2PreviewPage'));
+// F2：新版首页（真实数据接入，接管 / 路由；旧首页保留于 /legacy 回退）
+const OverviewV2Page = lazy(() => import('./v2/features/overview/OverviewV2Page'));
+// F2.1：新版首页外壳（v2 SideRail/TopBar + 全局 AI 助手，仅用于 /）
+const V2HomeShell = lazy(() => import('./v2/V2HomeShell'));
+// F3：新版数字孪生页（原生 Three.js 场景挂载 + v2 HUD；旧 MonitorPage 保留于 /monitor-legacy）
+const TwinV2Page = lazy(() => import('./v2/features/twin/TwinV2Page'));
+
+function V2HomeRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">河流态势总览加载中…</div>}>
+      <V2HomeShell />
+    </Suspense>
+  );
+}
 
 function MonitorRoute() {
   return (
@@ -33,6 +47,22 @@ function MonitorRoute() {
       }
     >
       <MonitorPage />
+    </Suspense>
+  );
+}
+
+function TwinRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">数字孪生场景加载中…</div>}>
+      <TwinV2Page />
+    </Suspense>
+  );
+}
+
+function OverviewV2Route() {
+  return (
+    <Suspense fallback={<div className="state-box">河流态势总览加载中…</div>}>
+      <OverviewV2Page />
     </Suspense>
   );
 }
@@ -62,10 +92,23 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
+          {/* F2.1/F3：新版深色外壳统一承载首页与数字孪生（SideRail/TopBar/Backdrop + SSE + AI 助手） */}
+          <Route path="/" element={<V2HomeRoute />}>
+            <Route index element={<OverviewV2Route />} />
+          </Route>
+          <Route path="/monitor" element={<V2HomeRoute />}>
+            <Route index element={<TwinRoute />} />
+          </Route>
+          <Route path="/river-3d" element={<V2HomeRoute />}>
+            <Route index element={<TwinRoute />} />
+          </Route>
+          {/* 旧版首页回退入口：保持原 AppLayout 布局 */}
+          <Route path="/legacy" element={<AppLayout />}>
+            <Route index element={<OverviewPage />} />
+          </Route>
+
           <Route element={<AppLayout />}>
-            {/* 01 智慧监测总览：卡片式总览为首页；3D 数字空间在 /monitor（独立开发） */}
-            <Route path="/" element={<OverviewPage />} />
-            <Route path="/monitor" element={<MonitorRoute />} />
+            <Route path="/monitor-legacy" element={<MonitorRoute />} />
 
             {/* 02 水环境分析（阶段 G 上线真实页面） */}
             {/* 02 水环境分析正式页；旧 P02 单断面详情保留 */}
@@ -79,7 +122,7 @@ export default function App() {
             <Route path="/events/:eventId/workbench" element={<WorkbenchPage />} />
             <Route path="/evidence" element={<EvidencePage />} />
             {/* 3D 数字空间：新旧入口统一到 MonitorPage；旧 P07 文件保留待验收后清理 */}
-            <Route path="/river-3d" element={<MonitorRoute />} />
+
 
             {/* 04 巡检协同中心（阶段 E 上线） */}
             <Route path="/inspection" element={<Navigate to="/tasks" replace />} />
