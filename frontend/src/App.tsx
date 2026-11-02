@@ -30,6 +30,9 @@ const V2HomeShell = lazy(() => import('./v2/V2HomeShell'));
 const TwinV2Page = lazy(() => import('./v2/features/twin/TwinV2Page'));
 // F4：新版水环境分析页（真实数据 + 演示双源；旧页保留于 /analysis-legacy）
 const AnalysisV2Page = lazy(() => import('./v2/features/analysis/AnalysisV2Page'));
+// F5：新版事件中心与研判工作台（真实八态状态机 + allowedActions；旧页保留 legacy）
+const AssessmentV2Page = lazy(() => import('./v2/features/assessment/AssessmentV2Page'));
+const WorkbenchV2Page = lazy(() => import('./v2/features/assessment/WorkbenchV2Page'));
 
 function V2HomeRoute() {
   return (
@@ -49,6 +52,22 @@ function MonitorRoute() {
       }
     >
       <MonitorPage />
+    </Suspense>
+  );
+}
+
+function AssessmentRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">事件中心加载中…</div>}>
+      <AssessmentV2Page />
+    </Suspense>
+  );
+}
+
+function WorkbenchRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">研判工作台加载中…</div>}>
+      <WorkbenchV2Page />
     </Suspense>
   );
 }
@@ -115,6 +134,12 @@ export default function App() {
           <Route path="/analysis" element={<V2HomeRoute />}>
             <Route index element={<AnalysisRoute />} />
           </Route>
+          <Route path="/events" element={<V2HomeRoute />}>
+            <Route index element={<AssessmentRoute />} />
+          </Route>
+          <Route path="/events/:eventId/workbench" element={<V2HomeRoute />}>
+            <Route index element={<WorkbenchRoute />} />
+          </Route>
           {/* 旧版首页回退入口：保持原 AppLayout 布局 */}
           <Route path="/legacy" element={<AppLayout />}>
             <Route index element={<OverviewPage />} />
@@ -130,8 +155,8 @@ export default function App() {
             {/* 03 异常研判与处置（阶段 D 上线三栏工作台） */}
             <Route path="/disposal" element={<Navigate to="/events" replace />} />
             <Route path="/disposal/:eventId" element={<DisposalEventRedirect />} />
-            <Route path="/events" element={<EventsPage />} />
-            <Route path="/events/:eventId/workbench" element={<WorkbenchPage />} />
+            <Route path="/events-legacy" element={<EventsPage />} />
+            <Route path="/events/:eventId/workbench-legacy" element={<WorkbenchPage />} />
             <Route path="/evidence" element={<EvidencePage />} />
             {/* 3D 数字空间：新旧入口统一到 MonitorPage；旧 P07 文件保留待验收后清理 */}
 
