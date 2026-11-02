@@ -28,6 +28,8 @@ const OverviewV2Page = lazy(() => import('./v2/features/overview/OverviewV2Page'
 const V2HomeShell = lazy(() => import('./v2/V2HomeShell'));
 // F3：新版数字孪生页（原生 Three.js 场景挂载 + v2 HUD；旧 MonitorPage 保留于 /monitor-legacy）
 const TwinV2Page = lazy(() => import('./v2/features/twin/TwinV2Page'));
+// F4：新版水环境分析页（真实数据 + 演示双源；旧页保留于 /analysis-legacy）
+const AnalysisV2Page = lazy(() => import('./v2/features/analysis/AnalysisV2Page'));
 
 function V2HomeRoute() {
   return (
@@ -47,6 +49,14 @@ function MonitorRoute() {
       }
     >
       <MonitorPage />
+    </Suspense>
+  );
+}
+
+function AnalysisRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">水环境分析加载中…</div>}>
+      <AnalysisV2Page />
     </Suspense>
   );
 }
@@ -102,6 +112,9 @@ export default function App() {
           <Route path="/river-3d" element={<V2HomeRoute />}>
             <Route index element={<TwinRoute />} />
           </Route>
+          <Route path="/analysis" element={<V2HomeRoute />}>
+            <Route index element={<AnalysisRoute />} />
+          </Route>
           {/* 旧版首页回退入口：保持原 AppLayout 布局 */}
           <Route path="/legacy" element={<AppLayout />}>
             <Route index element={<OverviewPage />} />
@@ -110,9 +123,8 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route path="/monitor-legacy" element={<MonitorRoute />} />
 
-            {/* 02 水环境分析（阶段 G 上线真实页面） */}
-            {/* 02 水环境分析正式页；旧 P02 单断面详情保留 */}
-            <Route path="/analysis" element={<AnalysisPage />} />
+            {/* 02 水环境分析：F4 新版视觉接管 /analysis；旧页保留于 /analysis-legacy 回退 */}
+            <Route path="/analysis-legacy" element={<AnalysisPage />} />
             <Route path="/reaches/:reachId" element={<ReachDetailPage />} />
 
             {/* 03 异常研判与处置（阶段 D 上线三栏工作台） */}
