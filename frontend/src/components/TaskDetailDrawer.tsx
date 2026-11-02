@@ -64,7 +64,16 @@ function EvidencePhoto({ attachmentId, onOpen }: { attachmentId: string; onOpen:
 }
 
 /** PC 巡检任务宽抽屉复核工作台：概况 / 测量 / 照片 / 观察结论 / 版本历史 + 复核操作。 */
-export function TaskDetailDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }) {
+export function TaskDetailDrawer({
+  taskId,
+  onClose,
+  dark = false,
+}: {
+  taskId: string;
+  onClose: () => void;
+  /** v2 深色科技风主题（仅视觉，不影响任何业务逻辑） */
+  dark?: boolean;
+}) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState<'APPROVE' | 'REJECT' | null>(null);
   const [error, setError] = useState('');
@@ -159,6 +168,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string; onClose:
       <Drawer
         open
         onClose={onClose}
+        data-theme={dark ? 'v2-dark' : undefined}
         width="clamp(620px, 60vw, 960px)"
         title={task?.title ?? '任务复核'}
         subtitle={task ? `${task.taskId} · ${reachName(task.reachId)}` : ''}

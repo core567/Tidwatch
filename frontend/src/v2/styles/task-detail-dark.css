@@ -1,0 +1,141 @@
+/* ============================================================
+   F6.1 任务详情抽屉 v2 深色主题（作用域 data-theme="v2-dark"）
+   仅视觉覆盖，不改原 TaskDetailDrawer 业务结构与类名
+   ============================================================ */
+
+.tw-drawer[data-theme="v2-dark"],
+.tw-overlay-right:has(.tw-drawer[data-theme="v2-dark"]) .tw-drawer {
+  background: linear-gradient(180deg, rgba(8, 27, 36, 0.98), rgba(3, 13, 18, 0.99));
+  border-left: 1px solid rgba(120, 205, 210, 0.22);
+  color: #c9e4e2;
+}
+
+.tw-drawer[data-theme="v2-dark"] .tw-drawer-head {
+  border-bottom: 1px solid rgba(120, 205, 210, 0.16);
+  background: rgba(5, 21, 28, 0.6);
+}
+.tw-drawer[data-theme="v2-dark"] .tw-modal-title { color: #eaf7f5; }
+.tw-drawer[data-theme="v2-dark"] .tw-modal-subtitle { color: #7da6ab; }
+.tw-drawer[data-theme="v2-dark"] .tw-drawer-body { background: transparent; }
+.tw-drawer[data-theme="v2-dark"] .tw-drawer-foot {
+  background: rgba(5, 21, 28, 0.85);
+  border-top: 1px solid rgba(120, 205, 210, 0.16);
+}
+.tw-drawer[data-theme="v2-dark"] .tw-icon-btn {
+  color: #9fc3c7;
+}
+.tw-drawer[data-theme="v2-dark"] .tw-icon-btn:hover { background: rgba(79, 230, 210, 0.1); color: #4fe6d2; }
+
+/* rv-* 组件深色化 */
+.tw-drawer[data-theme="v2-dark"] .rv-loading { color: #9fc3c7; }
+.tw-drawer[data-theme="v2-dark"] .rv-error-banner {
+  background: rgba(255, 111, 94, 0.1);
+  border-color: rgba(255, 111, 94, 0.4);
+  color: #ff9a88;
+}
+.tw-drawer[data-theme="v2-dark"] .rv-h { color: #eaf7f5; }
+.tw-drawer[data-theme="v2-dark"] .rv-h::before { background: #4fe6d2; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-info-grid {
+  background: rgba(120, 205, 210, 0.18);
+  border-color: rgba(120, 205, 210, 0.22);
+}
+.tw-drawer[data-theme="v2-dark"] .rv-info { background: rgba(8, 27, 36, 0.92); }
+.tw-drawer[data-theme="v2-dark"] .rv-info-k { color: #7da6ab; }
+.tw-drawer[data-theme="v2-dark"] .rv-info-v { color: #d7eceb; }
+.tw-drawer[data-theme="v2-dark"] .rv-info-v code { color: #9fe6dd; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-reason-box {
+  background: rgba(8, 27, 36, 0.7);
+  border-color: rgba(120, 205, 210, 0.2);
+  color: #c9e4e2;
+}
+.tw-drawer[data-theme="v2-dark"] .rv-reason-label { color: #9fc3c7; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-empty-box,
+.tw-drawer[data-theme="v2-dark"] .rv-measure-empty,
+.tw-drawer[data-theme="v2-dark"] .rv-photo-empty {
+  background: rgba(8, 27, 36, 0.5);
+  border-color: rgba(120, 205, 210, 0.25);
+  color: #7da6ab;
+}
+.tw-drawer[data-theme="v2-dark"] .rv-version {
+  background: rgba(8, 27, 36, 0.85);
+  border-color: rgba(120, 205, 210, 0.2);
+}
+.tw-drawer[data-theme="v2-dark"] .rv-version.is-pending {
+  border-color: #4fe6d2;
+  box-shadow: 0 0 0 2px rgba(79, 230, 210, 0.14);
+}
+.tw-drawer[data-theme="v2-dark"] .rv-version-title b {
+  background: #15504d;
+  color: #d7fbf6;
+}
+.tw-drawer[data-theme="v2-dark"] .rv-version-meta,
+.tw-drawer[data-theme="v2-dark"] .rv-measure-title,
+.tw-drawer[data-theme="v2-dark"] .rv-photo-title { color: #9fc3c7; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-measure {
+  background: linear-gradient(180deg, rgba(12, 38, 47, 0.9), rgba(7, 24, 31, 0.9));
+  border-color: rgba(120, 205, 210, 0.18);
+}
+.tw-drawer[data-theme="v2-dark"] .rv-measure.is-na { background: rgba(10, 30, 37, 0.7); }
+.tw-drawer[data-theme="v2-dark"] .rv-measure-k { color: #9fc3c7; }
+.tw-drawer[data-theme="v2-dark"] .rv-measure-v { color: #4fe6d2; }
+.tw-drawer[data-theme="v2-dark"] .rv-measure-u { color: #7da6ab; }
+.tw-drawer[data-theme="v2-dark"] .rv-measure-na { color: #60808a; }
+.tw-drawer[data-theme="v2-dark"] .rv-measure-foot { color: #60808a; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-photo {
+  background: rgba(8, 27, 36, 0.8);
+  border-color: rgba(120, 205, 210, 0.2);
+}
+.tw-drawer[data-theme="v2-dark"] .rv-photo-retry { background: rgba(8, 27, 36, 0.9); color: #4fe6d2; }
+.tw-drawer[data-theme="v2-dark"] .rv-photo-retry span { color: #7da6ab; }
+.tw-drawer[data-theme="v2-dark"] .rv-photo-all { color: #4fe6d2; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-note-box {
+  background: rgba(8, 27, 36, 0.7);
+  border-color: rgba(120, 205, 210, 0.18);
+}
+.tw-drawer[data-theme="v2-dark"] .rv-note-label { color: #7da6ab; }
+.tw-drawer[data-theme="v2-dark"] .rv-note-text { color: #d7eceb; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-review.is-ok { background: rgba(18, 165, 148, 0.12); border-color: rgba(79, 230, 210, 0.35); }
+.tw-drawer[data-theme="v2-dark"] .rv-review.is-reject { background: rgba(255, 111, 94, 0.1); border-color: rgba(255, 111, 94, 0.35); }
+.tw-drawer[data-theme="v2-dark"] .rv-review-none { background: rgba(8, 27, 36, 0.6); border-color: rgba(120, 205, 210, 0.2); color: #7da6ab; }
+.tw-drawer[data-theme="v2-dark"] .rv-review.is-ok .rv-review-head { color: #4fe6d2; }
+.tw-drawer[data-theme="v2-dark"] .rv-review.is-reject .rv-review-head { color: #ff9a88; }
+.tw-drawer[data-theme="v2-dark"] .rv-review-head span { color: #7da6ab; }
+.tw-drawer[data-theme="v2-dark"] .rv-review-comment { color: #d7eceb; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-foot-sub { color: #9fc3c7; }
+.tw-drawer[data-theme="v2-dark"] .rv-foot-reject { color: #ff9a88; }
+.tw-drawer[data-theme="v2-dark"] .rv-foot-hint { color: #60808a; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-reject-input,
+.tw-drawer[data-theme="v2-dark"] textarea,
+.tw-drawer[data-theme="v2-dark"] input {
+  background: rgba(3, 14, 19, 0.8);
+  border-color: rgba(120, 205, 210, 0.22);
+  color: #d7eceb;
+}
+.tw-drawer[data-theme="v2-dark"] .rv-reject-input:focus {
+  border-color: #4fe6d2;
+  box-shadow: 0 0 0 2px rgba(79, 230, 210, 0.14);
+}
+.tw-drawer[data-theme="v2-dark"] .rv-reject-count { color: #7da6ab; }
+
+.tw-drawer[data-theme="v2-dark"] .rv-confirm-ev { border-color: rgba(120, 205, 210, 0.2); }
+.tw-drawer[data-theme="v2-dark"] .rv-confirm-row { border-bottom-color: rgba(120, 205, 210, 0.14); }
+.tw-drawer[data-theme="v2-dark"] .rv-confirm-row span { color: #9fc3c7; }
+.tw-drawer[data-theme="v2-dark"] .rv-confirm-row b { color: #eaf7f5; }
+.tw-drawer[data-theme="v2-dark"] .rv-confirm-note { background: rgba(8, 27, 36, 0.7); border-top-color: rgba(120, 205, 210, 0.14); color: #c9e4e2; }
+.tw-drawer[data-theme="v2-dark"] .rv-confirm-tip { color: #7da6ab; }
+
+/* Tag/按钮在深色抽屉内 */
+.tw-drawer[data-theme="v2-dark"] .tw-tag {
+  background: rgba(79, 230, 210, 0.1);
+  color: #9fe6dd;
+  border: 1px solid rgba(79, 230, 210, 0.25);
+}

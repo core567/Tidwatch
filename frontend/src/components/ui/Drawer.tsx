@@ -8,6 +8,8 @@ export interface DrawerProps {
   onClose: () => void;
   footer?: ReactNode;
   width?: number | string;
+  /** 透传到抽屉根节点的 data-* 属性（用于主题作用域） */
+  'data-theme'?: string;
 }
 
 export default function Drawer({
@@ -18,6 +20,7 @@ export default function Drawer({
   footer,
   width = 480,
   children,
+  ...rest
 }: PropsWithChildren<DrawerProps>) {
   useEffect(() => {
     if (!open) return;
@@ -37,7 +40,7 @@ export default function Drawer({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <aside className="tw-drawer" role="dialog" aria-modal="true" style={{ width }}>
+      <aside className="tw-drawer" role="dialog" aria-modal="true" style={{ width }} data-theme={rest["data-theme"]}>
         <div className="tw-drawer-head">
           <div>
             <h3 className="tw-modal-title">{title}</h3>

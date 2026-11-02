@@ -33,6 +33,8 @@ const AnalysisV2Page = lazy(() => import('./v2/features/analysis/AnalysisV2Page'
 // F5：新版事件中心与研判工作台（真实八态状态机 + allowedActions；旧页保留 legacy）
 const AssessmentV2Page = lazy(() => import('./v2/features/assessment/AssessmentV2Page'));
 const WorkbenchV2Page = lazy(() => import('./v2/features/assessment/WorkbenchV2Page'));
+// F6：新版巡检协同中心（真实七态任务 + 版本化提交/复核；旧页保留 /tasks-legacy）
+const TasksV2Page = lazy(() => import('./v2/features/inspection/TasksV2Page'));
 
 function V2HomeRoute() {
   return (
@@ -60,6 +62,14 @@ function AssessmentRoute() {
   return (
     <Suspense fallback={<div className="state-box">事件中心加载中…</div>}>
       <AssessmentV2Page />
+    </Suspense>
+  );
+}
+
+function TasksRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">巡检任务加载中…</div>}>
+      <TasksV2Page />
     </Suspense>
   );
 }
@@ -140,6 +150,9 @@ export default function App() {
           <Route path="/events/:eventId/workbench" element={<V2HomeRoute />}>
             <Route index element={<WorkbenchRoute />} />
           </Route>
+          <Route path="/tasks" element={<V2HomeRoute />}>
+            <Route index element={<TasksRoute />} />
+          </Route>
           {/* 旧版首页回退入口：保持原 AppLayout 布局 */}
           <Route path="/legacy" element={<AppLayout />}>
             <Route index element={<OverviewPage />} />
@@ -163,7 +176,7 @@ export default function App() {
 
             {/* 04 巡检协同中心（阶段 E 上线） */}
             <Route path="/inspection" element={<Navigate to="/tasks" replace />} />
-            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/tasks-legacy" element={<TasksPage />} />
 
             {/* 05 事件复盘与报告（阶段 F 上线事件复盘列表；暂落月报/频次页） */}
             {/* 05 事件复盘：/review 列表（F2）、/review/:id 详情（F3） */}
