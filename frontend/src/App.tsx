@@ -35,6 +35,10 @@ const AssessmentV2Page = lazy(() => import('./v2/features/assessment/AssessmentV
 const WorkbenchV2Page = lazy(() => import('./v2/features/assessment/WorkbenchV2Page'));
 // F6：新版巡检协同中心（真实七态任务 + 版本化提交/复核；旧页保留 /tasks-legacy）
 const TasksV2Page = lazy(() => import('./v2/features/inspection/TasksV2Page'));
+// F7.1：事件复盘与报告（真实复盘 API；旧页保留 /review-legacy）
+const ReviewV2ListPage = lazy(() => import('./v2/features/review/ReviewV2ListPage'));
+const EventReviewV2Page = lazy(() => import('./v2/features/review/EventReviewV2Page'));
+const ReportPreviewPage = lazy(() => import('./v2/features/review/ReportPreviewPage'));
 
 function V2HomeRoute() {
   return (
@@ -62,6 +66,30 @@ function AssessmentRoute() {
   return (
     <Suspense fallback={<div className="state-box">事件中心加载中…</div>}>
       <AssessmentV2Page />
+    </Suspense>
+  );
+}
+
+function ReviewListRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">事件复盘加载中…</div>}>
+      <ReviewV2ListPage />
+    </Suspense>
+  );
+}
+
+function ReportPreviewRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">完整报告加载中…</div>}>
+      <ReportPreviewPage />
+    </Suspense>
+  );
+}
+
+function EventReviewRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">复盘详情加载中…</div>}>
+      <EventReviewV2Page />
     </Suspense>
   );
 }
@@ -153,6 +181,15 @@ export default function App() {
           <Route path="/tasks" element={<V2HomeRoute />}>
             <Route index element={<TasksRoute />} />
           </Route>
+          <Route path="/review" element={<V2HomeRoute />}>
+            <Route index element={<ReviewListRoute />} />
+          </Route>
+          <Route path="/review/:eventId" element={<V2HomeRoute />}>
+            <Route index element={<EventReviewRoute />} />
+          </Route>
+          <Route path="/review/:eventId/report" element={<V2HomeRoute />}>
+            <Route index element={<ReportPreviewRoute />} />
+          </Route>
           {/* 旧版首页回退入口：保持原 AppLayout 布局 */}
           <Route path="/legacy" element={<AppLayout />}>
             <Route index element={<OverviewPage />} />
@@ -180,8 +217,8 @@ export default function App() {
 
             {/* 05 事件复盘与报告（阶段 F 上线事件复盘列表；暂落月报/频次页） */}
             {/* 05 事件复盘：/review 列表（F2）、/review/:id 详情（F3） */}
-            <Route path="/review" element={<ReviewListPage />} />
-            <Route path="/review/:eventId" element={<EventReviewPage />} />
+            <Route path="/review-legacy" element={<ReviewListPage />} />
+            <Route path="/review-legacy/:eventId" element={<EventReviewPage />} />
             {/* 旧研判单路由保留为兼容跳转，指向新版复盘详情 */}
             <Route path="/reviews/:eventId" element={<LegacyReviewRedirect />} />
             <Route path="/reviews" element={<Navigate to="/review" replace />} />
