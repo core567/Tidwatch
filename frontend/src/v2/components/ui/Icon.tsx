@@ -26,7 +26,11 @@ export type IconName =
   | 'camera'
   | 'search'
   | 'server'
-  | 'layers';
+  | 'layers'
+  | 'history'
+  | 'copy'
+  | 'thumb-up'
+  | 'thumb-down';
 
 const shapes: Record<IconName, ReactNode> = {
   overview: <path d="M2.5 12h3.6l2.4-6.2 4 12.4 2.5-6.2h6.5" />,
@@ -139,6 +143,20 @@ const shapes: Record<IconName, ReactNode> = {
       <path d="m3.5 12.2 8.5 4.6 8.5-4.6M3.5 16.8l8.5 4.6 8.5-4.6" />
     </>
   ),
+  history: (
+    <>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 4v4h4M12 8v4l3 2" />
+    </>
+  ),
+  copy: (
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+    </>
+  ),
+  'thumb-up': <path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Zm0 0 4-7a2 2 0 0 1 2 2v4h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 20H7" />,
+  'thumb-down': <path d="M17 13V4h3a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3Zm0 0-4 7a2 2 0 0 1-2-2v-4H6a2 2 0 0 1-2-2.3l1.2-6A2 2 0 0 1 7.2 4H17" />,
 };
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

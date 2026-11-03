@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { findNavItem } from '../../config/nav';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
@@ -79,11 +79,15 @@ export function TopBar({ status }: { status?: TopBarStatus }) {
           <b>{time}</b>
           <span>{date} · UTC+8</span>
         </div>
-        <span className="v2-ai-btn" title="AI 助手入口位于右下角悬浮按钮" aria-hidden="true">
+        <NavLink
+          to="/assistant"
+          className={({ isActive }) => `v2-ai-btn ${isActive ? 'v2-ai-btn--active' : ''}`.trim()}
+          title="打开 AI 智能助手"
+        >
           <span className="v2-ai-btn__glow" />
           <Icon name="assistant" size={15} />
           AI 助手
-        </span>
+        </NavLink>
       </div>
     </header>
   );

@@ -112,6 +112,21 @@ export const NAV_ITEMS: NavItem[] = [
       '场景工具栏与全景复位',
     ],
   },
+  {
+    path: '/assistant',
+    index: '08',
+    label: 'AI 智能助手',
+    en: 'ASSISTANT',
+    icon: 'assistant',
+    phase: 4,
+    summary: '真实数据问答、会话历史、语音与业务导航',
+    modules: [
+      '真实问答与会话历史',
+      '快捷问题与能力入口',
+      '语音输入与确定性指令',
+      '页面导航与 3D 节点控制',
+    ],
+  },
 ];
 
 export function findNavItem(pathname: string): NavItem {

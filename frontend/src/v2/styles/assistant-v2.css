@@ -1,0 +1,198 @@
+/* ================= F7.3 AI 助手页面（真实能力层） ================= */
+.v2-assistant-scope {
+  height: calc(100vh - var(--topbar-h));
+  min-height: 0;
+  overflow: hidden;
+}
+.assistant-page.v2-page {
+  height: calc(100vh - var(--topbar-h));
+  padding: 18px var(--page-pad);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.assistant-page .assistant-shell {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+.assistant-page .copilot-side,
+.assistant-page .copilot-context { min-height: 0; height: 100%; }
+
+/* 三栏 grid 行必须可收缩，否则消息内容会把 copilot-main 撑高 */
+.assistant-page .assistant-shell { grid-template-rows: minmax(0, 1fr); }
+.assistant-page .copilot-main {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.assistant-page .chat { min-height: 0; }
+.assistant-page .chat-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+.assistant-page .chat-input { flex: none; }
+.assistant-page .chat-input textarea {
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.assistant-page .chat-bubble { min-width: 0; }
+.assistant-page .chat-bubble__text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* 顶部模式 / DEMO */
+.copilot-head__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.copilot-mode-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border: 1px solid var(--line-2); border-radius: 999px;
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: .05em; color: var(--ink-2);
+}
+.copilot-mode-pill i { width: 5px; height: 5px; border-radius: 50%; background: var(--warn); }
+.copilot-mode-pill.llm { color: var(--tide); border-color: rgba(79,230,210,.35); }
+.copilot-mode-pill.llm i { background: var(--tide); box-shadow: 0 0 6px var(--tide-glow); }
+.copilot-mode-pill.rule { color: var(--warn); border-color: rgba(255,196,107,.3); }
+.copilot-demo-badge {
+  font-family: var(--font-mono); font-size: 7px; letter-spacing: .12em;
+  color: var(--ink-3); border: 1px solid var(--line); padding: 2px 6px;
+}
+
+/* 左栏历史 */
+.copilot-history { min-height: 0; }
+.copilot-history__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  font-family: var(--font-mono); font-size: 7.5px; letter-spacing: .12em; color: var(--ink-3);
+}
+.copilot-history__head button {
+  padding: 0; border: 0; background: none; color: var(--ink-3);
+  font-size: 7.5px; cursor: pointer;
+}
+.copilot-history__head button:hover { color: var(--danger); }
+.copilot-history__list { display: flex; flex-direction: column; gap: 4px; max-height: 190px; overflow-y: auto; padding-right: 2px; }
+.history-item {
+  display: flex; align-items: center; gap: 4px;
+  border: 1px solid var(--line); border-radius: 2px; background: rgba(7,24,32,.3);
+}
+.history-item.is-active { border-color: rgba(79,230,210,.35); background: rgba(79,230,210,.06); }
+.history-item__pick {
+  flex: 1; min-width: 0; padding: 6px 7px; border: 0; background: none;
+  text-align: left; cursor: pointer; color: inherit;
+}
+.history-item__title {
+  display: block; font-size: 8.5px; color: var(--ink-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.history-item__meta { display: block; margin-top: 2px; font-size: 7px; color: var(--ink-3); }
+.history-item__del {
+  flex: none; width: 20px; height: 24px; padding: 0; border: 0;
+  background: none; color: var(--ink-3); cursor: pointer; font-size: 13px;
+}
+.history-item__del:hover { color: var(--danger); }
+.copilot-history__empty { font-size: 8px; color: var(--ink-3); line-height: 1.7; padding: 4px 0; }
+
+/* 左栏底部 */
+.copilot-side__mode { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.copilot-side__foot p { margin: 0; }
+
+/* 欢迎与快捷 */
+.chat-welcome { padding: 10px 2px 4px; max-width: 680px; }
+.chat-welcome h2 { margin: 0 0 7px; font-size: 16px; font-weight: 600; color: var(--ink-hi); letter-spacing: .02em; }
+.chat-welcome > p { margin: 0; font-size: 10.5px; line-height: 1.8; color: var(--ink-2); }
+.chat-welcome__note { margin-top: 7px !important; font-size: 8px !important; color: var(--ink-3) !important; }
+.chat-quick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.chat-quick button {
+  padding: 6px 9px; border: 1px solid var(--line-2); border-radius: 2px;
+  background: rgba(7,24,32,.4); color: var(--ink-2); font-size: 9px; cursor: pointer;
+  transition: color .18s var(--ease), border-color .18s var(--ease);
+}
+.chat-quick button:hover:not(:disabled) { color: var(--tide); border-color: rgba(79,230,210,.4); }
+.chat-quick button:disabled { opacity: .5; cursor: default; }
+
+/* 消息增强 */
+.chat-msg { max-width: 760px; }
+.chat-msg--user { max-width: 640px; }
+.chat-msg__avatar {
+  display: grid; place-items: center; flex: none; width: 26px; height: 26px;
+  margin-top: 2px; border: 1px solid rgba(79,230,210,.3);
+  background: rgba(79,230,210,.07); color: var(--tide);
+}
+.chat-bubble__text { white-space: pre-wrap; word-break: break-word; }
+.chat-mode-tag {
+  display: inline-flex; align-items: center; height: 16px; padding: 0 5px;
+  border: 1px solid var(--line-2); border-radius: 2px;
+  font-family: var(--font-mono); font-size: 6.5px; letter-spacing: .08em; color: var(--ink-3);
+}
+.chat-mode-tag.llm { color: var(--tide); border-color: rgba(79,230,210,.32); }
+.chat-mode-tag.rule { color: var(--warn); border-color: rgba(255,196,107,.28); }
+.chat-ref {
+  display: inline; padding: 0 3px; margin: 0 1px; border: 0; border-radius: 2px;
+  background: rgba(79,230,210,.1); color: var(--tide); font-size: inherit; cursor: pointer;
+}
+.chat-ref:hover { background: rgba(79,230,210,.2); }
+.chat-sources-toggle {
+  margin-top: 7px; padding: 0; border: 0; background: none;
+  color: var(--ink-3); font-size: 8px; cursor: pointer; text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.chat-sources-toggle:hover { color: var(--tide); }
+.chat-sources {
+  margin-top: 6px; padding: 7px 8px; border: 1px solid var(--line);
+  background: rgba(4,17,23,.5); display: flex; flex-direction: column; gap: 3px;
+}
+.chat-source { font-size: 8px; color: var(--ink-2); }
+.chat-source-warn { font-size: 8px; color: var(--warn); }
+.chat-actions { display: flex; align-items: center; gap: 4px; margin-top: 7px; }
+.chat-action {
+  display: grid; place-items: center; width: 24px; height: 22px;
+  border: 1px solid var(--line); border-radius: 2px;
+  background: transparent; color: var(--ink-3); cursor: pointer;
+}
+.chat-action:hover, .chat-action.is-on { color: var(--tide); border-color: rgba(79,230,210,.35); }
+.chat-action:disabled { opacity: .4; cursor: default; }
+.chat-thinking { display: flex; align-items: center; gap: 5px; padding: 11px 13px; border: 1px solid var(--line-2); background: rgba(8,27,36,.55); }
+.chat-thinking i { width: 4px; height: 4px; border-radius: 50%; background: var(--tide); animation: typing 1.2s ease-in-out infinite; }
+.chat-thinking i:nth-child(2) { animation-delay: .15s; }
+.chat-thinking i:nth-child(3) { animation-delay: .3s; }
+.chat-thinking span { margin-left: 5px; font-size: 8px; color: var(--ink-3); }
+.chat-error-retry { margin-top: 6px; }
+.chat-voice {
+  display: flex; align-items: center; gap: 6px; margin: 0 22px 6px;
+  font-size: 8.5px; color: var(--ink-2);
+}
+.chat-voice--error { color: var(--danger); }
+.chat-voice__tag {
+  flex: none; padding: 1px 5px; border: 1px solid var(--line-2);
+  font-family: var(--font-mono); font-size: 7px; color: var(--tide);
+}
+
+/* 输入区按钮样式兼容 */
+.chat-input__mic:disabled { opacity: .35; cursor: default; }
+.chat-input__mic.is-on { color: var(--danger); border-color: rgba(255,111,94,.4); }
+
+/* 右栏上下文 */
+.context-row b { max-width: 62%; }
+.context-event { display: flex; flex-direction: column; gap: 2px; }
+.context-event a { font-size: 8.5px; color: var(--ink-1); }
+.context-event a:hover { color: var(--tide); }
+.context-event span { font-size: 7px; color: var(--ink-3); }
+.context-note { font-size: 7px; }
+
+/* 响应式：高度与滚动 */
+@media (max-width: 1240px) {
+  .assistant-page.v2-page { padding: 14px 18px; }
+}
+@media (max-width: 1024px) {
+  .assistant-page.v2-page { height: calc(100vh - var(--topbar-h)); padding: 12px 16px; }
+  .assistant-page .assistant-shell { min-height: 0; }
+  .copilot-head { padding: 12px 16px 10px; }
+  .copilot-head h1 { font-size: 16px; }
+  .chat-msg { max-width: 100%; }
+}
+@media (max-height: 760px) {
+  .assistant-page.v2-page { padding-top: 10px; padding-bottom: 10px; }
+  .copilot-section { gap: 3px; }
+  .capability { padding: 5px; }
+}

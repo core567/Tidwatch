@@ -262,6 +262,11 @@
   border-color: rgba(79, 230, 210, 0.55);
   box-shadow: 0 0 28px -8px rgba(79, 230, 210, 0.45);
 }
+.v2-ai-btn--active {
+  border-color: rgba(79, 230, 210, 0.65);
+  background: linear-gradient(135deg, rgba(79, 230, 210, 0.2), rgba(90, 169, 255, 0.14));
+  color: #fff;
+}
 .v2-ai-btn:hover .v2-ai-btn__glow {
   transform: translateX(180%);
 }

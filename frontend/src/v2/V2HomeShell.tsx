@@ -6,7 +6,6 @@ import { TopBar, type TopBarStatus } from './components/layout/TopBar';
 import { useStreamState } from '@/store/stream';
 import { useRealtimeStream } from '@/services/useRealtimeStream';
 import { api } from '@/services/apiClient';
-import AiAssistant from '@/components/AiAssistant';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/layout.css';
@@ -16,7 +15,7 @@ import './styles/ui.css';
  * F2.1 新版首页专用外壳（复用 F1 的 SideRail/TopBar/Backdrop 视觉结构）。
  * - 只在新版首页路由使用；其他页面仍由原 AppLayout 承载，避免双壳渲染。
  * - 复用主项目唯一的实时链路（useRealtimeStream）与 SSE 状态 store。
- * - AI 助手以全局悬浮按钮形式保留原业务入口（不新增第二套路由）。
+ * - AI 助手使用独立 /assistant 页面；旧版 FAB/抽屉只在 legacy 布局保留。
  */
 export default function V2HomeShell() {
   useRealtimeStream();
@@ -44,7 +43,6 @@ export default function V2HomeShell() {
           <Outlet />
         </div>
       </div>
-      <AiAssistant />
     </div>
   );
 }

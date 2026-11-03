@@ -39,6 +39,8 @@ const TasksV2Page = lazy(() => import('./v2/features/inspection/TasksV2Page'));
 const ReviewV2ListPage = lazy(() => import('./v2/features/review/ReviewV2ListPage'));
 const EventReviewV2Page = lazy(() => import('./v2/features/review/EventReviewV2Page'));
 const ReportPreviewPage = lazy(() => import('./v2/features/review/ReportPreviewPage'));
+// F7.3：AI 智能助手独立页面（真实问答/历史/语音/导航/3D；legacy 保留原抽屉）
+const AssistantV2Page = lazy(() => import('./v2/features/assistant/AssistantV2Page'));
 
 function V2HomeRoute() {
   return (
@@ -90,6 +92,14 @@ function EventReviewRoute() {
   return (
     <Suspense fallback={<div className="state-box">复盘详情加载中…</div>}>
       <EventReviewV2Page />
+    </Suspense>
+  );
+}
+
+function AssistantRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">AI 助手加载中…</div>}>
+      <AssistantV2Page />
     </Suspense>
   );
 }
@@ -189,6 +199,9 @@ export default function App() {
           </Route>
           <Route path="/review/:eventId/report" element={<V2HomeRoute />}>
             <Route index element={<ReportPreviewRoute />} />
+          </Route>
+          <Route path="/assistant" element={<V2HomeRoute />}>
+            <Route index element={<AssistantRoute />} />
           </Route>
           {/* 旧版首页回退入口：保持原 AppLayout 布局 */}
           <Route path="/legacy" element={<AppLayout />}>

@@ -534,3 +534,9 @@
   .v2-topbar { padding: 0 20px; }
   .v2-topbar__where { display: none; }
 }
+
+/* 矮视口：8 项导航 + 底部状态需要完整可见，隐藏装饰性文字脊 */
+@media (max-height: 880px) {
+  .v2-rail__spine { display: none; }
+  .v2-rail__nav { margin-top: 18px; }
+}
