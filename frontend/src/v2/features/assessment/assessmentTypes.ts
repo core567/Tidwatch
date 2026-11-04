@@ -17,6 +17,8 @@ export interface Hypothesis {
   title: string;
   /** 真实假设无置信度口径时为 null（显示"—"，不编造） */
   confidence: number | null;
+  /** 真实证据支持占比（support / (support + counter)），无证据时为 null */
+  supportRatio?: number | null;
   basis: string;
   selected?: boolean;
 }
@@ -62,6 +64,7 @@ export interface AssessmentEvent {
     unit: string;
     delta: string;
     tone: 'alert' | 'watch' | 'good';
+    spark?: number[];
   };
   evidence: EvidenceItem[];
   hypotheses: Hypothesis[];

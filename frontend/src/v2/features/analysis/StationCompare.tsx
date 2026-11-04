@@ -108,7 +108,7 @@ export function StationCompare({
                   status === 'alert' ? 'v2-is-alert' : status === 'watch' ? 'v2-is-watch' : ''
                 }`.trim()}
               >
-                {hasDelta ? `${arrow} ${Math.abs(delta as number).toFixed(1)}%` : '环比 —'}
+                {hasDelta ? `${arrow} ${Math.abs(delta as number).toFixed(1)}%` : '暂无环比'}
               </span>
             </button>
           );

@@ -70,15 +70,14 @@ export default function ReviewV2ListPage() {
             </div>
             <h1 className="v2-page-title">事件复盘与报告<em>REVIEW &amp; REPORT</em></h1>
             <p className="v2-page-situation">
-              近 30 天共归档 <b>{stats.total30d} 起</b>事件，高风险 <b>{stats.highRisk} 起</b>，平均闭环{' '}
-              <b>{formatDuration(stats.avgCloseMs)}</b>（{stats.closedCount} 起已闭环）。按编号、标题或风险等级检索历史事件，右侧直接查看真实复盘报告。
+              近 30 天共 <b>{stats.total30d} 起</b>事件，已恢复 <b>{stats.archived} 起</b>、已闭环 <b>{stats.closedCount} 起</b>（含无法判定 {stats.unresolved} 起）、未闭环 <b>{stats.active} 起</b>，高风险 <b>{stats.highRisk} 起</b>；平均闭环 <b>{formatDuration(stats.avgCloseMs)}</b>。按编号、标题或风险等级检索历史事件，右侧直接查看基于事件记录的复盘报告。
             </p>
           </div>
           <div className="v2-readouts">
             <div className="v2-readout">
-              <span className="v2-readout__label">ARCHIVED · 30D</span>
-              <div className="v2-readout__value">{String(stats.total30d).padStart(2, '0')}<small>起</small></div>
-              <div className="v2-readout__sub">近 30 天事件</div>
+              <span className="v2-readout__label">RECOVERED · 30D</span>
+              <div className="v2-readout__value">{String(stats.archived).padStart(2, '0')}<small>起</small></div>
+              <div className="v2-readout__sub">已恢复 · 可复盘归档</div>
             </div>
             <div className="v2-readout">
               <span className="v2-readout__label">HIGH RISK</span>
@@ -91,11 +90,9 @@ export default function ReviewV2ListPage() {
               <div className="v2-readout__sub">平均闭环 · {stats.closedCount} 起</div>
             </div>
             <div className="v2-readout">
-              <span className="v2-readout__label">RECOVERED</span>
-              <div className="v2-readout__value">
-                {stats.recovered}<small>/ {stats.total30d}</small>
-              </div>
-              <div className="v2-readout__sub">已恢复事件占比</div>
+              <span className="v2-readout__label">IN PROGRESS</span>
+              <div className="v2-readout__value">{String(stats.active).padStart(2, '0')}<small>起</small></div>
+              <div className="v2-readout__sub">未闭环 · 研判或处置中</div>
             </div>
           </div>
         </div>

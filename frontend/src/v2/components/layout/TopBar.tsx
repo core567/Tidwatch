@@ -43,6 +43,7 @@ export function TopBar({ status }: { status?: TopBarStatus }) {
   });
 
   const streamOnline = status?.streamState === 'open';
+  const dataLive = streamOnline && (status?.onlineCount ?? 0) > 0;
 
   return (
     <header className="v2-topbar">
@@ -67,8 +68,8 @@ export function TopBar({ status }: { status?: TopBarStatus }) {
       </div>
 
       <div className="v2-topbar__right">
-        <Badge tone={streamOnline ? 'live' : 'mid'}>
-          {streamOnline ? 'LIVE' : 'OFFLINE'}
+        <Badge tone={dataLive ? 'live' : 'mid'}>
+          {dataLive ? 'LIVE' : streamOnline ? 'SSE' : 'OFFLINE'}
         </Badge>
         <span className="v2-topbar__stations v2-mono">
           {status && status.totalCount > 0

@@ -12,6 +12,7 @@ interface WaterQualityPanelProps {
   stations: Station[];
   selectedStation: StationId;
   onSelectStation: (id: StationId) => void;
+  demo?: boolean;
 }
 
 export function WaterQualityPanel({
@@ -19,10 +20,12 @@ export function WaterQualityPanel({
   stations,
   selectedStation,
   onSelectStation,
+  demo = false,
 }: WaterQualityPanelProps) {
   const selected = waterQuality.find((w) => w.id === selectedStation);
   const station = stations.find((s) => s.id === selectedStation);
-  const compliant = waterQuality.filter((w) => w.classIndex <= 1).length;
+  const classified = waterQuality.filter((w) => w.classIndex > 0);
+  const compliant = classified.filter((w) => w.classIndex <= 2).length;
 
   return (
     <Panel
@@ -36,7 +39,7 @@ export function WaterQualityPanel({
         {stations.map((item) => {
           const quality = waterQuality.find((w) => w.id === item.id);
           if (!quality) return null;
-          const color = classColors[quality.classIndex];
+          const color = quality.classIndex > 0 ? classColors[quality.classIndex - 1] : 'var(--ink-3)';
           return (
             <button
               key={item.id}
@@ -50,10 +53,10 @@ export function WaterQualityPanel({
                 {item.id}
                 <em>{item.name.replace(' 断面', '').replace(`${item.id} `, '')}</em>
               </span>
-              <span className="v2-wq-row__class">{classNames[quality.classIndex]}</span>
+              <span className="v2-wq-row__class">{quality.classIndex > 0 ? classNames[quality.classIndex - 1] : '—'}</span>
               <span className="v2-wq-row__scale" aria-hidden="true">
                 {classNames.map((cls, i) => (
-                  <i key={cls} className={i <= quality.classIndex ? 'v2-is-filled' : ''} />
+                  <i key={cls} className={i < quality.classIndex ? 'v2-is-filled' : ''} />
                 ))}
               </span>
             </button>
@@ -63,7 +66,7 @@ export function WaterQualityPanel({
 
       <div className="v2-wq-detail">
         <div className="v2-wq-detail__head">
-          <span>{station?.name.replace(' 断面', '')} · 超标与预警</span>
+          <span>{station?.name.replace(' 断面', '')} · 活动事件与预警</span>
           <span className="v2-mono">{selected?.exceedances.length ?? 0} 项</span>
         </div>
         {selected && selected.exceedances.length > 0 ? (
@@ -79,16 +82,16 @@ export function WaterQualityPanel({
         ) : (
           <div className="v2-wq-clear">
             <Icon name="check" size={14} />
-            当前断面未发现超标指标
+            当前断面无活动事件触发预警
           </div>
         )}
       </div>
 
       <div className="v2-wq-foot">
         <span>
-          综合达标 <b className="v2-mono">{String(compliant).padStart(2, '0')} / 03</b> 断面
+          Ⅱ类及以上 <b className="v2-mono">{String(compliant).padStart(2, '0')} / {String(classified.length).padStart(2, '0')}</b> 断面
         </span>
-        <span className="v2-mono">DEMO · 评价规则</span>
+        <span className="v2-mono">{demo ? 'DEMO · 场景剧本' : 'OFFICIAL · 最新类别快照'}</span>
       </div>
     </Panel>
   );

@@ -233,6 +233,13 @@ export default function OverviewV2Page() {
 
   const stationName = (id: StationId) =>
     data.stations.find((s) => s.id === id)?.name.replace(' 断面', '') ?? id;
+  const observedLabel = demoEnabled
+    ? data.updatedAt
+    : data.summary.latestObservedAt
+      ? data.summary.latestObservedAt.slice(5, 16).replace('T', ' ')
+      : '—';
+  const realtimeOnline = data.system.sources.find((s) => s.type === 'realtime')?.online ?? false;
+  const isLive = !demoEnabled && realtimeOnline && data.summary.reachesOnline > 0;
 
   return (
     <div className="v2-scope">
@@ -273,7 +280,7 @@ export default function OverviewV2Page() {
           <div className="v2-page-intro__main">
             <div className="v2-eyebrow v2-eyebrow--bare v2-intro-line">
               <span>
-                {demoEnabled ? 'SCENARIO DEMO · SIMULATED · 内存回放' : `LIVE SITUATION · ${data.updatedAt} · ${data.scenario}`}
+                {demoEnabled ? 'SCENARIO DEMO · SIMULATED · 内存回放' : `${isLive ? 'LIVE SITUATION' : 'HISTORICAL SNAPSHOT'} · ${observedLabel} · ${data.scenario}`}
               </span>
               {demoEnabled ? (
                 <span className="v2-intro-sync v2-mono">演示模式 · 数据不落库</span>
@@ -304,17 +311,18 @@ export default function OverviewV2Page() {
               <em>RIVER OVERVIEW</em>
             </h1>
             <p className="v2-page-situation">
-              当前数据源{data.summary.backendStatus === 'ok' ? '正常' : '异常'}，
+              物理站点 <b>{data.summary.reachesOnline}/{data.summary.stationCount}</b> 在线，实时通道 <b>{realtimeOnline ? '已连接' : '未连接'}</b>，最新观测 <b className="v2-mono">{observedLabel}</b>。
+              {!isLive && <> 当前展示<b>历史观测快照</b>，不代表站点实时在线。</>}
               {lead && leadStation ? (
                 <>
-                  {leadStation.name}
+                  {' '}{leadStation.name}
                   <b className="v2-hot">{lead.title.split('·')[1]?.trim() ?? lead.title}</b>
                   ，{lead.status}。
                 </>
               ) : (
-                <>暂无活跃异常事件。</>
+                <> 暂无活跃异常事件。</>
               )}
-              共 {data.summary.activeEventCount} 起预警，{running} 项巡检任务执行中。
+              {' '}活动预警 {data.summary.activeEventCount} 起，{running} 项巡检任务执行中。
             </p>
           </div>
 
@@ -335,10 +343,10 @@ export default function OverviewV2Page() {
             <div className="v2-readout v2-readout--secondary">
               <span className="v2-readout__label">STATIONS</span>
               <div className="v2-readout__value">
-                {String(data.summary.stationCount).padStart(2, '0')}
-                <small>个断面</small>
+                {String(data.summary.reachesOnline).padStart(2, '0')}
+                <small>/ {String(data.summary.stationCount).padStart(2, '0')} 在线</small>
               </div>
-              <div className="v2-readout__sub">上游 · 中游 · 下游</div>
+              <div className="v2-readout__sub">最新观测 <span className="v2-mono">{observedLabel}</span></div>
             </div>
             <div className="v2-readout v2-readout--secondary">
               <span className="v2-readout__label">FIELD TASKS</span>
@@ -361,7 +369,7 @@ export default function OverviewV2Page() {
               onSelect={setSelected}
               turbidity={turbidity}
               level={level}
-              syncedAt={data.updatedAt.slice(11)}
+              syncedAt={observedLabel}
             />
           </div>
           <div className="v2-col-4">

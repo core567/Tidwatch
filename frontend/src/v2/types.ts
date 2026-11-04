@@ -131,6 +131,10 @@ export interface OverviewData {
     backendStatus: 'ok' | 'degraded' | 'error';
     activeEventCount: number;
     stationCount: number;
+    /** 物理站点在线数（来自 reach.onlineStatus，与历史观测可用性无关） */
+    reachesOnline: number;
+    /** 最新观测时间（真实数据时间，非页面刷新时间） */
+    latestObservedAt: string | null;
     taskRunning: number;
     taskPendingReview: number;
     /** 已完成任务数（APPROVED，看板三列之外的真实闭环口径） */

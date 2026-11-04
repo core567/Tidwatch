@@ -6,8 +6,12 @@ import { useDemoStore } from '../../demo/demoStore';
 import { useOverviewData } from '../overview/OverviewV2Page';
 import { toQueueEvent } from './assessmentAdapter';
 import { EventQueue } from './EventQueue';
+import { CaseWorkbenchV2 } from './CaseWorkbenchV2';
+import { EVENT_STATUS_GROUP } from './meta';
+import { Segmented } from '../../components/ui/Segmented';
 import { Icon } from '../../components/ui/Icon';
 import { PanelState } from '../../components/ui/PanelState';
+import { reachName } from '@/components/EventBits';
 import type { ActiveEvent } from '@/types/contract';
 import '../../styles/tokens.css';
 import '../../styles/base.css';
@@ -15,92 +19,111 @@ import '../../styles/layout.css';
 import '../../styles/ui.css';
 import '../../styles/assessment.css';
 
-const FILTERS = [
-  { value: 'ACTIVE', label: '活动事件' },
-  { value: '', label: '全部' },
-  { value: 'RECOVERED', label: '已恢复' },
-  { value: 'UNRESOLVED', label: '无法判定' },
+type StatusFilter = 'all' | 'active' | 'review' | 'closed';
+type RiskFilter = 'all' | 'high' | 'medium' | 'low';
+
+const STATUS_OPTIONS = [
+  { value: 'all' as const, label: '全部' },
+  { value: 'active' as const, label: '进行中' },
+  { value: 'review' as const, label: '待复核' },
+  { value: 'closed' as const, label: '已闭环' },
 ];
 
-const STATUS_ORDER: Record<string, number> = {
-  OPEN: 0, INVESTIGATING: 1, MONITORING: 2, ESCALATED: 3, NARROWED: 4,
-  RECOVERY_PENDING: 5, UNRESOLVED: 6, RECOVERED: 7,
-};
+const RISK_OPTIONS = [
+  { value: 'all' as const, label: '全部风险' },
+  { value: 'high' as const, label: '高风险' },
+  { value: 'medium' as const, label: '中风险' },
+  { value: 'low' as const, label: '低风险' },
+];
 
-const PAGE_SIZE = 12;
+function groupMatches(status: string, filter: StatusFilter): boolean {
+  const group = EVENT_STATUS_GROUP[status];
+  if (filter === 'all') return true;
+  if (filter === 'active') return group === '待研判' || group === '研判中' || group === '处置中';
+  if (filter === 'review') return group === '待复核';
+  return group === '已闭环';
+}
+
+function riskMatches(priority: string, filter: RiskFilter): boolean {
+  if (filter === 'all') return true;
+  return (priority === 'HIGH' ? 'high' : priority === 'LOW' ? 'low' : 'medium') === filter;
+}
 
 /**
- * F5 事件中心：新版 EventQueue 视觉 + 原 EventsPage 完整筛选/分页/排序/搜索。
- * 数据全部来自真实 api.events；演示模式在本阶段不提供入口（不写模拟事件）。
+ * F7.2 异常研判：恢复 TidewatchWeb 原版左队列 + 右研判工作台，
+ * 数据来自真实 events / evidence / hypotheses / timeline / recommendations / tasks。
  */
 export default function AssessmentV2Page() {
   const navigate = useNavigate();
   const demoEnabled = useDemoStore((s) => s.enabled);
-  const real = useOverviewData(); // stations 复用
-  const [status, setStatus] = useState('ACTIVE');
-  const [priority, setPriority] = useState('');
-  const [reachId, setReachId] = useState('');
+  const real = useOverviewData();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
   const [keyword, setKeyword] = useState('');
-  const [debounced, setDebounced] = useState('');
-  const [page, setPage] = useState(1);
-
-  useEffect(() => setPage(1), [status, priority, reachId, debounced]);
-  useEffect(() => {
-    const id = window.setTimeout(() => setDebounced(keyword), 350);
-    return () => window.clearTimeout(id);
-  }, [keyword]);
+  const [selectedId, setSelectedId] = useState<string | undefined>();
 
   const eventsQ = useQuery({
-    queryKey: ['events', status, priority, reachId, debounced, page],
-    queryFn: () =>
-      api.events({
-        status: status || undefined,
-        priority: priority || undefined,
-        reachId: reachId || undefined,
-        q: debounced || undefined,
-        page,
-        pageSize: PAGE_SIZE,
-      }),
+    queryKey: ['events', 'assessment-dashboard'],
+    queryFn: () => api.events({ page: 1, pageSize: 200 }),
     refetchInterval: 8000,
   });
+  const allEvents = (eventsQ.data?.items ?? []) as ActiveEvent[];
 
   const evidenceCountQ = useQuery({
-    queryKey: ['evidence-counts'],
+    queryKey: ['evidence-counts', allEvents.map((event) => event.eventId).join(',')],
     queryFn: async () => {
-      const list = (eventsQ.data?.items ?? []) as ActiveEvent[];
-      const entries = await Promise.all(
-        list.map(async (e) => {
-          try {
-            const res = await api.evidence(e.eventId);
-            const arr = Array.isArray(res) ? res : (res as { items?: unknown[] }).items ?? [];
-            return [e.eventId, arr.length] as const;
-          } catch {
-            return [e.eventId, 0] as const;
-          }
-        }),
-      );
+      const entries = await Promise.all(allEvents.map(async (event) => {
+        try {
+          const result = await api.evidence(event.eventId);
+          const list = Array.isArray(result) ? result : (result as { items?: unknown[] }).items ?? [];
+          return [event.eventId, list.length] as const;
+        } catch {
+          return [event.eventId, 0] as const;
+        }
+      }));
       return Object.fromEntries(entries) as Record<string, number>;
     },
-    enabled: (eventsQ.data?.items?.length ?? 0) > 0,
-    refetchInterval: 30000,
+    enabled: allEvents.length > 0,
   });
 
-  const items = useMemo(() => {
-    const list = (eventsQ.data?.items ?? []) as ActiveEvent[];
-    return list
-      .slice()
-      .sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9))
-      .map((e) => {
-        const q = toQueueEvent(e);
-        // 队列卡片证据数与工作台口径一致（同 /events/:id/evidence 接口）
-        q.evidence = new Array(evidenceCountQ.data?.[e.eventId] ?? 0).fill(null);
-        return q;
-      });
-  }, [eventsQ.data, evidenceCountQ.data]);
+  const normalized = keyword.trim().toLowerCase();
+  const filtered = useMemo(() => allEvents.filter((event) => {
+    const text = `${event.eventId} ${event.title} ${event.scopeReachIds.map(reachName).join(' ')}`.toLowerCase();
+    return groupMatches(event.status, statusFilter)
+      && riskMatches(event.priority, riskFilter)
+      && (!normalized || text.includes(normalized));
+  }), [allEvents, statusFilter, riskFilter, normalized]);
 
-  const total = eventsQ.data?.total ?? 0;
-  const filterLabel = FILTERS.find((f) => f.value === status)?.label ?? '';
-  const isDefault = status === 'ACTIVE' && !priority && !reachId && !debounced;
+  useEffect(() => {
+    if (filtered.length === 0) {
+      setSelectedId(undefined);
+      return;
+    }
+    if (!selectedId || !filtered.some((event) => event.eventId === selectedId)) {
+      setSelectedId(filtered[0].eventId);
+    }
+  }, [filtered, selectedId]);
+
+  const queueEvents = useMemo(
+    () => filtered.map((event) => {
+      const item = toQueueEvent(event);
+      item.evidence = new Array(evidenceCountQ.data?.[event.eventId] ?? 0).fill(null);
+      return item;
+    }),
+    [filtered, evidenceCountQ.data],
+  );
+
+  const highCount = allEvents.filter((event) => event.priority === 'HIGH').length;
+  const activeCount = allEvents.filter((event) => {
+    const group = EVENT_STATUS_GROUP[event.status];
+    return group === '待研判' || group === '研判中' || group === '处置中';
+  }).length;
+  const reviewCount = allEvents.filter((event) => EVENT_STATUS_GROUP[event.status] === '待复核').length;
+  const closedCount = allEvents.filter((event) => EVENT_STATUS_GROUP[event.status] === '已闭环').length;
+  const lead = allEvents.find((event) => event.priority === 'HIGH' && EVENT_STATUS_GROUP[event.status] !== '已闭环');
+
+  const loading = eventsQ.isLoading && allEvents.length === 0;
+  const error = eventsQ.error as Error | null;
 
   if (demoEnabled) {
     return (
@@ -120,88 +143,94 @@ export default function AssessmentV2Page() {
         <div className="v2-page-intro">
           <div className="v2-page-intro__main">
             <div className="v2-eyebrow v2-eyebrow--bare v2-intro-line">
-              <span>事件中心 · 实时研判链路</span>
+              <span>ASSESSMENT · CASE WORKBENCH</span>
+              <button type="button" className="v2-review-sync" onClick={() => void eventsQ.refetch()} disabled={eventsQ.isFetching}>
+                <Icon name="refresh" size={11} className={eventsQ.isFetching ? 'v2-is-spinning' : undefined} />
+                {eventsQ.isFetching ? '同步中' : '刷新'}
+              </button>
             </div>
-            <h1 className="v2-page-title">
-              异常事件中心
-              <em>EVENT CENTER</em>
-            </h1>
+            <h1 className="v2-page-title">异常研判与处置<em>ASSESSMENT</em></h1>
             <p className="v2-page-situation">
-              事件列表 · {filterLabel || '全部'}（{total}）· 状态与处置由研判规则自动流转
+              {lead ? <><b className="v2-hot">{lead.title}</b>正在研判；</> : null}
+              {reviewCount} 起现场反馈等待复核，{closedCount} 起事件已闭环。选择左侧事件查看证据链、研判假设与处置建议。
             </p>
           </div>
           <div className="v2-readouts">
             <div className="v2-readout">
-              <span className="v2-readout__label">EVENTS</span>
-              <div className="v2-readout__value">{String(total).padStart(2, '0')}<small>起</small></div>
-              <div className="v2-readout__sub">当前筛选结果</div>
+              <span className="v2-readout__label">HIGH RISK</span>
+              <div className="v2-readout__value">{String(highCount).padStart(2, '0')}<small>起</small></div>
+              <div className="v2-readout__sub"><span className="v2-status-dot v2-status-dot--danger" />需优先处置</div>
+            </div>
+            <div className="v2-readout">
+              <span className="v2-readout__label">IN PROGRESS</span>
+              <div className="v2-readout__value">{String(activeCount).padStart(2, '0')}<small>起</small></div>
+              <div className="v2-readout__sub">研判 · 处置 · 流转</div>
+            </div>
+            <div className="v2-readout">
+              <span className="v2-readout__label">TO REVIEW</span>
+              <div className="v2-readout__value">{String(reviewCount).padStart(2, '0')}<small>起</small></div>
+              <div className="v2-readout__sub">等待审核结论</div>
+            </div>
+            <div className="v2-readout">
+              <span className="v2-readout__label">CLOSED</span>
+              <div className="v2-readout__value">{String(closedCount).padStart(2, '0')}<small>起</small></div>
+              <div className="v2-readout__sub">已闭环</div>
             </div>
           </div>
         </div>
 
-        <div className="v2-filter-bar">
-          <div className="v2-filter-chips">
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              type="button"
-              className={`v2-filter-chip ${status === f.value ? 'v2-is-active' : ''}`.trim()}
-              onClick={() => setStatus(f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div className="v2-panel v2-workbench-bar" role="group" aria-label="事件筛选">
+          <div className="v2-workbench-bar__group">
+            <span className="v2-workbench-bar__label">状态</span>
+            <Segmented ariaLabel="按状态筛选事件" value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
           </div>
-          <div className="v2-filter-controls">
-          <select value={priority} onChange={(e) => setPriority(e.target.value)} className="v2-select" aria-label="优先级筛选">
-            <option value="">全部优先级</option>
-            <option value="HIGH">高</option>
-            <option value="NORMAL">普通</option>
-            <option value="LOW">低</option>
-          </select>
-          <select value={reachId} onChange={(e) => setReachId(e.target.value)} className="v2-select" aria-label="断面筛选">
-            <option value="">全部断面</option>
-            {real.data?.stations.map((s) => (
-              <option key={s.id} value={s.id === 'A' ? 'reach-a' : s.id === 'B' ? 'reach-b' : 'reach-c'}>
-                {s.name.replace(' 断面', '')}
-              </option>
-            ))}
-          </select>
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜索事件编号 / 标题 / 关键词"
-            className="v2-input"
-            aria-label="搜索事件"
-          />
-          {!isDefault && (
-            <button
-              type="button"
-              className="v2-filter-chip"
-              onClick={() => { setStatus('ACTIVE'); setPriority(''); setReachId(''); setKeyword(''); }}
-            >
-              重置
-            </button>
-          )}
+          <div className="v2-workbench-bar__group">
+            <span className="v2-workbench-bar__label">风险</span>
+            <div className="v2-risk-filter">
+              {RISK_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`v2-risk-chip ${riskFilter === option.value ? 'v2-is-active' : ''}`.trim()}
+                  onClick={() => setRiskFilter(option.value)}
+                  aria-pressed={riskFilter === option.value}
+                >
+                  {option.value !== 'all' && <i className={`v2-risk-chip__dot v2-risk-chip__dot--${option.value}`} />}
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
+          <input className="v2-input" placeholder="搜索编号 / 标题 / 断面" value={keyword} onChange={(e) => setKeyword(e.target.value)} aria-label="搜索事件" />
+          <span className="v2-workbench-bar__count">显示 <b className="v2-mono">{filtered.length}</b> / {allEvents.length} 起</span>
         </div>
 
-        <EventQueue
-          events={items}
-          total={total}
-          stations={real.data?.stations ?? []}
-          onSelect={(id) => navigate(`/events/${encodeURIComponent(id)}/workbench`)}
-        />
-
-        <div className="v2-pager" hidden={Math.ceil(total / PAGE_SIZE) <= 1}>
-          <button type="button" className="v2-btn v2-btn--ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            <Icon name="chevron-right" size={12} style={{ transform: 'rotate(180deg)' }} />上一页
-          </button>
-          <span className="v2-mono">第 {page} 页 · 共 {Math.max(1, Math.ceil(total / PAGE_SIZE))} 页</span>
-          <button type="button" className="v2-btn v2-btn--ghost" disabled={page >= Math.ceil(total / PAGE_SIZE)} onClick={() => setPage((p) => p + 1)}>
-            下一页<Icon name="chevron-right" size={12} />
-          </button>
-        </div>
+        {loading ? (
+          <div className="v2-panel v2-state-page"><PanelState variant="loading" title="事件加载中…" /></div>
+        ) : error ? (
+          <div className="v2-panel v2-state-page">
+            <PanelState variant="error" title="事件加载失败" desc={error.message}
+              action={<button type="button" className="v2-btn v2-btn--primary" onClick={() => void eventsQ.refetch()}>重新加载</button>} />
+          </div>
+        ) : (
+          <div className="v2-grid v2-assessment-grid">
+            <div className="v2-col-4 v2-queue-col">
+              <EventQueue
+                events={queueEvents}
+                total={allEvents.length}
+                stations={real.data?.stations ?? []}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            </div>
+            <div className="v2-col-8 v2-case-col">
+              <CaseWorkbenchV2
+                eventId={selectedId ?? ''}
+                onOpenFull={selectedId ? () => navigate(`/events/${encodeURIComponent(selectedId)}/workbench`) : undefined}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

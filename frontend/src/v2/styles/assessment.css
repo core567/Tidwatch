@@ -1306,3 +1306,48 @@ a.v2-linked-task:hover {
 .v2-pager[hidden] { display: none; }
 .v2-queue-card__reading em { font-style: normal; color: var(--ink-3); margin-left: 2px; font-size: 9px; }
 .v2-queue-card__reading b { margin-right: 2px; }
+
+/* F7.2 原版案例工作台复原补充 */
+.v2-case-actions__reason { flex: 0 0 190px; height: 26px; font-size: 9.5px; }
+.v2-case-actions .v2-case-actions__error { flex-basis: 100%; }
+.v2-case-reading .v2-spark { margin-top: 3px; align-self: flex-end; }
+.v2-suggestion__action.is-static { color: var(--ink-3); cursor: default; }
+.v2-suggestion__action.is-static:hover { color: var(--ink-3); border-color: var(--line-2); }
+.v2-case-timeline__dot { color: var(--ink-3); }
+.v2-case-timeline__dot--TASK { color: var(--tide); border-color: rgba(79,230,210,.35); }
+.v2-case-timeline__dot--SUBMISSION,
+.v2-case-timeline__dot--REVIEW { color: var(--blue); }
+.v2-case-timeline__dot--EVIDENCE { color: var(--good); }
+.v2-case-timeline__dot--BLINDSPOT { color: var(--danger); }
+@media (max-width: 760px) {
+  .v2-case-actions__reason { flex: 1 1 100%; }
+}
+
+/* F7.2 页面引言同步按钮（与复核页一致） */
+.v2-assessment-page .v2-review-sync {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: 10px;
+  padding: 2px 0; border: 0; background: none; color: var(--ink-3);
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .06em; cursor: pointer;
+}
+.v2-assessment-page .v2-review-sync:hover { color: var(--tide); }
+.v2-assessment-page .v2-review-sync:disabled { opacity: .55; cursor: default; }
+.v2-assessment-page .v2-is-spinning { animation: v2-assessment-spin 1s linear infinite; }
+@keyframes v2-assessment-spin { to { transform: rotate(360deg); } }
+
+/* F7.2 恢复原版事件队列高度（仅桌面宽屏） */
+@media (min-width: 1181px) {
+  .v2-assessment-grid > .v2-queue-col > .v2-queue-panel {
+    height: calc(100vh - var(--topbar-h) - 44px);
+    min-height: 560px;
+  }
+}
+
+/* F7.4 事件队列压缩空白：内容驱动高度，长队列内部滚动 */
+@media (min-width: 1181px) {
+  .v2-assessment-grid > .v2-queue-col > .v2-queue-panel {
+    height: auto;
+    min-height: 0;
+    max-height: 620px;
+  }
+  .v2-queue-panel .v2-queue-list { max-height: 520px; }
+}

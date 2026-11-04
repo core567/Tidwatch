@@ -905,3 +905,17 @@
 
 /* 任务编号省略不换行 */
 .v2-task-card__id { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; display: inline-block; vertical-align: bottom; }
+
+/* F7.4 任务看板空态与已归档列空间 */
+.v2-task-board { align-items: start; }
+.v2-board-col { align-self: start; }
+.v2-task-board[data-filled="1"][data-first="已归档"] {
+  grid-template-columns: repeat(3, minmax(110px, 0.5fr)) minmax(280px, 1.5fr);
+}
+.v2-task-board[data-archive="true"] .v2-board-col:last-child { flex: 1; }
+@media (min-width: 1240px) {
+  .v2-task-board[data-filled="1"][data-first="已归档"] .v2-board-col:last-child .v2-board-col__cards {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+  }
+}
+.v2-board-col__empty { padding: 16px 10px; }

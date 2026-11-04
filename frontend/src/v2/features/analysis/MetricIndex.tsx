@@ -17,15 +17,16 @@ interface MetricGroup {
 }
 
 function groupMetrics(metrics: AnalysisMetric[]): MetricGroup[] {
-  return metrics.reduce<MetricGroup[]>((groups, metric) => {
-    const last = groups[groups.length - 1];
-    if (last && last.group === metric.group) {
-      last.items.push(metric);
+  const groups = new Map<string, MetricGroup>();
+  for (const metric of metrics) {
+    const existing = groups.get(metric.group);
+    if (existing) {
+      existing.items.push(metric);
     } else {
-      groups.push({ group: metric.group, groupEn: metric.groupEn, items: [metric] });
+      groups.set(metric.group, { group: metric.group, groupEn: metric.groupEn, items: [metric] });
     }
-    return groups;
-  }, []);
+  }
+  return [...groups.values()];
 }
 
 export function MetricIndex({
@@ -89,7 +90,7 @@ export function MetricIndex({
                       status === 'alert' ? 'v2-is-alert' : status === 'watch' ? 'v2-is-watch' : ''
                     }`.trim()}
                   >
-                    {hasDelta ? `${arrow} ${Math.abs(delta as number).toFixed(1)}%` : '环比 —'}
+                    {hasDelta ? `${arrow} ${Math.abs(delta as number).toFixed(1)}%` : '暂无环比'}
                   </span>
                 </button>
               );

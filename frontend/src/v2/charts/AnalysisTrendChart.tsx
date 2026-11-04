@@ -93,7 +93,8 @@ function buildOption(props: AnalysisTrendChartProps): echarts.EChartsCoreOption 
         color: '#71969e',
         fontSize: 9,
         margin: 14,
-        interval: labels.length > 12 ? 3 : 0,
+        interval: Math.max(0, Math.ceil(labels.length / 7) - 1),
+        hideOverlap: true,
       },
     },
     yAxis: {

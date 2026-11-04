@@ -4,7 +4,7 @@ import { Icon } from '../../components/ui/Icon';
 import { Panel } from '../../components/ui/Panel';
 import type { ActiveEvent } from '@/types/contract';
 import type { ArchiveStats } from './useReviewArchive';
-import { ARCHIVE_PAGE_SIZE, PRIORITY_FILTERS, formatDuration, priorityMeta } from './useReviewArchive';
+import { ARCHIVE_PAGE_SIZE, PRIORITY_FILTERS, priorityMeta } from './useReviewArchive';
 
 interface Props {
   events: ActiveEvent[];
@@ -48,11 +48,11 @@ export function ReviewArchivePanel({
       en="EVENT ARCHIVE"
       className="v2-archive"
       bodyClassName="v2-archive__body"
-      actions={<Badge>{String(total).padStart(2, '0')} ARCHIVED</Badge>}
+      actions={<Badge>{String(stats.archived).padStart(2, '0')} RECOVERED</Badge>}
       footer={
         <>
-          <span className="v2-archive__foot">共 {total} 起事件</span>
-          <span className="v2-archive__foot v2-mono">LIVE · /events</span>
+          <span className="v2-archive__foot">筛选 {total} 起 · 已恢复 {stats.archived}</span>
+          <span className="v2-archive__foot v2-mono">API · /events</span>
         </>
       }
     >
@@ -88,18 +88,19 @@ export function ReviewArchivePanel({
 
       <div className="v2-archive-stats">
         <div>
-          <span>近 30 天</span>
-          <b className="v2-mono">{String(stats.total30d).padStart(2, '0')}</b>
+          <span>已恢复</span>
+          <b className="v2-mono">{String(stats.archived).padStart(2, '0')}</b>
           <em>起</em>
         </div>
         <div>
-          <span>高风险</span>
-          <b className="v2-mono">{String(stats.highRisk).padStart(2, '0')}</b>
+          <span>已闭环</span>
+          <b className="v2-mono">{String(stats.closedCount).padStart(2, '0')}</b>
           <em>起</em>
         </div>
         <div>
-          <span>平均闭环</span>
-          <b className="v2-mono">{formatDuration(stats.avgCloseMs)}</b>
+          <span>未闭环</span>
+          <b className="v2-mono">{String(stats.active).padStart(2, '0')}</b>
+          <em>起</em>
         </div>
       </div>
 
@@ -164,7 +165,7 @@ export function ReviewArchivePanel({
           <div className="v2-archive-hint">
             <Icon name="layers" size={14} />
             <span>已显示全部 {events.length} 起事件</span>
-            <em>事件由规则识别后自动归档；完成现场复核与恢复评估后可在此复盘。</em>
+            <em>事件由规则识别后进入研判；完成现场复核与恢复评估后可在此复盘。</em>
           </div>
         )}
       </div>

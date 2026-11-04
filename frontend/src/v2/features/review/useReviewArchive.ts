@@ -21,7 +21,9 @@ export interface ArchiveStats {
   highRisk: number;
   avgCloseMs: number | null;
   closedCount: number;
-  recovered: number;
+  archived: number;
+  active: number;
+  unresolved: number;
   total: number;
   buckets: ArchiveBucket[];
 }
@@ -52,6 +54,10 @@ function buildStats(items: ActiveEvent[]): ArchiveStats {
   });
 
   const closed = recent.filter((e) => e.status === 'RECOVERED' || e.status === 'UNRESOLVED');
+  // 事件状态机没有“归档”状态：只有 RECOVERED 可进入复盘归档，UNRESOLVED 计入闭环但不归档。
+  const archived = recent.filter((e) => e.status === 'RECOVERED').length;
+  const active = recent.length - closed.length;
+  const unresolved = recent.filter((e) => e.status === 'UNRESOLVED').length;
   const durations = closed
     .map((e) => Date.parse(e.updatedAt) - firstSeenMs(e))
     .filter((v) => Number.isFinite(v) && v >= 0);
@@ -77,7 +83,9 @@ function buildStats(items: ActiveEvent[]): ArchiveStats {
     highRisk: recent.filter((e) => e.priority === 'HIGH').length,
     avgCloseMs,
     closedCount: closed.length,
-    recovered: recent.filter((e) => e.status === 'RECOVERED').length,
+    archived,
+    active,
+    unresolved,
     total: items.length,
     buckets,
   };

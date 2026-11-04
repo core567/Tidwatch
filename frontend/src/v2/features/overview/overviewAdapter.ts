@@ -312,6 +312,14 @@ export function buildOverviewData(input: OverviewAdapterInput): OverviewData {
   };
 
   const scenario = input.scenario.running && input.scenario.scenario ? input.scenario.scenario : '常规监测';
+  const reachesOnline = reaches.filter((reach) => reach.onlineStatus === 'ONLINE').length;
+  const observedTimes = [
+    ...Object.values(input.latestByReach).flat().map((obs) => obs.observedAt),
+    ...Object.values(input.officialByReach).map((rec) => rec.observedAt),
+  ].filter(Boolean);
+  const latestObservedAt = observedTimes.length
+    ? observedTimes.reduce((latest, current) => (Date.parse(current) > Date.parse(latest) ? current : latest))
+    : null;
 
   return {
     scenario,
@@ -331,6 +339,8 @@ export function buildOverviewData(input: OverviewAdapterInput): OverviewData {
       backendStatus: input.health.status,
       activeEventCount: input.activeEvents.length,
       stationCount: stations.length,
+      reachesOnline,
+      latestObservedAt,
       taskRunning: input.taskTotalByStatus.IN_PROGRESS ?? 0,
       taskPendingReview: input.taskTotalByStatus.SUBMITTED ?? 0,
       taskCompleted: input.taskTotalByStatus.APPROVED ?? 0,

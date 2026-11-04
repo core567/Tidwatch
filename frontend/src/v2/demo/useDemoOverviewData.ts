@@ -166,6 +166,8 @@ function buildDemoOverview(clock: number): OverviewData {
       backendStatus: 'ok',
       activeEventCount: alerts.length,
       stationCount: 3,
+      reachesOnline: 3,
+      latestObservedAt: null,
       taskRunning: inspections.filter((t) => t.status === '进行中').length,
       taskPendingReview: inspections.filter((t) => t.status === '待复核').length,
       taskCompleted: phase.key === 'recovery' ? 1 : 0,

@@ -6,6 +6,7 @@ import { Panel } from '../../components/ui/Panel';
 import { PanelState } from '../../components/ui/PanelState';
 import type { EventDetail, EventReviewDetail, RecoveryAssessment } from '@/types/contract';
 import type { useEventDossier } from './useEventDossier';
+import { summarizeObservationSource } from '@/lib/observationSource';
 import { RecoveryCard } from './RecoveryCard';
 import { ReviewTrendChart } from './ReviewTrendChart';
 import { RiskRail } from './RiskRail';
@@ -112,6 +113,7 @@ export function ReviewAnalysisGrid({ dossier }: { dossier: DossierView }) {
   const { event, assess, chartWindow, observations, observationsLoading } = dossier;
   const tone = priorityMetaSafe(event?.priority).tone;
   const unit = metricUnit(chartWindow, observations);
+  const source = summarizeObservationSource(observations);
   const baseline = chartWindow?.baseline ?? null;
   const thresholdText = chartWindow?.threshold === null || chartWindow?.threshold === undefined
     ? null
@@ -125,7 +127,7 @@ export function ReviewAnalysisGrid({ dossier }: { dossier: DossierView }) {
           <h4>异常前后数据对比</h4>
           <span>BEFORE / AFTER</span>
           <span className="v2-report-block__aside v2-mono">
-            {metricLabel(event?.trigger?.metric)} · 真实观测
+            {metricLabel(event?.trigger?.metric)} · {source.label}
           </span>
         </header>
         <div className="v2-report-chart-legend">

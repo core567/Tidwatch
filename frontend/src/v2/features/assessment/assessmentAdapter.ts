@@ -110,12 +110,16 @@ export function buildCaseEvent(input: {
     value: `${POLARITY_CN[ev.polarity] ?? ev.polarity}${ev.qualityFlag ? ` · ${QUALITY_CN[ev.qualityFlag] ?? ev.qualityFlag}` : ''}`,
   }));
 
-  const hypotheses: HypothesisView[] = input.hypotheses.map((h, i) => ({
-    title: h.statement,
-    confidence: null,
-    basis: `支持证据 ${h.supportRefs.length} 项 · 反对证据 ${h.counterRefs.length} 项（${HYP_STATE_CN[h.state] ?? h.state}）`,
-    selected: i === 0,
-  }));
+  const hypotheses: HypothesisView[] = input.hypotheses.map((h, i) => {
+    const total = h.supportRefs.length + h.counterRefs.length;
+    return {
+      title: h.statement,
+      confidence: null,
+      supportRatio: total ? Math.round((h.supportRefs.length / total) * 100) : null,
+      basis: `支持证据 ${h.supportRefs.length} 项 · 反对证据 ${h.counterRefs.length} 项（${HYP_STATE_CN[h.state] ?? h.state}）`,
+      selected: i === 0,
+    };
+  });
 
   const timeline: TimelineStep[] = input.timeline.map((t) => ({
     time: t.occurredAt.slice(5, 16).replace('T', ' '),

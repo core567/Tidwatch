@@ -9,6 +9,7 @@ import type { Observation } from '@/types/contract';
 import { Badge } from '../../components/ui/Badge';
 import { Icon } from '../../components/ui/Icon';
 import { CAPABILITIES, QUICK, useAssistantChat } from './useAssistantChat';
+import { parseAssistantAnswer } from './assistantText';
 import '../../styles/tokens.css';
 import '../../styles/base.css';
 import '../../styles/layout.css';
@@ -98,7 +99,7 @@ function MessageView({
           )}
           <span>{formatMsgTime(message.at)}</span>
         </div>
-        <p className="chat-bubble__text">{isAssistant ? renderText(message.text) : message.text}</p>
+        {isAssistant ? <AnswerView text={message.text} /> : <p className="chat-bubble__text">{message.text}</p>}
         {isAssistant && message.error && (
           <button type="button" className="chat-sources-toggle" onClick={onRetry}>请求失败，点击重试</button>
         )}
@@ -141,6 +142,35 @@ function MessageView({
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+
+
+function AnswerView({ text }: { text: string }) {
+  const [rawOpen, setRawOpen] = useState(false);
+  const parsed = parseAssistantAnswer(text);
+  return (
+    <div className="chat-answer">
+      {parsed.lead && <p className="chat-answer__lead">{renderText(parsed.lead)}</p>}
+      {parsed.bullets.length > 0 && (
+        <ul className="chat-answer__bullets">
+          {parsed.bullets.map((item, index) => (
+            <li key={index}>
+              {item.label && <b>{item.label}</b>}
+              <span>{renderText(item.value)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {parsed.paragraphs.map((paragraph, index) => (
+        <p className="chat-answer__paragraph" key={`p-${index}`}>{renderText(paragraph)}</p>
+      ))}
+      <button type="button" className="chat-sources-toggle" onClick={() => setRawOpen((value) => !value)}>
+        {rawOpen ? '收起原始回答' : '查看原始回答与规则字段'}
+      </button>
+      {rawOpen && <pre className="chat-raw">{text}</pre>}
     </div>
   );
 }

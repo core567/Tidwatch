@@ -41,6 +41,8 @@ const EventReviewV2Page = lazy(() => import('./v2/features/review/EventReviewV2P
 const ReportPreviewPage = lazy(() => import('./v2/features/review/ReportPreviewPage'));
 // F7.3：AI 智能助手独立页面（真实问答/历史/语音/导航/3D；legacy 保留原抽屉）
 const AssistantV2Page = lazy(() => import('./v2/features/assistant/AssistantV2Page'));
+// F7.2：新版数据与系统管理（真实健康/诊断/导入/官方实时/场景；旧页保留 /admin-legacy）
+const SystemV2Page = lazy(() => import('./v2/features/system/SystemV2Page'));
 
 function V2HomeRoute() {
   return (
@@ -100,6 +102,14 @@ function AssistantRoute() {
   return (
     <Suspense fallback={<div className="state-box">AI 助手加载中…</div>}>
       <AssistantV2Page />
+    </Suspense>
+  );
+}
+
+function SystemRoute() {
+  return (
+    <Suspense fallback={<div className="state-box">系统管理加载中…</div>}>
+      <SystemV2Page />
     </Suspense>
   );
 }
@@ -203,6 +213,9 @@ export default function App() {
           <Route path="/assistant" element={<V2HomeRoute />}>
             <Route index element={<AssistantRoute />} />
           </Route>
+          <Route path="/admin" element={<V2HomeRoute />}>
+            <Route index element={<SystemRoute />} />
+          </Route>
           {/* 旧版首页回退入口：保持原 AppLayout 布局 */}
           <Route path="/legacy" element={<AppLayout />}>
             <Route index element={<OverviewPage />} />
@@ -238,7 +251,7 @@ export default function App() {
             <Route path="/reports" element={<ReportsPage />} />
 
             {/* 06 数据与系统管理（阶段 G 迁移 P12/P10/P11） */}
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin-legacy" element={<AdminPage />} />
             <Route path="/mobile" element={<MobilePage />} />
             <Route path="/field-voice" element={<FieldVoicePage />} />
           </Route>

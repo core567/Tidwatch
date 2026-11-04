@@ -7,7 +7,8 @@ import { useOverviewData } from '../overview/OverviewV2Page';
 import { STATION_MAP } from '../overview/overviewAdapter';
 import { buildAnalysisData, type TrendSeriesInput } from './analysisAdapter';
 import type { AnalysisMetricKey, AnalysisRange, AnalysisData } from './analysisTypes';
-import type { ActiveEvent, OfficialAutoRecord } from '@/types/contract';
+import type { ActiveEvent, Observation, OfficialAutoRecord } from '@/types/contract';
+import { summarizeObservationSource } from '@/lib/observationSource';
 import { Icon } from '../../components/ui/Icon';
 import { PanelState } from '../../components/ui/PanelState';
 import { MetricIndex } from './MetricIndex';
@@ -22,7 +23,7 @@ import '../../styles/layout.css';
 import '../../styles/ui.css';
 import '../../styles/analysis.css';
 
-const TREND_PAGE = 96;
+const TREND_PAGE = 1200;
 
 /** 演示模式：从剧本 24h 序列构建五项指标趋势（内存回放，不落库） */
 function buildDemoTrends(data: import('../../types').OverviewData): Record<string, Record<AnalysisRange, TrendSeriesInput>> {
@@ -71,24 +72,44 @@ function useAnalysisReal() {
   });
 
   const trends = useMemo(() => {
-    const goodOf = (items: { observedAt: string; value: number; qualityFlag: string }[]) =>
+    const goodOf = (items: Observation[]) =>
       items.filter((o) => o.qualityFlag === 'GOOD' && Number.isFinite(o.value));
-    const dayAgo = Date.now() - 24 * 3600 * 1000;
+    const raw = trendQ.data as Record<string, Record<string, Observation[]>> | undefined;
+    const allGood = reachIds.flatMap((rid) =>
+      Object.values(raw?.[rid] ?? {}).flatMap((items) => goodOf(items)),
+    );
+    // 演示/归档数据可能不是“当前时刻”：24h/7d 均以最新观测为锚点，避免历史数据被误判为空。
+    const latestMs = allGood.length
+      ? Math.max(...allGood.map((o) => new Date(o.observedAt).getTime()))
+      : Date.now();
+    const dayStart = latestMs - 24 * 3600 * 1000;
+    const weekStart = latestMs - 7 * 24 * 3600 * 1000;
     const perMetric: Record<string, Record<AnalysisRange, TrendSeriesInput>> = {};
     // trends 键名必须与分析指标 key 一致（adapter 按 def.key 取值）：
     // 查询 API 用 'waterLevel'，序列挂到 'level' 键。
     for (const [analysisKey, apiMetric] of [['turbidity', 'turbidity'], ['level', 'waterLevel']] as const) {
       perMetric[analysisKey] = { '24h': { labels: [], perReach: {} }, '7d': { labels: [], perReach: {} } };
       for (const rid of reachIds) {
-        const items = goodOf((trendQ.data as Record<string, Record<string, { observedAt: string; value: number; qualityFlag: string }[]>> | undefined)?.[rid]?.[apiMetric] ?? []);
-        const day = items.filter((o) => new Date(o.observedAt).getTime() >= dayAgo);
+        const items = goodOf(raw?.[rid]?.[apiMetric] ?? []);
+        const day = items.filter((o) => new Date(o.observedAt).getTime() >= dayStart);
+        const week = items.filter((o) => new Date(o.observedAt).getTime() >= weekStart);
         perMetric[analysisKey]['24h'].labels = perMetric[analysisKey]['24h'].labels.length ? perMetric[analysisKey]['24h'].labels : day.map((o) => o.observedAt.slice(11, 16));
-        perMetric[analysisKey]['7d'].labels = perMetric[analysisKey]['7d'].labels.length ? perMetric[analysisKey]['7d'].labels : items.map((o) => o.observedAt.slice(5, 16).replace('T', ' '));
+        perMetric[analysisKey]['7d'].labels = perMetric[analysisKey]['7d'].labels.length ? perMetric[analysisKey]['7d'].labels : week.map((o) => o.observedAt.slice(5, 16).replace('T', ' '));
         perMetric[analysisKey]['24h'].perReach[rid] = day.map((o) => o.value);
-        perMetric[analysisKey]['7d'].perReach[rid] = items.map((o) => o.value);
+        perMetric[analysisKey]['7d'].perReach[rid] = week.map((o) => o.value);
       }
     }
     return perMetric;
+  }, [trendQ.data, reachIds]);
+
+  const trendSources = useMemo(() => {
+    const raw = trendQ.data as Record<string, Record<string, Observation[]>> | undefined;
+    const sourceOf = (apiMetric: string) =>
+      summarizeObservationSource(reachIds.flatMap((rid) => raw?.[rid]?.[apiMetric] ?? []));
+    return {
+      turbidity: sourceOf('turbidity'),
+      level: sourceOf('waterLevel'),
+    };
   }, [trendQ.data, reachIds]);
 
   const data: AnalysisData | null =
@@ -100,6 +121,7 @@ function useAnalysisReal() {
           ),
           activeEvents: (eventsQ.data?.items ?? []) as ActiveEvent[],
           trends,
+          trendSources,
         })
       : null;
 
@@ -116,6 +138,10 @@ function useAnalysisDemo() {
         officialByReach: {},
         activeEvents: [],
         trends: buildDemoTrends(demo.data),
+        trendSources: {
+          turbidity: summarizeObservationSource([{ sourceType: 'SIMULATED' }]),
+          level: summarizeObservationSource([{ sourceType: 'SIMULATED' }]),
+        },
         demo: true,
       }),
     [demo.data],
@@ -169,12 +195,19 @@ export default function AnalysisV2Page() {
 
   const metric = data.metrics.find((m) => m.key === metricKey) ?? data.metrics[0];
   const alarmMetrics = data.metrics.filter((m) => Object.values(m.status).includes('alert'));
-  const compliant = data.waterQuality.filter((w) => w.classIndex > 0 && w.classIndex <= 2).length;
+  const classifiedStations = data.waterQuality.filter((w) => w.classIndex > 0);
+  const compliant = classifiedStations.filter((w) => w.classIndex <= 2).length;
   const leadEventReach = (() => {
     const alertStation = data.stations.find((s) => s.tone === 'alert');
     return alertStation?.name.replace(' 断面', '') ?? undefined;
   })();
   const eventWindow: [number, number] | undefined = undefined; // 真实事件区间由研判时间线为准，图表不虚构区间
+  const dataAsOfLabel = data.dataAsOf
+    ? data.dataAsOf.slice(5, 16).replace('T', ' ')
+    : data.updatedAt;
+  const trendSource = data.trendSources[metric.key] ?? summarizeObservationSource([]);
+  const trendBadge = demoEnabled ? 'SIMULATED · 演示序列' : `${trendSource.code} · ${trendSource.label}`;
+  const trendDesc = demoEnabled ? '场景演示序列（内存回放，不落库）' : trendSource.desc;
 
   return (
     <div className="v2-scope">
@@ -196,7 +229,7 @@ export default function AnalysisV2Page() {
         <div className="v2-page-intro">
           <div className="v2-page-intro__main">
             <div className="v2-eyebrow v2-eyebrow--bare v2-intro-line">
-              <span>{demoEnabled ? 'SCENARIO DEMO · SIMULATED · 内存回放' : `ANALYSIS · ${data.updatedAt} · ${data.scenario}`}</span>
+              <span>{demoEnabled ? 'SCENARIO DEMO · SIMULATED · 内存回放' : `ANALYSIS · ${dataAsOfLabel} · ${data.scenario}`}</span>
               {demoEnabled ? (
                 <span className="v2-intro-sync v2-mono">演示模式 · 数据不落库</span>
               ) : (
@@ -220,7 +253,7 @@ export default function AnalysisV2Page() {
                 .filter((s) => s.waterClass)
                 .map((s) => `${s.name.replace(' 断面', '')} ${s.waterClass}类`)
                 .join('、') || '官方水质类别暂未映射'}
-              。{leadEventReach ? <><b className="v2-hot">{leadEventReach}</b> 存在未闭环事件，异常区间以研判时间线为准。</> : '当前无未闭环事件，图表仅展示真实观测序列。'}
+              。{leadEventReach ? <><b className="v2-hot">{leadEventReach}</b> 存在未闭环事件，异常区间以研判时间线为准。</> : '当前无未闭环事件，图表仅展示已入库观测序列。'}
             </p>
           </div>
 
@@ -258,8 +291,10 @@ export default function AnalysisV2Page() {
               range={range}
               labels={data.labels[range]}
               eventWindow={eventWindow}
+              demoLabel={trendBadge}
+              sourceDesc={trendDesc}
+              demoMode={demoEnabled}
               leadReachName={leadEventReach}
-              demoLabel={demoEnabled ? 'SIMULATED' : 'REAL OBSERVATIONS'}
               demoOnly24h={demoEnabled}
               onRangeChange={setRange}
               onSelectStation={setStationId}
@@ -278,7 +313,7 @@ export default function AnalysisV2Page() {
             />
           </div>
           <div className="v2-col-3 v2-analysis-wq">
-            <WaterQualityPanel waterQuality={data.waterQuality} stations={data.stations} selectedStation={stationId} onSelectStation={setStationId} />
+            <WaterQualityPanel waterQuality={data.waterQuality} stations={data.stations} selectedStation={stationId} onSelectStation={setStationId} demo={data.demo} />
           </div>
         </div>
       </div>

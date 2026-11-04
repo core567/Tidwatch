@@ -2,6 +2,7 @@ import type { InspectionTask, TaskStatus } from './inspectionTypes';
 import type { Station } from '../../types';
 import { Icon } from '../../components/ui/Icon';
 import { Panel } from '../../components/ui/Panel';
+import { PanelState } from '../../components/ui/PanelState';
 import { PRIORITY_KEY, TASK_STATUS_KEY } from './meta';
 
 const columns: { status: TaskStatus; label: string; tone: string }[] = [
@@ -26,6 +27,17 @@ export function TaskBoard({
   onClearFilter,
   onOpenTask,
 }: TaskBoardProps) {
+  const filledColumns = columns.filter((column) => tasks.some((task) => task.status === column.status));
+  const firstFilled = filledColumns[0]?.status ?? '';
+
+  if (tasks.length === 0) {
+    return (
+      <Panel code="01" title="任务看板" en="FIELD BOARD" className="v2-board-panel">
+        <PanelState variant="empty" title="当前筛选下暂无任务" desc="调整状态筛选或新建任务后可在此查看七态流转。" />
+      </Panel>
+    );
+  }
+
   return (
     <Panel
       code="01"
@@ -43,7 +55,9 @@ export function TaskBoard({
     >
       <div
         className="v2-task-board"
-        data-filled={columns.filter((c) => tasks.some((task) => task.status === c.status)).length}
+        data-filled={filledColumns.length}
+        data-first={firstFilled}
+        data-archive={columns[3] && tasks.some((task) => task.status === '已归档') ? 'true' : 'false'}
       >
         {columns.map((column, index) => {
           const items = tasks.filter((task) => task.status === column.status);
@@ -92,7 +106,11 @@ export function TaskBoard({
                       </span>
                       <span className="v2-task-card__foot">
                         <span className="v2-mono">
-                          {t2.latestVersion ? `已提交 v${t2.latestVersion}` : t2.originalStatusCn ?? ''}
+                          {t2.originalStatusCn === '已完成'
+                            ? `已完成${t2.latestVersion ? ` · v${t2.latestVersion}` : ''}`
+                            : t2.originalStatusCn === '已取消'
+                              ? '已取消'
+                              : t2.latestVersion ? `已提交 v${t2.latestVersion}` : t2.originalStatusCn ?? ''}
                         </span>
                         <span className="v2-mono">
                           {t2.eventId ? `关联事件 ${t2.eventId}` : '独立任务'} · {t2.time ?? ''}

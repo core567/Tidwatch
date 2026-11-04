@@ -14,8 +14,12 @@ interface AnalysisTrendPanelProps {
   labels: string[];
   eventWindow?: [number, number];
   leadReachName?: string;
-  /** 状态角标（真实观测 / 场景演示） */
+  /** 状态角标（按观测来源显示：模拟观测 / 官方观测 / 观测记录） */
   demoLabel?: string;
+  /** 观测来源说明，用于趋势备注 */
+  sourceDesc?: string;
+  /** 场景演示模式（内存回放），与“模拟观测来源”区分 */
+  demoMode?: boolean;
   /** 演示剧本仅 24h：7d 档禁用并提示 */
   demoOnly24h?: boolean;
   onRangeChange: (range: AnalysisRange) => void;
@@ -36,7 +40,9 @@ export function AnalysisTrendPanel({
   labels,
   eventWindow,
   leadReachName,
-  demoLabel = 'REAL OBSERVATIONS',
+  demoLabel = 'OBSERVATIONS',
+  sourceDesc = '观测序列',
+  demoMode = false,
   demoOnly24h = false,
   onRangeChange,
   onSelectStation,
@@ -53,11 +59,13 @@ export function AnalysisTrendPanel({
       ? '历史数据不足：官方自动站为日频发布，当前仅保存最新快照，不绘制连续曲线。'
       : metric.historyKind === 'none'
         ? '暂无历史观测记录。'
-        : metric.key === 'turbidity'
-          ? leadReachName
+        : demoMode
+          ? `场景演示序列（内存回放，不落库；近 ${labels.length} 个演示点）`
+          : metric.key === 'turbidity'
+            ? leadReachName
             ? `${leadReachName} 存在未闭环事件，异常区间以研判时间线为准`
-            : `无关联活动事件，展示真实观测序列（阈值 ${metric.limits[0]?.value ?? 60} NTU）`
-          : `展示真实观测序列（近 ${labels.length} 个观测点）。`;
+            : `无关联活动事件，展示${sourceDesc}（阈值 ${metric.limits[0]?.value ?? 60} NTU）`
+          : `展示${sourceDesc}（近 ${labels.length} 个观测点）。`;
 
   const emptyText =
     metric.historyKind === 'snapshot'
@@ -139,7 +147,7 @@ export function AnalysisTrendPanel({
           <span className="v2-analysis-trend-empty__text">{emptyText}</span>
           {metric.historyKind === 'snapshot' && (
             <span className="v2-analysis-trend-empty__hint">
-              {metric.snapshotNote} · 图例数值为各断面最新快照（真实数据，未伪造曲线）
+              {metric.snapshotNote} · 图例数值为各断面最新官方快照（未伪造曲线）
             </span>
           )}
         </div>

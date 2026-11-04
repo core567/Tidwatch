@@ -7,12 +7,14 @@
  */
 import type { OfficialAutoRecord, ActiveEvent } from '@/types/contract';
 import type { OverviewData, StationId } from '../../types';
+import type { ObservationSourceSummary } from '@/lib/observationSource';
 import { STATION_MAP, STATION_ORDER } from '../overview/overviewAdapter';
 import type {
   AnalysisData, AnalysisMetric, AnalysisMetricKey, AnalysisRange, MetricGroup, MetricStatus, WaterQualityStation,
 } from './analysisTypes';
 
 export const TURBIDITY_THRESHOLD = 60;
+export const LEVEL_THRESHOLD = 8.5;
 
 const METRIC_DEFS: {
   key: AnalysisMetricKey; label: string; en: string; unit: string; group: MetricGroup; groupEn: string; precision: number;
@@ -39,14 +41,15 @@ export interface AnalysisAdapterInput {
   activeEvents: ActiveEvent[];
   /** 有真实序列的指标（turbidity/waterLevel），其余指标序列为空并显示空态 */
   trends: Record<string, Record<AnalysisRange, TrendSeriesInput>>;
+  /** 各指标序列的实际观测来源 */
+  trendSources?: Record<string, ObservationSourceSummary>;
   demo?: boolean;
 }
 
 const CLASS_INDEX: Record<string, number> = { 'Ⅰ': 1, 'Ⅱ': 2, 'Ⅲ': 3, 'Ⅳ': 4, 'Ⅴ': 5 };
 
 export function buildAnalysisData(input: AnalysisAdapterInput): AnalysisData {
-  const { overview, officialByReach, activeEvents, trends, demo = false } = input;
-  const stationTone = Object.fromEntries(overview.stations.map((s) => [s.id, s.tone])) as Record<StationId, MetricStatus>;
+  const { overview, officialByReach, activeEvents, trends, trendSources = {}, demo = false } = input;
   const reachIds = Object.fromEntries(STATION_ORDER.map((id) => [id, STATION_MAP[id]])) as Record<StationId, string>;
 
   const labels: Record<AnalysisRange, string[]> = {
@@ -76,7 +79,12 @@ export function buildAnalysisData(input: AnalysisAdapterInput): AnalysisData {
       }
       values[id] = value;
       deltas[id] = null;
-      status[id] = stationTone[id] === 'alert' ? 'alert' : stale || stationTone[id] === 'watch' ? 'watch' : 'good';
+      // 逐指标阈值判定：只有该指标真实越限才标红；站点事件状态不放大到所有指标。
+      const exceeded = value !== null && (
+        (def.key === 'turbidity' && value > TURBIDITY_THRESHOLD) ||
+        (def.key === 'level' && value >= LEVEL_THRESHOLD)
+      );
+      status[id] = exceeded ? 'alert' : stale || value === null ? 'watch' : 'good';
       sparks[id] = overview.metrics[id].find((x) => x.key === def.key)?.spark ?? [];
       for (const range of ['24h', '7d'] as AnalysisRange[]) {
         const t = trends[def.key]?.[range];
@@ -104,7 +112,11 @@ export function buildAnalysisData(input: AnalysisAdapterInput): AnalysisData {
       groupEn: def.groupEn,
       precision: def.precision,
       normalRange: null,
-      limits: def.key === 'turbidity' ? [{ value: TURBIDITY_THRESHOLD, label: '预警阈值' }] : [],
+      limits: def.key === 'turbidity'
+        ? [{ value: TURBIDITY_THRESHOLD, label: '预警阈值' }]
+        : def.key === 'level'
+          ? [{ value: LEVEL_THRESHOLD, label: '预警阈值' }]
+          : [],
       historyKind,
       snapshotNote,
       values,
@@ -117,7 +129,8 @@ export function buildAnalysisData(input: AnalysisAdapterInput): AnalysisData {
 
   const waterQuality: WaterQualityStation[] = overview.stations.map((s) => {
     const cls = s.waterClass;
-    const event = activeEvents.find((e) => e.scopeReachIds.includes(STATION_MAP[s.id]));
+    // 只把触发断面归到该站点的预警；范围包含不扩展到触发断面以免误标。
+    const event = activeEvents.find((e) => e.trigger?.reachId === STATION_MAP[s.id]);
     return {
       id: s.id,
       classIndex: cls && CLASS_INDEX[cls] ? CLASS_INDEX[cls] : 0,
@@ -130,10 +143,12 @@ export function buildAnalysisData(input: AnalysisAdapterInput): AnalysisData {
   return {
     demo,
     updatedAt: overview.updatedAt,
+    dataAsOf: overview.summary.latestObservedAt ?? null,
     scenario: demo ? '场景演示 · 模拟数据' : overview.scenario,
     stations: overview.stations,
     labels,
     metrics,
     waterQuality,
+    trendSources,
   };
 }

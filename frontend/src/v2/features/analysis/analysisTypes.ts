@@ -1,4 +1,5 @@
 import type { Station, StationId } from '../../types';
+import type { ObservationSourceSummary } from '@/lib/observationSource';
 
 export type AnalysisMetricKey =
   | 'level'
@@ -49,9 +50,12 @@ export interface WaterQualityStation {
 export interface AnalysisData {
   demo?: boolean;
   updatedAt: string;
+  /** 最新观测时间（真实数据时间，非页面刷新时间） */
+  dataAsOf: string | null;
   scenario: string;
   stations: Station[];
   labels: Record<AnalysisRange, string[]>;
   metrics: AnalysisMetric[];
-  waterQuality: WaterQualityStation[];
+  /** 各指标趋势序列的实际观测来源 */
+  trendSources: Record<string, ObservationSourceSummary>;  waterQuality: WaterQualityStation[];
 }
