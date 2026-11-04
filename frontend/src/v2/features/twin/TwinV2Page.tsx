@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import RiverScene from '@/features/threeD/RiverScene';
 import { useCameraStore, type View3d } from '@/features/threeD/cameraStore';
 import { useSceneSettings } from '@/features/threeD/sceneSettings';
+import { buildNodeVisualMap, NODE_VISUAL_LABELS, type NodeVisualState, type NodeVisualStatus } from '@/features/threeD/nodeVisual';
 import { api } from '@/services/apiClient';
 import { useDemoStore } from '../../demo/demoStore';
 import { useDemoOverviewData } from '../../demo/useDemoOverviewData';
@@ -14,6 +15,7 @@ import type { StationId, OverviewData } from '../../types';
 import type { ActiveEvent } from '@/types/contract';
 import { buildTwinData } from './twinAdapter';
 import { TwinScene } from './TwinScene';
+import { NodeLabelOverlay } from './NodeLabelOverlay';
 import { TwinSceneBar } from './TwinSceneBar';
 import { TwinStationHud } from './TwinStationHud';
 import { TwinMetricHud } from './TwinMetricHud';
@@ -82,6 +84,11 @@ export default function TwinV2Page() {
   const overview: OverviewData | null = demoEnabled ? demo.data : real.data;
   const data = overview ? buildTwinData(overview, demoEnabled) : null;
 
+  // 聚焦节点时展开断面侧栏，返回全景时收起；不触发相机切换。
+  useEffect(() => {
+    setLeftOpen(view !== 'overview');
+  }, [view]);
+
   // cameraStore → 本地 view：外部相机命令（AI 助手等）驱动 Twin 选中态
   const cameraView = useCameraStore((s) => s.view);
   useEffect(() => {
@@ -100,15 +107,46 @@ export default function TwinV2Page() {
   // 3D 场景内部节点点击：场景已完成 flyTo，这里只同步 Twin 选中态
   const handleNodeSelect = (reachId: string) => setView(stationIdOf(reachId));
 
-  const abnormalIds = useMemo(() => {
-    if (demoEnabled) {
-      return demo.phase.key === 'baseline' ? [] : ['reach-b'];
-    }
-    const items = (eventsQ.data?.items ?? []) as ActiveEvent[];
-    return [...new Set(items.flatMap((e) => e.scopeReachIds))];
-  }, [demoEnabled, demo.phase.key, eventsQ.data]);
-
   const reaches = reachesQ.data ?? [];
+
+  const nodeVisuals = useMemo(() => {
+    if (demoEnabled) {
+      const map: Record<string, NodeVisualState> = {};
+      for (const station of demo.data.stations) {
+        const reachId = STATION_MAP[station.id];
+        const alert = demo.data.alerts.find((item) => item.stationId === station.id);
+        let tier: NodeVisualStatus =
+          station.tone === 'alert' ? 'abnormal' : station.tone === 'watch' ? 'watch' : 'normal';
+        if (alert?.status === '恢复中') tier = 'recovery';
+        map[reachId] = {
+          tier,
+          offline: false,
+          eventId: alert?.id,
+          eventTitle: alert?.title,
+          eventStatus: alert?.status,
+        };
+      }
+      return map;
+    }
+    return buildNodeVisualMap(
+      reachesQ.data ?? [],
+      (eventsQ.data?.items ?? []) as ActiveEvent[],
+    );
+  }, [demoEnabled, demo.data, reachesQ.data, eventsQ.data]);
+
+  const abnormalReachIds = useMemo(
+    () => Object.entries(nodeVisuals)
+      .filter(([, state]) => state.tier === 'abnormal')
+      .map(([reachId]) => reachId),
+    [nodeVisuals],
+  );
+
+  const nodeVisualStatuses = useMemo(
+    () => Object.fromEntries(
+      Object.entries(nodeVisuals).map(([reachId, state]) => [reachId, state.tier]),
+    ) as Record<string, NodeVisualStatus>,
+    [nodeVisuals],
+  );
 
   const loading = !demoEnabled && real.loading && !data;
   if (loading) return <TwinSkeleton />;
@@ -126,6 +164,10 @@ export default function TwinV2Page() {
   }
 
   const station = view === 'overview' ? undefined : data.stations.find((s) => s.id === view);
+  const abnormalStations = data.stations.filter((s) => {
+    const state = nodeVisuals[STATION_MAP[s.id]];
+    return state?.tier === 'abnormal' || state?.tier === 'recovery';
+  });
   const metrics = station ? station.metrics : aggregateMetrics(data.stations);
   const risk: TwinRiskInfo = data.activeRisk.eventId
     ? {
@@ -179,6 +221,33 @@ export default function TwinV2Page() {
             </p>
           </div>
           <div className="v2-twin-head__meta">
+            <label className="v2-twin-locate" title="按真实事件范围定位异常节点">
+              <select
+                className="v2-select v2-twin-locate__select"
+                aria-label="定位异常节点"
+                defaultValue=""
+                disabled={abnormalStations.length === 0}
+                onChange={(event) => {
+                  const id = event.currentTarget.value as StationId;
+                  if (id) flyToView(id);
+                  event.currentTarget.value = '';
+                }}
+              >
+                <option value="">
+                  {abnormalStations.length
+                    ? `定位异常（${abnormalStations.length}）`
+                    : '无异常节点'}
+                </option>
+                {abnormalStations.map((item) => {
+                  const state = nodeVisuals[STATION_MAP[item.id]];
+                  return (
+                    <option key={item.id} value={item.id}>
+                      {item.name.replace(' 断面', '')} · {NODE_VISUAL_LABELS[state?.tier ?? 'normal']}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
             {!demoEnabled && (
               <button type="button" className="v2-intro-sync" onClick={() => useDemoStore.getState().enable()}>
                 场景演示
@@ -206,10 +275,17 @@ export default function TwinV2Page() {
               <div className="v2-twin-scene__mount-child">
                 <RiverScene
                   reaches={reaches}
-                  abnormalReachIds={abnormalIds}
+                  abnormalReachIds={abnormalReachIds}
+                  nodeVisuals={nodeVisualStatuses}
+                  compactLabels
                   onSelectNode={handleNodeSelect}
                   selectedReachId={view === 'overview' ? null : STATION_MAP[view]}
                   onViewChange={(v) => setView(v === 'overview' ? 'overview' : stationIdOf(v))}
+                />
+                <NodeLabelOverlay
+                  stations={data.stations}
+                  nodeStates={nodeVisuals}
+                  onSelect={(id) => flyToView(id)}
                 />
               </div>
             </TwinScene>
@@ -244,6 +320,7 @@ export default function TwinV2Page() {
             open={leftOpen}
             onToggle={() => setLeftOpen((v) => !v)}
             onViewChange={(v) => (webglOk ? flyToView(v) : setView(v))}
+            nodeStates={nodeVisuals}
           />
 
           <TwinMetricHud
@@ -271,6 +348,8 @@ export default function TwinV2Page() {
             <span><i className="v2-twin-legend__dot v2-twin-legend__dot--good" />正常</span>
             <span><i className="v2-twin-legend__dot v2-twin-legend__dot--watch" />关注</span>
             <span><i className="v2-twin-legend__dot v2-twin-legend__dot--alert" />异常</span>
+            <span><i className="v2-twin-legend__dot v2-twin-legend__dot--recovery" />恢复观察</span>
+            <span><i className="v2-twin-legend__dot v2-twin-legend__dot--offline" />离线</span>
             <span className="v2-mono">
               {webglOk ? '原生 Three.js 场景 · 相机由 cameraStore 驱动' : '2D 示意图层 · WebGL 不可用'}
             </span>

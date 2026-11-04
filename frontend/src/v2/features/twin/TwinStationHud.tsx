@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom';
 import type { TwinStation } from './twinTypes';
 import { Icon } from '../../components/ui/Icon';
 import type { TwinView } from './types';
+import { STATION_MAP } from '../overview/overviewAdapter';
+import { NODE_VISUAL_COLORS, NODE_VISUAL_LABELS, type NodeVisualState, type NodeVisualStatus } from '@/features/threeD/nodeVisual';
+import type { StationId } from '../../types';
 
 interface TwinStationHudProps {
   stations: TwinStation[];
@@ -11,6 +14,7 @@ interface TwinStationHudProps {
   open: boolean;
   onToggle: () => void;
   onViewChange: (view: TwinView) => void;
+  nodeStates?: Record<string, NodeVisualState>;
 }
 
 export function TwinStationHud({
@@ -21,9 +25,21 @@ export function TwinStationHud({
   open,
   onToggle,
   onViewChange,
+  nodeStates,
 }: TwinStationHudProps) {
   const station = view === 'overview' ? undefined : stations.find((s) => s.id === view);
   const attention = stations.filter((s) => s.tone !== 'good').length;
+  const tierOf = (id: StationId): NodeVisualStatus | undefined => nodeStates?.[STATION_MAP[id]]?.tier;
+  const statusToneOf = (tier?: NodeVisualStatus): string => (
+    tier === 'abnormal' ? 'alert'
+      : tier === 'watch' ? 'watch'
+        : tier === 'recovery' ? 'recovery'
+          : tier === 'offline' ? 'offline'
+            : 'good'
+  );
+  const tier = station ? tierOf(station.id) : undefined;
+  const tierLabel = tier ? NODE_VISUAL_LABELS[tier] : undefined;
+  const statusTone = station ? statusToneOf(tier) : 'alert';
 
   if (!open) {
     return (
@@ -48,8 +64,8 @@ export function TwinStationHud({
     >
       <header className="v2-twin-hud__head">
         <span className="v2-mono">{station ? `STATION ${station.id}` : 'RIVER SEGMENT'}</span>
-        <span className={`v2-twin-panel-status v2-twin-panel-status--${station?.tone ?? 'alert'}`}>
-          {station ? station.statusLabel : `${attention} 个断面需关注`}
+        <span className={`v2-twin-panel-status v2-twin-panel-status--${statusTone}`}>
+          {station ? (tierLabel ?? station.statusLabel) : `${attention} 个断面需关注`}
         </span>
         <button
           type="button"
@@ -70,7 +86,8 @@ export function TwinStationHud({
             <div className="v2-twin-info__tags">
               <span>水质 {station.waterClass} 类</span>
               <span className="v2-mono">{station.riskCode}</span>
-              <span>{station.statusLabel}</span>
+              <span>{tierLabel ?? station.statusLabel}</span>
+              {tierLabel && tierLabel !== station.statusLabel && <span>{station.statusLabel}</span>}
             </div>
             <p className="v2-twin-info__summary">{station.summary}</p>
             <div className="v2-twin-info__meta">
@@ -89,23 +106,32 @@ export function TwinStationHud({
               干流断面总览。当前 {attention} 个断面处于关注或异常状态，点击任意断面聚焦查看详情。
             </p>
             <div className="v2-twin-station-list">
-              {stations.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={view === item.id ? 'v2-is-active' : ''}
-                  onClick={() => onViewChange(item.id)}
-                  aria-pressed={view === item.id}
-                >
-                  <span className={`v2-twin-station-list__dot v2-twin-station-list__dot--${item.tone}`} />
-                  <span className="v2-twin-station-list__id v2-mono">{item.id}</span>
-                  <span className="v2-twin-station-list__name">
-                    {item.name.replace(' 断面', '')}
-                  </span>
-                  <span className="v2-twin-station-list__class">{item.waterClass} 类</span>
-                  <span className="v2-twin-station-list__status">{item.statusLabel}</span>
-                </button>
-              ))}
+              {stations.map((item) => {
+                const itemTier = tierOf(item.id);
+                const itemTone = statusToneOf(itemTier);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={view === item.id ? 'v2-is-active' : ''}
+                    onClick={() => onViewChange(item.id)}
+                    aria-pressed={view === item.id}
+                  >
+                    <span
+                      className={`v2-twin-station-list__dot v2-twin-station-list__dot--${itemTone}`}
+                      style={itemTier ? { background: NODE_VISUAL_COLORS[itemTier] } : undefined}
+                    />
+                    <span className="v2-twin-station-list__id v2-mono">{item.id}</span>
+                    <span className="v2-twin-station-list__name">
+                      {item.name.replace(' 断面', '')}
+                    </span>
+                    <span className="v2-twin-station-list__class">{item.waterClass} 类</span>
+                    <span className="v2-twin-station-list__status">
+                      {itemTier ? NODE_VISUAL_LABELS[itemTier] : item.statusLabel}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
             <div className="v2-twin-info__meta">
               <span className="v2-mono">更新 {updatedAt}</span>

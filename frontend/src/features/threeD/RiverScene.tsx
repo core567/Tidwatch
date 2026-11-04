@@ -16,12 +16,14 @@ import SkyEnvironment from './SkyEnvironment';
 import { useSceneSettings, QUALITY_SETTINGS } from './sceneSettings';
 import { sceneObstacleHeight } from './landscapeLayout';
 import MonitorNode from './MonitorNode';
+import NodeLabelProjector from './NodeLabelProjector';
 import CameraRig from './CameraRig';
 import { NODE_ANCHORS, OVERVIEW_CAMERA } from './riverGeometry';
 import { useCameraStore, type View3d } from './cameraStore';
 import WebGLErrorBoundary from './WebGLErrorBoundary';
 import { BridgeCaption, InfoConnector } from './SceneAnnotations';
 import type { InfluenceRange } from './sceneOverlays';
+import type { NodeVisualStatus } from './nodeVisual';
 import type { Reach } from '@/types/contract';
 
 export interface RiverSceneProps {
@@ -30,11 +32,15 @@ export interface RiverSceneProps {
   onSelectNode: (reachId: string) => void;
   selectedReachId?: string | null;
   onViewChange?: (view: View3d) => void;
+  /** 由宿主按真实断面/事件状态推导；缺省时按 abnormal + onlineStatus 兼容旧调用。 */
+  nodeVisuals?: Record<string, NodeVisualStatus>;
+  /** 数字孪生页使用屏幕空间标签 Overlay；缺省保留原 Html 详情卡。 */
+  compactLabels?: boolean;
   influenceRanges?: readonly InfluenceRange[];
   infoPanelSelector?: string;
 }
 
-function SceneGuard({ controls, onLost }: { controls: React.RefObject<OrbitControlsImpl | null>; onLost: () => void }) {
+function SceneGuard({ controls, onLost, nodeVisuals, compactLabels }: { controls: React.RefObject<OrbitControlsImpl | null>; onLost: () => void; nodeVisuals?: Record<string, NodeVisualStatus>; compactLabels?: boolean }) {
   const { gl, camera, scene } = useThree();
   const elapsed = useRef(0);
   const frames = useRef(0);
@@ -75,6 +81,8 @@ function SceneGuard({ controls, onLost }: { controls: React.RefObject<OrbitContr
     ds.controlsEnabled = String(ctrl?.enabled);
     ds.clearance = String(camera.position.y - sceneObstacleHeight(camera.position.x, camera.position.z));
     ds.nodes = JSON.stringify(NODE_ANCHORS.map(a => ({id: a.reachId, position: a.position.clone().add(new THREE.Vector3(0, 0.55, 0)).project(camera).toArray()})));
+    ds.nodeVisuals = JSON.stringify(nodeVisuals ?? {});
+    ds.compactLabels = String(Boolean(compactLabels));
     ds.position = JSON.stringify(camera.position.toArray());
     ds.target = JSON.stringify(ctrl?.target.toArray());
     ds.flying = String(useCameraStore.getState().flying);
@@ -90,7 +98,7 @@ function SceneGuard({ controls, onLost }: { controls: React.RefObject<OrbitContr
   return null;
 }
 
-function SceneContent({ reaches, abnormalReachIds, onSelectNode, selectedReachId, onViewChange, influenceRanges, infoPanelSelector }: RiverSceneProps) {
+function SceneContent({ reaches, abnormalReachIds, nodeVisuals, compactLabels, onSelectNode, selectedReachId, onViewChange, influenceRanges, infoPanelSelector }: RiverSceneProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const [lost, setLost] = useState(false);
   const quality = useSceneSettings(s => s.quality);
@@ -141,12 +149,17 @@ function SceneContent({ reaches, abnormalReachIds, onSelectNode, selectedReachId
     {NODE_ANCHORS.map(anchor => <MonitorNode key={anchor.reachId} anchor={anchor}
       name={reaches.find(r => r.reachId === anchor.reachId)?.name}
       onlineStatus={reaches.find(r => r.reachId === anchor.reachId)?.onlineStatus ?? 'UNKNOWN'}
-      abnormal={abnormalReachIds.includes(anchor.reachId)} onClick={select} />)}
+      abnormal={abnormalReachIds.includes(anchor.reachId)}
+      visualStatus={nodeVisuals?.[anchor.reachId]}
+      compact={compactLabels}
+      onClick={select} />)}
+    {compactLabels && <NodeLabelProjector />}
     <OrbitControls ref={controlsRef} makeDefault target={OVERVIEW_CAMERA.target.toArray()}
       enableDamping dampingFactor={0.08} minDistance={7} maxDistance={85}
       minPolarAngle={0.22} maxPolarAngle={Math.PI / 2.5} />
     <CameraRig controls={controlsRef} />
-    <SceneGuard controls={controlsRef} onLost={() => setLost(true)} />
+    <SceneGuard controls={controlsRef} onLost={() => setLost(true)}
+      nodeVisuals={nodeVisuals} compactLabels={compactLabels} />
   </Canvas>;
 }
 

@@ -62,7 +62,7 @@ export function TwinSceneToolbar({
       </button>
 )}
       <span className="v2-twin-toolbar__divider" />
-      <button type="button" onClick={onReset}>
+      <button type="button" onClick={onReset} aria-label="返回河流全景" title="返回河流全景">
         <Icon name="refresh" size={14} />
         复位
       </button>
