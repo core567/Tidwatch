@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError
-from app.models.event import ActiveEvent, EventStatusTransition
+from app.models.event import ActiveEvent, ChangeEvent, EventStatusTransition
 from app.models.focus import BlindSpot
 from app.models.observation import Observation
 from app.models.workflow import (
@@ -248,7 +248,7 @@ def assess_recovery(db: Session, event_id: str) -> dict:
         scope_metrics: list[tuple[str, str]] = []
         for reach in scope:
             have = _metrics_with_any_data(db, reach, baseline_start, anchor + POST_WINDOW)
-            ordered = trigger_metrics + [m for m in TRACKED_METRICS if m not in trigger_metrics]
+            ordered = trigger_metrics if trigger_metrics else list(TRACKED_METRICS)
             picked = [m for m in ordered if m in have]
             for metric in picked:
                 scope_metrics.append((reach, metric))
@@ -409,7 +409,7 @@ def _has_open_submission(db: Session, task_ids: list[str]) -> bool:
 
 
 def _trigger_metrics(db: Session, event_id: str) -> list[str]:
-    """从触发信息取指标；trigger_json 不存在则回退跟踪指标全集。"""
+    """从触发信息取指标；trigger_json 缺失时回退到首个 ChangeEvent 的指标。"""
     import json
     e = db.get(ActiveEvent, event_id)
     if e and getattr(e, "trigger_json", None):
@@ -418,4 +418,10 @@ def _trigger_metrics(db: Session, event_id: str) -> list[str]:
             return [m] if m else []
         except Exception:
             return []
-    return []
+    metric = db.execute(
+        select(ChangeEvent.metric)
+        .where(ChangeEvent.event_id == event_id)
+        .order_by(ChangeEvent.window_start.asc(), ChangeEvent.change_id.asc())
+        .limit(1)
+    ).scalar_one_or_none()
+    return [metric] if metric else []

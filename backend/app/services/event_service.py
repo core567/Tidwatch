@@ -533,6 +533,7 @@ class EventProcessor:
             reason=reason,
             actor=actor,
             rule_version=settings.rule_version,
+            created_at=at,
         ))
         from app.services import timeline_service
         timeline_service.record(

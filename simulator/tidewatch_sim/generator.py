@@ -179,7 +179,72 @@ S5 = ScenarioSpec(
 S5_OUTAGES: tuple[Outage, ...] = (Outage("reach-c", 16, None),)
 
 
-SCENARIOS: dict[str, ScenarioSpec] = {"S1": S1, "S2": S2, "S3": S3, "S4": S4, "S5": S5}
+# ===== F8 异常模拟与闭环联调场景 =====
+# 阈值来自 backend/app/rules/thresholds.py（demo-rules-v1）：
+#   waterLevel >= 8.5 洪水预警；>= 7.0 高水位警戒；turbidity >= 60 水质浑浊。
+# 变化检测需连续 2 个异常点确认、连续 3 个正常点恢复；跨断面关联窗口 20 分钟。
+# 以下场景 tick_step_seconds=60，因此连续 2 点 = 2 分钟，满足确认窗口。
+
+F8S1 = ScenarioSpec(
+    scenario_id="F8S1",
+    name="F8-S1 上游 A 水位异常",
+    description="A 水位持续 9.0m（≥8.5 洪水预警），B/C 正常；单断面事件，不自动创建下游任务。",
+    seed=20261101,
+    interval_sec=0.6,
+    reaches=_reaches(),
+    anomalies=(
+        Anomaly("reach-a", 8, 18, "waterLevel", (9.0, 9.1)),
+    ),
+    total_ticks=20,
+    tick_step_seconds=60,
+)
+
+F8S2 = ScenarioSpec(
+    scenario_id="F8S2",
+    name="F8-S2 中游 B 浊度异常",
+    description="B 浊度持续 65–75 NTU（≥60），水位保持正常；单断面浊度事件，不自动创建任务。",
+    seed=20261102,
+    interval_sec=0.6,
+    reaches=_reaches(),
+    anomalies=(
+        Anomaly("reach-b", 8, 18, "turbidity", (65.0, 72.0)),
+    ),
+    total_ticks=20,
+    tick_step_seconds=60,
+)
+
+F8S3 = ScenarioSpec(
+    scenario_id="F8S3",
+    name="F8-S3 A→B→C 关联异常",
+    description="A/B/C 先后出现高水位，合并为同一事件并扩展到三断面；B 纳入范围时为 C 自动建现场任务。",
+    seed=20261103,
+    interval_sec=0.6,
+    reaches=_reaches(),
+    anomalies=(
+        Anomaly("reach-a", 8, 24, "waterLevel", (9.0, 9.1)),
+        Anomaly("reach-b", 12, 24, "waterLevel", (8.9, 9.05)),
+        Anomaly("reach-c", 16, 24, "waterLevel", (8.8, 9.0)),
+    ),
+    total_ticks=26,
+    tick_step_seconds=60,
+)
+
+F8S4 = ScenarioSpec(
+    scenario_id="F8S4",
+    name="F8-S4 恢复正常",
+    description="只发布连续正常观测，用于在已有活动事件上验证 3 个正常点后的自动恢复与恢复评估；需先运行 F8S1/F8S3。",
+    seed=20261104,
+    interval_sec=0.6,
+    reaches=_reaches(),
+    total_ticks=12,
+    tick_step_seconds=60,
+)
+
+
+SCENARIOS: dict[str, ScenarioSpec] = {
+    "S1": S1, "S2": S2, "S3": S3, "S4": S4, "S5": S5,
+    "F8S1": F8S1, "F8S2": F8S2, "F8S3": F8S3, "F8S4": F8S4,
+}
 
 class StableWalk:
     """单指标带界随机游走；同 seed 重置后产生完全相同序列。"""
