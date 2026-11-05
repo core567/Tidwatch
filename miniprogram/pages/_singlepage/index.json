@@ -1,7 +1,7 @@
 {
   "navigationBarBackgroundColor": "#0B2A4A",
   "navigationBarTextStyle": "white",
-  "navigationBarTitleText": "单页面切换实验",
+  "navigationBarTitleText": "TideWatch",
   "disableScroll": true,
   "usingComponents": {
     "shell-monitor": "/components/shell-monitor/shell-monitor",

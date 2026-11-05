@@ -20,18 +20,19 @@
     <!-- 顶部监测总览 -->
     <view class="sm-overview">
       <view class="sm-ov-row">
-        <view>
+        <view class="sm-ov-heading">
           <view class="sm-ov-title">水环境监测</view>
-          <view class="sm-ov-sub">汉江武汉段 · 示意拓扑</view>
+          <view class="sm-ov-sub">汉江武汉段</view>
         </view>
         <view class="sm-ov-pill {{offlineCount > 0 ? 'off' : 'on'}}">
-          <view class="sm-ov-dot"></view>{{offlineCount > 0 ? '异常 ' + offlineCount : '链路在线'}}
+          <view class="sm-ov-dot"></view>异常 {{offlineCount}}
         </view>
       </view>
-      <view class="sm-ov-meta">
-        <view class="sm-ov-chip">更新 {{updatedText || '—'}}</view>
-        <view class="sm-ov-chip">活动事件 {{activeEventCount}}</view>
-        <view class="sm-ov-chip sm-src">MQTT 模拟</view>
+      <view class="sm-ov-status">
+        <view class="sm-ov-status-dot {{wsOpen ? 'is-live' : 'is-off'}}"></view>
+        <text>{{wsOpen ? '实时连接' : '连接中'}}</text>
+        <text class="sm-ov-sep">·</text>
+        <text>更新 {{updatedText || '—'}}</text>
       </view>
 
       <!-- 弯曲河道示意（SVG，viewBox 自适应，非地理测绘） -->

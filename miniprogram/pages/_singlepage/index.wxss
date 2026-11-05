@@ -12,30 +12,18 @@
   background: #eef2f8;
 }
 
-/* ===== 常驻顶部品牌区（不收缩、不滚动）===== */
+/* ===== 顶部仅保留通知入口（不收缩、不滚动）===== */
 .sp-header {
   background: linear-gradient(155deg, #08233f 0%, #0b2a4a 55%, #123e68 100%);
-  padding: 0 32rpx;
+  padding: 0 24rpx;
   flex-shrink: 0;
 }
-.sp-header-inner { padding: 28rpx 0 30rpx; }
-.sp-brand-row { display: flex; align-items: center; gap: 18rpx; }
-.sp-logo {
-  width: 72rpx; height: 72rpx; border-radius: 18rpx;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-weight: 800; font-size: 28rpx; letter-spacing: 1rpx;
-  background: linear-gradient(135deg, #1e6fe0, #18b7c8);
-  box-shadow: 0 6rpx 18rpx rgba(30, 111, 224, 0.4);
+.sp-header-utility {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4rpx 0 2rpx;
 }
-.sp-brand { color: #fff; font-size: 38rpx; font-weight: 800; line-height: 1.15; }
-.sp-subtitle { color: #9fb8d6; font-size: 22rpx; margin-top: 4rpx; letter-spacing: 2rpx; }
-.sp-demo-badge {
-  font-size: 19rpx; color: #ffd9a0;
-  background: rgba(232, 144, 42, 0.16);
-  border: 1rpx solid rgba(232, 144, 42, 0.4);
-  border-radius: 999rpx; padding: 6rpx 16rpx;
-}
-.sp-header-right { margin-left: auto; display: flex; align-items: center; gap: 10rpx; }
 
 /* ===== 内容区：flex:1 + min-height:0，内部各模块自行滚动 ===== */
 .sp-body {

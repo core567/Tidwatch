@@ -4,21 +4,10 @@
 -->
 <view class="sp">
 
-  <!-- 常驻顶部品牌区 -->
+  <!-- 顶部仅保留复核通知入口，不再展示重复品牌区 -->
   <view class="sp-header">
-    <view class="sp-header-inner">
-      <view class="sp-brand-row">
-        <view class="sp-logo">TW</view>
-        <view>
-          <view class="sp-brand">TideWatch</view>
-          <view class="sp-subtitle">智慧河流监测</view>
-        </view>
-        <view class="sp-header-right">
-          <view class="sp-demo-badge">{{demoFlag}}</view>
-          <!-- 复核通知铃铛（V2.2）：未读红点 + 通知中心面板 -->
-          <shell-notify id="notify" bind:unread="onNotifyUnread" bind:open-task="onOpenTaskFromNotify" />
-        </view>
-      </view>
+    <view class="sp-header-utility">
+      <shell-notify id="notify" bind:unread="onNotifyUnread" bind:open-task="onOpenTaskFromNotify" />
     </view>
   </view>
 

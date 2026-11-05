@@ -25,8 +25,6 @@ Page({
   data: {
     tabs: TABS,
     activeTab: 'tasks',
-    // 模块徽章：四个模块均已接正式接口（「我的」为系统与演示中心）
-    demoFlag: '单页面工作台',
     loadCount: 0,
     showCount: 0,
     switchCount: 0,
