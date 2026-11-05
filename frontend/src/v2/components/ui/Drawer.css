@@ -1,0 +1,97 @@
+/* 公共 V2 抽屉：由 Drawer 组件直接引入，避免依赖页面级 assessment.css */
+.v2-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* display: contents 只恢复 V2 主题变量，不产生额外盒模型或背景 */
+.v2-drawer-scope {
+  display: contents;
+}
+
+.v2-drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(1, 7, 10, 0.62);
+  backdrop-filter: blur(5px);
+  animation: fade-in 0.25s ease both;
+}
+
+.v2-drawer__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 94vw);
+  height: 100%;
+  background: linear-gradient(180deg, #0a222c, #05151c);
+  border-left: 1px solid var(--line-2);
+  box-shadow: -50px 0 110px -60px #000;
+  animation: drawer-in 0.35s var(--ease) both;
+}
+
+.v2-drawer__panel--wide {
+  width: min(608px, 96vw);
+}
+
+@keyframes drawer-in {
+  from {
+    opacity: 0.3;
+    transform: translateX(46px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.v2-drawer__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 22px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.v2-drawer__heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.v2-drawer__heading h2 {
+  margin-top: 8px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-hi);
+}
+
+.v2-drawer__heading p {
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v2-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px 30px;
+}
+
+.v2-drawer__footer {
+  flex: none;
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+  background: rgba(4, 16, 22, 0.6);
+}
+
+/* 恢复 .v2-scope 后，基线的 button { color: inherit } 会盖住主按钮强调色，局部还原 */
+.v2-drawer .v2-btn--primary {
+  color: #c9fff7;
+}

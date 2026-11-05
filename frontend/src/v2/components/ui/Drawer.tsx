@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
+import './Drawer.css';
 
 interface DrawerProps {
   open: boolean;
@@ -54,32 +55,34 @@ export function Drawer({
 
   return createPortal(
     <div className="v2-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
-      <div className="v2-drawer__backdrop" onClick={onClose} aria-hidden="true" />
-      <aside
-        ref={panelRef}
-        className={`v2-drawer__panel ${
-          size === 'wide' ? 'v2-drawer__panel--wide' : ''
-        }`.trim()}
-      >
-        <header className="v2-drawer__head">
-          <div className="v2-drawer__heading">
-            <span className="v2-eyebrow v2-eyebrow--bare">{eyebrow}</span>
-            <h2 id="drawer-title">{title}</h2>
-            {subtitle && <p>{subtitle}</p>}
-          </div>
-          <button
-            ref={closeRef}
-            type="button"
-            className="v2-btn v2-btn--icon v2-btn--ghost"
-            onClick={onClose}
-            aria-label="关闭抽屉"
-          >
-            <Icon name="close" size={16} />
-          </button>
-        </header>
-        <div className="v2-drawer__body">{children}</div>
-        {footer && <footer className="v2-drawer__footer">{footer}</footer>}
-      </aside>
+      <div className="v2-scope v2-drawer-scope">
+        <div className="v2-drawer__backdrop" onClick={onClose} aria-hidden="true" />
+        <aside
+          ref={panelRef}
+          className={`v2-drawer__panel ${
+            size === 'wide' ? 'v2-drawer__panel--wide' : ''
+          }`.trim()}
+        >
+          <header className="v2-drawer__head">
+            <div className="v2-drawer__heading">
+              <span className="v2-eyebrow v2-eyebrow--bare">{eyebrow}</span>
+              <h2 id="drawer-title">{title}</h2>
+              {subtitle && <p>{subtitle}</p>}
+            </div>
+            <button
+              ref={closeRef}
+              type="button"
+              className="v2-btn v2-btn--icon v2-btn--ghost"
+              onClick={onClose}
+              aria-label="关闭抽屉"
+            >
+              <Icon name="close" size={16} />
+            </button>
+          </header>
+          <div className="v2-drawer__body">{children}</div>
+          {footer && <footer className="v2-drawer__footer">{footer}</footer>}
+        </aside>
+      </div>
     </div>,
     document.body,
   );
