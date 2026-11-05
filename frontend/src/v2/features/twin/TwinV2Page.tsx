@@ -74,7 +74,10 @@ export default function TwinV2Page() {
     refetchInterval: 8000,
   });
 
-  const [view, setView] = useState<TwinView>('overview');
+  const [view, setView] = useState<TwinView>(() => {
+    const current = useCameraStore.getState().view;
+    return current === 'overview' ? 'overview' : stationIdOf(current);
+  });
   const [flowOn, setFlowOn] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(true);
