@@ -9,8 +9,14 @@ import { blindSpotTime, buildBlindSpotSummary } from './blindspotModel';
 import { ReportTrendChart } from './ReportTrendChartPdf';
 import { ACTION_CN, FACTOR_CN } from './reviewModel';
 
-// 中文字体嵌入（SimHei，public 静态资源）
-Font.register({ family: 'CN', src: '/fonts/SimHei.ttf' });
+// 中文字体嵌入（Noto Sans SC，SIL OFL 1.1；来源与许可证见 public/fonts/NotoSansSC-LICENSE.txt）
+Font.register({
+  family: 'CN',
+  fonts: [
+    { src: '/fonts/NotoSansSC-Regular.ttf', fontWeight: 400 },
+    { src: '/fonts/NotoSansSC-Bold.ttf', fontWeight: 700 },
+  ],
+});
 
 const C = {
   ink: '#0e2029', line: '#c7d5da', muted: '#5d7580',
