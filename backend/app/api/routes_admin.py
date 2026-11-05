@@ -1,6 +1,8 @@
 """系统管理与运行诊断路由（P12）。"""
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -14,6 +16,7 @@ from app.models.ingestion import IngestionError, ProcessedMessage
 from app.models.observation import Observation
 from app.models.reach import Reach
 from app.models.system import RuleConfig, User
+from app.rules.thresholds import DEMO_RULES_V1
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -30,6 +33,14 @@ def diagnostics(
 
     reaches = db.execute(select(Reach)).scalars().all()
     rule = db.get(RuleConfig, settings.rule_version)
+    rule_params: dict[str, float] = DEMO_RULES_V1.to_dict()
+    if rule and rule.params_json:
+        try:
+            parsed = json.loads(rule.params_json)
+            if isinstance(parsed, dict):
+                rule_params = {**rule_params, **{k: float(v) for k, v in parsed.items()}}
+        except (ValueError, TypeError):
+            pass
     latest_errors = [
         {
             "errorId": e.error_id,
@@ -48,6 +59,7 @@ def diagnostics(
         "appVersion": __version__,
         "ruleVersion": settings.rule_version,
         "ruleLabel": rule.label if rule else None,
+        "ruleParams": rule_params,
         "mqtt": {
             # 配置项；真实连接状态由在线/陈旧断面体现
             "enabled": settings.mqtt_enabled,

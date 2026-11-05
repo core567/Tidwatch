@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test:3d": "node --test src/features/threeD/__tests__/*.mjs src/features/threeD/*.test.ts"
+    "test:3d": "node --test src/features/threeD/__tests__/*.mjs src/features/threeD/*.test.ts",
+    "test:alerts": "node --test src/services/alertRules.test.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",

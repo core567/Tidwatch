@@ -43,6 +43,8 @@ const ReportPreviewPage = lazy(() => import('./v2/features/review/ReportPreviewP
 const AssistantV2Page = lazy(() => import('./v2/features/assistant/AssistantV2Page'));
 // F7.2：新版数据与系统管理（真实健康/诊断/导入/官方实时/场景；旧页保留 /admin-legacy）
 const SystemV2Page = lazy(() => import('./v2/features/system/SystemV2Page'));
+// F9：全局异常告警（复用 SSE + 事件 API，覆盖 V2 与 legacy 页面）
+import GlobalAlertCenter from './v2/components/layout/GlobalAlertCenter';
 
 function V2HomeRoute() {
   return (
@@ -275,6 +277,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <GlobalAlertCenter />
       </Router>
     </QueryClientProvider>
   );

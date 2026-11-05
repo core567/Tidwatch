@@ -5,6 +5,25 @@ import { useNotificationStore, type PushNotificationInput } from '@/store/notifi
 import { useStreamStore } from '@/store/stream';
 import type { StreamMessage } from '@/types/contract';
 
+type StreamListener = (msg: StreamMessage) => void;
+const streamListeners = new Set<StreamListener>();
+
+/** 复用同一条 SSE：其他全局消费者（如 F9 告警）订阅此总线，不另建连接。 */
+export function subscribeRealtimeStream(listener: StreamListener): () => void {
+  streamListeners.add(listener);
+  return () => streamListeners.delete(listener);
+}
+
+function publishRealtimeStream(msg: StreamMessage): void {
+  for (const listener of streamListeners) {
+    try {
+      listener(msg);
+    } catch {
+      // 单个消费者异常不能中断 SSE 处理
+    }
+  }
+}
+
 function payloadOf(msg: StreamMessage): Record<string, unknown> {
   return (msg.payload ?? {}) as Record<string, unknown>;
 }
@@ -13,40 +32,17 @@ function str(v: unknown): string | undefined {
   return typeof v === 'string' && v ? v : undefined;
 }
 
-/** 实时消息 → 通知条目；高频的 focus/observation 不进通知，避免刷屏。 */
+/** 实时消息 → 通用通知条目；事件类告警由 F9 全局告警中心处理，避免双弹窗。 */
 function toNotification(msg: StreamMessage): PushNotificationInput | null {
   const p = payloadOf(msg);
-  const eventId = str(p.eventId);
   const taskId = str(p.taskId);
   const reachId = str(p.reachId);
 
   switch (msg.messageType) {
-    case 'change.detected': {
-      const metric = str(p.metric);
-      return {
-        title: '检测到异常变化',
-        description: [reachId, metric].filter(Boolean).join(' · ') || undefined,
-        tone: 'watch',
-        to: '/events',
-      };
-    }
-    case 'event.status-changed': {
-      const status = str(p.status) ?? '—';
-      const tone = status === 'RECOVERED' ? 'ok' : status === 'ESCALATED' ? 'danger' : 'watch';
-      return {
-        title: `事件状态：${status}`,
-        description: eventId ? `事件 ${eventId}` : undefined,
-        tone,
-        to: eventId ? `/events/${eventId}/workbench` : '/events',
-      };
-    }
+    case 'change.detected':
+    case 'event.status-changed':
     case 'event.updated':
-      return {
-        title: '事件更新',
-        description: eventId ? `事件 ${eventId}` : undefined,
-        tone: 'info',
-        to: eventId ? `/events/${eventId}/workbench` : '/events',
-      };
+      return null;
     case 'task.created':
       return {
         title: '新巡检任务',
@@ -107,6 +103,7 @@ export function useRealtimeStream(enabled: boolean = true) {
         }
       },
       onMessage: (msg) => {
+        publishRealtimeStream(msg);
         const notice = toNotification(msg);
         if (notice) useNotificationStore.getState().push(notice);
 

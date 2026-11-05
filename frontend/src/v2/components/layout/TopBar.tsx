@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { findNavItem } from '../../config/nav';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
+import { AlertBell } from './AlertBell';
 
 function useClock() {
   const [now, setNow] = useState(() => new Date());
@@ -80,6 +81,7 @@ export function TopBar({ status }: { status?: TopBarStatus }) {
           <b>{time}</b>
           <span>{date} · UTC+8</span>
         </div>
+        <AlertBell />
         <NavLink
           to="/assistant"
           className={({ isActive }) => `v2-ai-btn ${isActive ? 'v2-ai-btn--active' : ''}`.trim()}

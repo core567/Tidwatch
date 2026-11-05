@@ -345,6 +345,8 @@ export interface Diagnostics {
   appVersion: string;
   ruleVersion: string;
   ruleLabel: string | null;
+  /** 当前规则版本的判定参数（来自 rule_configs.params_json，snake_case）。 */
+  ruleParams?: Record<string, number>;
   mqtt: {
     enabled: boolean;
     host: string;

@@ -1,0 +1,222 @@
+/* F9 全局异常告警 —— 深色科技风，独立于页面布局 */
+.f9-alert-card {
+  position: fixed;
+  top: calc(var(--topbar-h, 72px) + 14px);
+  right: 20px;
+  z-index: 260;
+  width: 390px;
+  max-width: calc(100vw - 32px);
+  color: #e9f6f5;
+  border: 1px solid rgba(120, 205, 210, 0.22);
+  border-left: 3px solid var(--f9-tone, #ff6f5e);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(8, 27, 36, 0.97), rgba(3, 14, 19, 0.98));
+  box-shadow: 0 18px 50px -15px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(14px);
+  animation: f9-alert-in 0.18s ease-out;
+  overflow: hidden;
+}
+.f9-alert-card--severe { --f9-tone: #ff6f5e; }
+.f9-alert-card--general { --f9-tone: #ffc46b; }
+.f9-alert-card--recovery { --f9-tone: #5fe3a0; }
+@keyframes f9-alert-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.f9-alert-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 12px 9px;
+  border-bottom: 1px solid rgba(120, 205, 210, 0.12);
+}
+.f9-alert-card__icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  color: var(--f9-tone);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+.f9-alert-card__title { flex: 1; min-width: 0; }
+.f9-alert-card__title b { display: block; font-size: 13px; font-weight: 650; letter-spacing: 0.02em; }
+.f9-alert-card__title span { display: block; margin-top: 2px; font-size: 9px; color: #7fa4ab; }
+.f9-alert-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.f9-alert-card__actions button,
+.f9-alert-row__actions button,
+.f9-alert-history__actions button,
+.f9-alert-history-item__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px 7px;
+  color: #a8c4c9;
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.4;
+  border: 1px solid rgba(120, 205, 210, 0.2);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+}
+.f9-alert-card__actions button:hover,
+.f9-alert-row__actions button:hover,
+.f9-alert-history__actions button:hover,
+.f9-alert-history-item__actions button:hover {
+  color: #e9f6f5;
+  border-color: rgba(79, 230, 210, 0.45);
+}
+.f9-alert-card__actions button:disabled,
+.f9-alert-history__actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.f9-alert-close { width: 22px; height: 22px; padding: 0 !important; }
+
+.f9-alert-card__rows { max-height: min(58vh, 420px); overflow: auto; }
+.f9-alert-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-top: 1px solid rgba(120, 205, 210, 0.09);
+}
+.f9-alert-row:first-child { border-top: 0; }
+.f9-alert-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.f9-alert-row__main b { font-size: 12px; font-weight: 650; color: #eaf7f5; }
+.f9-alert-row__main span { font-size: 9.5px; line-height: 1.45; color: #7fa4ab; }
+.f9-alert-row__main .f9-mono { color: #a8c4c9; font-family: var(--font-mono, "Cascadia Code", Consolas, monospace); }
+.f9-alert-row--severe .f9-alert-row__main b { color: #ffb0a4; }
+.f9-alert-row--general .f9-alert-row__main b { color: #ffd9a2; }
+.f9-alert-row--recovery .f9-alert-row__main b { color: #a9f5cc; }
+.f9-alert-row__actions { display: flex; gap: 5px; flex: none; }
+
+.f9-alert-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 268;
+  background: rgba(1, 7, 10, 0.36);
+  backdrop-filter: blur(2px);
+}
+.f9-alert-history {
+  position: fixed;
+  top: calc(var(--topbar-h, 72px) + 10px);
+  right: 14px;
+  bottom: 18px;
+  z-index: 269;
+  width: 420px;
+  max-width: calc(100vw - 28px);
+  display: flex;
+  flex-direction: column;
+  color: #e9f6f5;
+  border: 1px solid rgba(120, 205, 210, 0.22);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(8, 27, 36, 0.98), rgba(3, 14, 19, 0.99));
+  box-shadow: 0 24px 70px -20px rgba(0, 0, 0, 0.9);
+}
+.f9-alert-history__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(120, 205, 210, 0.12);
+}
+.f9-alert-history__head b { display: block; font-size: 13px; }
+.f9-alert-history__head span { display: block; margin-top: 2px; font-size: 9px; color: #7fa4ab; }
+.f9-alert-history__actions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+.f9-alert-history__list { flex: 1; min-height: 0; overflow: auto; padding: 8px; }
+.f9-alert-empty { padding: 30px 16px; text-align: center; color: #628891; font-size: 11px; }
+.f9-alert-history-item {
+  padding: 9px 10px;
+  margin-bottom: 7px;
+  border: 1px solid rgba(120, 205, 210, 0.12);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.025);
+}
+.f9-alert-history-item.is-unread { border-color: rgba(79, 230, 210, 0.3); background: rgba(79, 230, 210, 0.045); }
+.f9-alert-history-item__head { display: flex; align-items: center; gap: 7px; }
+.f9-alert-history-item__head b { flex: 1; min-width: 0; font-size: 12px; }
+.f9-alert-history-item__head em { font-size: 9px; font-style: normal; color: #628891; }
+.f9-alert-history-item p { margin: 4px 0; font-size: 10.5px; line-height: 1.5; color: #a8c4c9; }
+.f9-alert-history-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #628891;
+  font-family: var(--font-mono, "Cascadia Code", Consolas, monospace);
+  font-size: 8.5px;
+}
+.f9-alert-history-item__actions { display: flex; justify-content: flex-end; gap: 5px; margin-top: 6px; }
+.f9-alert-dot { width: 6px; height: 6px; flex: none; border-radius: 50%; }
+.f9-alert-dot--severe { background: #ff6f5e; box-shadow: 0 0 7px rgba(255, 111, 94, 0.7); }
+.f9-alert-dot--general { background: #ffc46b; box-shadow: 0 0 6px rgba(255, 196, 107, 0.55); }
+.f9-alert-dot--recovery { background: #5fe3a0; box-shadow: 0 0 6px rgba(95, 227, 160, 0.55); }
+
+.v2-alert-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  color: var(--ink-1, #a8c4c9);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--line-2, rgba(120, 205, 210, 0.2));
+  border-radius: 2px;
+  background: rgba(4, 18, 26, 0.6);
+  cursor: pointer;
+}
+.v2-alert-bell:hover,
+.v2-alert-bell.is-open {
+  color: var(--ink-hi, #e9f6f5);
+  border-color: rgba(79, 230, 210, 0.45);
+  background: rgba(79, 230, 210, 0.08);
+}
+.v2-alert-bell em {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ff6f5e;
+  color: #fff;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(255, 111, 94, 0.4);
+}
+
+@media (max-width: 640px) {
+  .f9-alert-card { right: 12px; width: calc(100vw - 24px); }
+  .f9-alert-history { right: 10px; width: calc(100vw - 20px); }
+}
+
+/* 抽屉/弹窗打开时：告警卡上浮到左上角并折叠明细，避免遮挡表单输入 */
+body:has(.v2-drawer) .f9-alert-card,
+body:has(.v2-modal) .f9-alert-card {
+  top: 8px;
+  left: 20px;
+  right: auto;
+  width: auto;
+  max-width: min(420px, calc(100vw - 40px));
+  animation: none;
+}
+body:has(.v2-drawer) .f9-alert-card__rows,
+body:has(.v2-modal) .f9-alert-card__rows { display: none; }
