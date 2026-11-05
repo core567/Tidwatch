@@ -1,7 +1,7 @@
 # TideWatch Git 开发演进（参赛材料）
 
 > 数据来源：当前仓库 `fusion/f2-overview-migration` 分支真实 Git 历史。
-> 记录日期：2026-11-05；基线提交：`2fa77e2918f60ac9a6d5accc2039692e29deec72`。
+> 记录日期：2026-11-05；统计截止提交：`b365610747fa80f2840ca6ada739d08f7913b0d1`（不含之后的统计修正提交）。
 > 全部提交为线性历史，未使用 rebase、amend、squash；没有改写过去记录。
 > 完整哈希均可在公开仓库查看：https://github.com/core567/Tidwatch
 
@@ -15,9 +15,10 @@
 | 远程 | `origin/fusion/f2-overview-migration`（与本地同步） |
 | 当前功能基线 | `2fa77e2918f60ac9a6d5accc2039692e29deec72` |
 | PDF 字体提交 | `bc1000ae211cea2242afb888c782642e6f905462`（Noto Sans SC，OFL 1.1） |
+| 文档收口提交 | `b365610747fa80f2840ca6ada739d08f7913b0d1`（README、复现模板、当前版本截图） |
 | main | `b726ca33b79a40a3bf50b6edf71576644affdff5`（落后 17 个提交，尚未合并） |
 | 标签 | `stable/3d-v2-integration`、`stable/tidewatch-pre-optimization`（未新增参赛标签） |
-| 提交总数 | 55（2026-10-21 至 2026-11-05，含字体提交） |
+| 提交总数 | **58**（2026-10-21 至 2026-11-05，截至 `b365610`；不含之后的统计修正提交） |
 
 ---
 
@@ -96,6 +97,7 @@
 | [`607fb40`](https://github.com/core567/Tidwatch/commit/607fb4068939dcb5eb6fe8bcb375169d6235aed1) | 2026-11-05 | 全局异常告警中心 |
 | [`2fa77e2`](https://github.com/core567/Tidwatch/commit/2fa77e2918f60ac9a6d5accc2039692e29deec72) | 2026-11-05 | 数字孪生初始视角恢复 |
 | `bc1000a`（本地提交，推送后可在 GitHub 查看） | 2026-11-05 | PDF 中文字体替换：Noto Sans SC（OFL 1.1），移除 SimHei |
+| `b365610`（本地提交，推送后可在 GitHub 查看） | 2026-11-05 | README 规范化、复现模板与当前版本截图 |
 
 ---
 
