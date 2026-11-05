@@ -13,28 +13,37 @@ interface ModalProps {
 
 export function Modal({ open, title, subtitle, onClose, children, footer }: ModalProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // 仅在开关状态变化时执行；onClose 每次渲染都是新函数，放进依赖会把焦点从表单抢到关闭按钮。
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
+    if (!panelRef.current?.contains(document.activeElement)) {
+      closeRef.current?.focus();
+    }
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previous;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
   return createPortal(
     <div className="v2-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div className="v2-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="v2-modal__panel">
+      <div ref={panelRef} className="v2-modal__panel">
         <header className="v2-modal__head">
           <div>
             <span className="v2-eyebrow v2-eyebrow--bare">NEW FIELD TASK</span>

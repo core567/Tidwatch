@@ -24,21 +24,31 @@ export function Drawer({
   size = 'default',
 }: DrawerProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const onCloseRef = useRef(onClose);
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // 仅在开关状态变化时执行：调用方每次渲染都会传入新的 onClose，
+  // 若把它放进依赖数组，抽屉内每次输入都会重跑并抢走输入框焦点。
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
+    if (!panelRef.current?.contains(document.activeElement)) {
+      closeRef.current?.focus();
+    }
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previous;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -46,6 +56,7 @@ export function Drawer({
     <div className="v2-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
       <div className="v2-drawer__backdrop" onClick={onClose} aria-hidden="true" />
       <aside
+        ref={panelRef}
         className={`v2-drawer__panel ${
           size === 'wide' ? 'v2-drawer__panel--wide' : ''
         }`.trim()}

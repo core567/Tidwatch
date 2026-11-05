@@ -919,3 +919,16 @@
   }
 }
 .v2-board-col__empty { padding: 16px 10px; }
+
+/* 新建任务抽屉：不依赖 assessment.css 的 .v2-stack，显式保证单行输入高度 */
+.v2-create-task { display: flex; flex-direction: column; gap: 12px; }
+.v2-create-task .v2-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.v2-create-task input.v2-input {
+  flex: none;
+  height: 42px;
+  min-width: 0;
+  max-width: none;
+  line-height: 1.4;
+}
+.v2-create-task select.v2-select { flex: none; height: 40px; min-width: 0; max-width: none; }
+.v2-create-task textarea.v2-textarea { flex: none; min-height: 96px; }

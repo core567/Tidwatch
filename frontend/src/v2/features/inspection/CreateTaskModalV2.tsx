@@ -45,7 +45,7 @@ export default function CreateTaskModalV2({ onClose }: { onClose: () => void }) 
       subtitle="草稿可继续编辑；直接派发后进入待接收"
       onClose={() => (busy ? undefined : onClose())}
     >
-      <div className="v2-stack" style={{ gap: 12 }}>
+      <div className="v2-create-task">
         <label className="v2-field">
           <span className="v2-field__label">监测断面</span>
           <select value={reachId} onChange={(e) => setReachId(e.target.value)} className="v2-select" style={{ width: '100%' }}>
@@ -62,6 +62,7 @@ export default function CreateTaskModalV2({ onClose }: { onClose: () => void }) 
             placeholder="如：现场核查 C 断面水位"
             className="v2-input"
             style={{ width: '100%' }}
+            autoFocus
           />
         </label>
         <label className="v2-field">

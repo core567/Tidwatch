@@ -1236,7 +1236,10 @@ a.v2-linked-task:hover {
 /* 紧凑筛选区：1920 单/双行，1366 整齐，1024 换行 */
 .v2-filter-bar { gap: 6px; padding: 8px 10px; }
 .v2-filter-chip { padding: 3px 9px; font-size: 10.5px; }
-.v2-input { min-width: 160px; flex: 1 1 200px; max-width: 320px; padding: 4px 8px; }
+/* 仅约束筛选栏内的紧凑输入框；不可写成全局 .v2-input，否则在列向 flex 的
+   .v2-field 中 flex-basis 200px 会被解释成高度，使抽屉里的单行输入框整体变高。 */
+.v2-filter-bar .v2-input,
+.v2-workbench-bar .v2-input { min-width: 160px; flex: 1 1 200px; max-width: 320px; padding: 4px 8px; }
 .v2-select { padding: 4px 6px; }
 
 /* 卡片层级：风险/标题/指标/状态优先，时间弱化 */
