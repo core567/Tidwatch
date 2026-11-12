@@ -501,7 +501,7 @@ AI 作为辅助工具参与：需求拆解、代码草拟、测试用例草拟�
 
 说明：
 
-- `docs/screenshots/` 下按阶段归档的旧截图拍摄于 2026-10-25/26，早于 V2 视觉融合，**不作为当前版本展示**，仅保留历史记录。
+- 2026-10-25/26 的阶段性旧截图（`stage-b/c/d/f/g/g2/h`、`home-overview`、`bugfix-monthly`，共 106 张、约 19 MB）早于 V2 视觉融合，**不作为当前版本展示**；为减小克隆体积已于 2026-11-12 从主分支移出。旧图未被删除：可随时用 `git checkout 8214b71cb3b242a9159df6aacda40e83b2a953f9 -- docs/screenshots/` 从历史提交完整恢复，另有逐字节一致的离线归档包 `tidewatch-screenshots-archive-2026-11-12.zip`（校验与恢复说明见归档清单 MANIFEST，计划作为 GitHub Release 附件分发）。
 - 3D 截图为无头浏览器 SwiftShader 渲染，真实显卡下细节可能略有差异。
 - 演示视频尚未提供，状态为「待补充」。
 
