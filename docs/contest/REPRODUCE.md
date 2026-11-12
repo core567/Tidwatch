@@ -99,9 +99,12 @@ powershell -File scripts/repro/run-repro-timing.ps1 -Mode Warm -WorkRoot D:\iso-
 powershell -File scripts/repro/run-regression-timing.ps1 -TargetDir <隔离目录> -EvidenceDir D:\iso-runs\evidence-reg
 ```
 
-> 无头 one-shot 截图只产出 1 张总览作为“前端已渲染”的视觉证据（SPA 客户端路由在首帧后才区分页面，
-> 且持久 SSE 会让 `--virtual-time-budget` 死锁）；`/monitor`、`/events`、`/tasks`、`/review` 的逐路由
-> 功能由 `core-pages` 阶段 HTTP 200 + 后端 API 真实数据验证，差异化页面截图需人工用浏览器完成。
+> **浏览器真实渲染校验**：无头 one-shot 截图会在 SPA 客户端路由渲染前抓首帧（5 条路由同图），
+> 且持久 SSE 会让 `--virtual-time-budget` 死锁。正式流程用 `verify-render.mjs` 走 Edge/Chrome 的 CDP：
+> 等待 `#root` 渲染后对 `/`、`/monitor`、`/events`、`/tasks`、`/review` 各取真实截图与 innerText，
+> 产出 5 张哈希互不相同的页面图（`render/screenshots/`）与 `render/render-report.json`，作为“页面确实在浏览器中
+> 正常渲染”的证据；需 Node ≥ 22，不满足时如实跳过并改用真实浏览器人工检查，禁止用重复截图冒充不同页面。
+> 该步骤在计时编排里是 `browser-render` 阶段，与 `core-pages`（HTTP 200 + 后端 API 数据）互补。
 
 脚本设计与故障处理见 [scripts/repro/README.md](../../scripts/repro/README.md)。
 所有日志在 `.repro-cache/<run>/logs/`，该目录已 gitignore。

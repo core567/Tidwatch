@@ -27,6 +27,7 @@ Windows PowerShell 5.1（无需安装 PowerShell 7），不依赖 VSClaude 专�
 | `stop-services.ps1` | 按 PID 干净停止前后端进程 |
 | `run-repro-timing.ps1` | **A 核心复现计时编排**：逐阶段 Stopwatch、环境/缓存信息、退出码、原始日志、`timing-cold/warm.json`、核心路由检查与总览无头截图 |
 | `run-regression-timing.ps1` | **B 扩展回归计时编排**：pytest/typecheck/build/3D/告警/小程序逐阶段计时，写 `timing-regression.json` |
+| `verify-render.mjs` | **真实浏览器渲染校验**（零依赖，用已装 Edge/Chrome 的 CDP）：等待 React 渲染后对 5 条路由取差异化截图与渲染后 DOM，写 `render/render-report.json`，需 Node ≥ 22 |
 | `upload-archive-to-release.ps1` | 历史截图归档包上传 GitHub Release 的助手（无 gh/token 时打印手动步骤） |
 
 ## 标准复现流程（在仓库根目录执行）
@@ -76,12 +77,15 @@ powershell -File scripts/repro/run-regression-timing.ps1 -TargetDir <隔离目�
 每个 evidence 目录产出：`env-info.json`（OS/PowerShell/Python/Node/npm/源/缓存目录）、
 `timing-cold.json` / `timing-warm.json` / `timing-regression.json`（逐阶段开始/结束/耗时/退出码）、
 `cache-info.json`（缓存目录文件数，证明冷启动初始为 0）、`core-pages.json`（路由与 API 检查）、
-`fetch-report.json`（每次下载的来源/HTTP/字节/耗时/完整性）、`logs/` 原始日志、`screenshots/`。
+`fetch-report.json`（每次下载的来源/HTTP/字节/耗时/完整性）、`render/render-report.json` 与
+`render/screenshots/`（CDP 5 路由真实渲染、互不相同的截图）、`logs/` 原始日志。
 
-> **无头截图的诚实边界**：Edge/Chrome 的 one-shot `--screenshot` 在首帧即截图，SPA 客户端路由
-> 尚未渲染出各页差异，且本应用的持久 SSE 会让 `--virtual-time-budget` 死锁。因此编排器只截 1 张
-> 总览作为“前端已渲染（非空白）”的视觉证据；`/monitor`、`/events`、`/tasks`、`/review` 的逐路由
-> 功能正确性由 `core-pages` 阶段的 HTTP 200 + 后端 API 真实数据验证，差异化页面截图需人工用浏览器完成。
+> **浏览器渲染校验（CDP）**：无头 one-shot 的 `--screenshot`/`--dump-dom` 在首帧即抓取，SPA 客户端路由
+> 尚未渲染，对不同路由产出相同外壳，且持久 SSE 会让 `--virtual-time-budget` 死锁。因此正式校验改用
+> `verify-render.mjs`：通过已装 Edge/Chrome 的 DevTools Protocol，`Page.navigate` 后等待 `#root` 渲染出
+> 足够内容，再对 `/`、`/monitor`、`/events`、`/tasks`、`/review` 各取真实截图与 innerText，产出 5 张互不相同
+> （哈希不同）的页面证据，结果在 `render/render-report.json`。需要 Node ≥ 22（内置 WebSocket）；
+> 不满足时编排器如实跳过并提示用真实浏览器人工检查，不用重复截图冒充不同页面。
 
 ## 冷/温对照
 

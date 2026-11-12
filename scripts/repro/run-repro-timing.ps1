@@ -230,51 +230,32 @@ $rc = Invoke-Phase -Name 'core-pages' -LogName '04-core-pages.log' -Block {
 $pageResults | ConvertTo-Json -Depth 4 | Out-File -FilePath (Join-Path $evidenceDir 'core-pages.json') -Encoding utf8
 if ($rc -ne 0) { Fail-Run '核心页面/API 验证存在失败项，见 04-core-pages.log 与 core-pages.json' }
 
-# ---------- 阶段 5（可选）：无头浏览器视觉证据 ----------
-# 诚实边界：Edge/Chrome 的 one-shot --screenshot 在首帧即截图，SPA 客户端路由尚未渲染出
-# 各页面差异，且本应用的持久 SSE 连接会让 --virtual-time-budget 死锁，因此无头 one-shot
-# 无法可靠产出 5 张互不相同的页面图。这里只截 1 张总览作为“前端确实渲染出应用（非空白）”
-# 的视觉证据；/monitor、/events、/tasks、/review 的逐路由【功能】验证由 core-pages 阶段的
-# HTTP 200 + 后端 API 真实数据承担（见 core-pages.json），需要差异化截图时请人工用浏览器打开。
-if (-not $NoBrowser) {
-    $browserPath = Resolve-Browser
-    $shotDir = Join-Path $evidenceDir 'screenshots'
-    if ($browserPath) {
-        $browserName = Split-Path $browserPath -Leaf
-        New-Item -ItemType Directory -Force -Path $shotDir | Out-Null
-        $profileDir = Join-Path $evidenceDir 'browser-profile'
-        $out = Join-Path $shotDir 'overview.png'
-        # 不加 --virtual-time-budget（会与 SSE 死锁）；独立临时 profile 避免争用默认 profile；30s 超时保护
-        $bargs = @(
-            '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
-            "--user-data-dir=$profileDir", '--run-all-compositor-stages-before-draw',
-            '--window-size=1600,950', "--screenshot=$out", 'http://localhost:5173/'
-        )
-        $p = Start-Process -FilePath $browserPath -ArgumentList $bargs -PassThru -WindowStyle Hidden
-        if (-not $p.WaitForExit(30000)) { try { $p.Kill() } catch {} }
-        $ok = Test-Path $out
-        if ($ok) {
-            Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
-            $img = [System.Drawing.Image]::FromFile($out)
-            $dims = "$($img.Width)x$($img.Height)"; $img.Dispose()
-            Write-Phase 'BROWSER' "总览无头截图成功（$dims）-> $out（$browserName）"
-        } else {
-            Write-Phase 'BROWSER' '总览无头截图未生成（如实记录，不伪造）'
-        }
-        [ordered]@{
-            browser = $browserName; browserPath = $browserPath; screenshotDir = $shotDir
-            overviewCaptured = $ok; dimensions = $(if ($ok) { $dims } else { $null })
-            limitation = '无头 one-shot 仅证明前端渲染出应用外壳；逐路由差异截图需人工浏览器，路由功能验证见 core-pages.json'
-        } | ConvertTo-Json -Depth 4 | Out-File -FilePath (Join-Path $evidenceDir 'screenshots.json') -Encoding utf8
-    } else {
-        Write-Phase 'BROWSER' 'PATH 与标准安装位置均未找到 msedge/chrome，跳过截图（如实记录，不伪造）'
-        [ordered]@{ browser = $null; skipped = $true } | ConvertTo-Json |
-            Out-File -FilePath (Join-Path $evidenceDir 'screenshots.json') -Encoding utf8
+# ---------- 阶段 5：真实浏览器渲染校验（CDP，5 条路由差异化证据）----------
+# 用已安装 Edge/Chrome 的 DevTools Protocol + 零依赖 Node 脚本，等待 React 渲染后再取 DOM/截图，
+# 解决无头 one-shot 首帧抓取导致 5 条路由同图的问题。需要 Node>=22（内置 WebSocket）。
+$renderScript = Join-Path $reproDir 'verify-render.mjs'
+$browserPath = Resolve-Browser
+$nodeVer = (& node.exe --version 2>$null)
+$nodeMajor = 0; if ($nodeVer -match 'v(\d+)\.') { $nodeMajor = [int]$Matches[1] }
+if ($NoBrowser) {
+    [void]$phases.Add([ordered]@{ name='browser-render'; startedAt=(Get-Date).ToString('o'); endedAt=(Get-Date).ToString('o'); elapsedSec=0; exitCode=0; ok=$true; detail='-NoBrowser 跳过'; logFile=$null })
+    Write-Phase 'BROWSER' '按 -NoBrowser 跳过浏览器渲染校验'
+} elseif (-not $browserPath) {
+    [void]$phases.Add([ordered]@{ name='browser-render'; startedAt=(Get-Date).ToString('o'); endedAt=(Get-Date).ToString('o'); elapsedSec=0; exitCode=0; ok=$true; detail='未找到 Edge/Chrome，跳过自动渲染校验，需人工浏览器检查 5 条路由并留存证据'; logFile=$null })
+    Write-Phase 'BROWSER' '未找到浏览器，跳过自动渲染（请人工检查 /、/monitor、/events、/tasks、/review）'
+} elseif ($nodeMajor -lt 22) {
+    [void]$phases.Add([ordered]@{ name='browser-render'; startedAt=(Get-Date).ToString('o'); endedAt=(Get-Date).ToString('o'); elapsedSec=0; exitCode=0; ok=$true; detail="Node=$nodeVer 无内置 WebSocket（需>=22），跳过自动渲染，需人工浏览器检查"; logFile=$null })
+    Write-Phase 'BROWSER' "Node $nodeVer 低于 22，跳过 CDP 自动渲染（请人工浏览器检查）"
+} else {
+    $renderOut = Join-Path $evidenceDir 'render'
+    $rc = Invoke-Phase -Name 'browser-render' -LogName '05-browser-render.log' -Block {
+        & node.exe $renderScript --base http://localhost:5173 --out $renderOut --port 9333
     }
+    if ($rc -ne 0) { Fail-Run '浏览器真实渲染校验失败（存在路由未渲染或不可区分），见 05-browser-render.log 与 render/render-report.json' }
 }
 
 # ---------- 停止服务 ----------
-$rc = Invoke-Phase -Name 'stop-services' -LogName '05-stop-services.log' -Block {
+$rc = Invoke-Phase -Name 'stop-services' -LogName '06-stop-services.log' -Block {
     & (Join-Path $reproDir 'stop-services.ps1')
 }
 
