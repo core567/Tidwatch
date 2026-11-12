@@ -18,13 +18,15 @@ Windows PowerShell 5.1（无需安装 PowerShell 7），不依赖 VSClaude 专�
 
 | 脚本 | 作用 |
 |---|---|
-| `common.ps1` | 公共函数：阶段日志、重试、HTTP 轮询、Python 定位（被其他脚本 dot-source，不单独运行） |
-| `fetch-source.ps1` | 源码获取：官方 codeload → 镜像 codeload → git 浅克隆，依次兜底，带重试与完整性校验 |
+| `common.ps1` | 公共函数：阶段日志、重试、HTTP 轮询、Python/浏览器定位（被其他脚本 dot-source，不单独运行） |
+| `fetch-source.ps1` | 源码获取：官方 codeload 优先 → 可选镜像（`-MirrorUrl`，不传则跳过）→ git 浅克隆兜底；每次下载记录来源/HTTP/字节/耗时并做 gzip 与内容完整性校验，写 `fetch-report.json` |
 | `install-deps.ps1` | 后端 pip 与前端 npm **并行**安装，独立缓存区分冷/温 |
 | `init-db.ps1` | 自动补 `.env`，依次运行 init_db.py、seed_data.py 并分别计时 |
 | `start-services.ps1` | 无 `--reload` 启动 uvicorn、node 启动 vite，随后轮询健康检查 |
 | `health-check.ps1` | 带超时轮询：后端 health JSON、前端入口 HTML、Vite 代理链路三项 |
 | `stop-services.ps1` | 按 PID 干净停止前后端进程 |
+| `run-repro-timing.ps1` | **A 核心复现计时编排**：逐阶段 Stopwatch、环境/缓存信息、退出码、原始日志、`timing-cold/warm.json`、核心路由检查与总览无头截图 |
+| `run-regression-timing.ps1` | **B 扩展回归计时编排**：pytest/typecheck/build/3D/告警/小程序逐阶段计时，写 `timing-regression.json` |
 | `upload-archive-to-release.ps1` | 历史截图归档包上传 GitHub Release 的助手（无 gh/token 时打印手动步骤） |
 
 ## 标准复现流程（在仓库根目录执行）
@@ -56,8 +58,30 @@ powershell -ExecutionPolicy Bypass -File scripts/repro/stop-services.ps1
 |---|---|
 | 默认（国内网络） | pip 清华源、npm npmmirror，脚本默认即是 |
 | 镜像不可用，切官方源 | `install-deps.ps1 -Mode Cold -Official`（pypi.org + registry.npmjs.org） |
-| GitHub 下载失败 | `fetch-source.ps1` 自动换镜像前缀与 git 浅克隆；也可加 `-NoMirror` 强制官方 |
+| GitHub 下载失败 | `fetch-source.ps1` 默认官方 codeload 重试，失败再走 git 浅克隆；**不内置固定镜像**，需要时显式 `-MirrorUrl https://<你的镜像>`，镜像不可用会自动跳过 |
 | 只用手动命令 | 见 `docs/contest/REPRODUCE.md` 的“逐条手动命令”章节 |
+
+## A/B 计时编排（落盘证据）
+
+```powershell
+# A 核心复现（冷）：全新 TargetDir 由 -DoSourceFetch 网络获取；也可先备好隔离源码后不带该参数
+powershell -File scripts/repro/run-repro-timing.ps1 -Mode Cold -WorkRoot D:\iso-runs -DoSourceFetch
+# A 核心复现（温）：复用冷启动缓存目录，仍重建 venv/node_modules、重新初始化数据库
+powershell -File scripts/repro/run-repro-timing.ps1 -Mode Warm -WorkRoot D:\iso-runs `
+  -ReuseCacheDir D:\iso-runs\evidence-cold-<ts>\cache\cold-<ts> -TargetDir D:\iso-runs\Tidwatch-warm
+# B 扩展回归（在已装好依赖的隔离目录上，单独计时）
+powershell -File scripts/repro/run-regression-timing.ps1 -TargetDir <隔离目录> -EvidenceDir D:\iso-runs\evidence-reg
+```
+
+每个 evidence 目录产出：`env-info.json`（OS/PowerShell/Python/Node/npm/源/缓存目录）、
+`timing-cold.json` / `timing-warm.json` / `timing-regression.json`（逐阶段开始/结束/耗时/退出码）、
+`cache-info.json`（缓存目录文件数，证明冷启动初始为 0）、`core-pages.json`（路由与 API 检查）、
+`fetch-report.json`（每次下载的来源/HTTP/字节/耗时/完整性）、`logs/` 原始日志、`screenshots/`。
+
+> **无头截图的诚实边界**：Edge/Chrome 的 one-shot `--screenshot` 在首帧即截图，SPA 客户端路由
+> 尚未渲染出各页差异，且本应用的持久 SSE 会让 `--virtual-time-budget` 死锁。因此编排器只截 1 张
+> 总览作为“前端已渲染（非空白）”的视觉证据；`/monitor`、`/events`、`/tasks`、`/review` 的逐路由
+> 功能正确性由 `core-pages` 阶段的 HTTP 200 + 后端 API 真实数据验证，差异化页面截图需人工用浏览器完成。
 
 ## 冷/温对照
 

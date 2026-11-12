@@ -101,3 +101,22 @@ function Resolve-Python {
     if ($python) { return 'python.exe' }
     throw '未找到 Python（要求 3.12）。请先安装 Python 3.12 或确认 py 启动器可用。'
 }
+
+# 定位无头截图用浏览器：先查 PATH，再查 Windows 标准安装位置（Edge 常不在 PATH）。
+# 返回浏览器 exe 的完整路径；找不到返回 $null。
+function Resolve-Browser {
+    $cmd = Get-Command msedge.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    $cmd = Get-Command chrome.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    $candidates = @(
+        "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
+        "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+        "$env:LOCALAPPDATA\Microsoft\Edge\Application\msedge.exe",
+        "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+        "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+        "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+    )
+    foreach ($p in $candidates) { if ($p -and (Test-Path $p)) { return $p } }
+    return $null
+}

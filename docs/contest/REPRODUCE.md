@@ -64,7 +64,9 @@ Python 约 2 分 48 秒；npm 约 54 秒且命中本机缓存；数据库约 5 �
 ```powershell
 Set-ExecutionPolicy -Scope Process -Bypass
 
-# 1) 源码获取到全新空目录（官方 codeload → 镜像 codeload → git 浅克隆，自动兜底）
+# 1) 源码获取到全新空目录。默认官方 codeload 优先；不内置固定第三方镜像，
+#    需要备用镜像时显式 -MirrorUrl https://<你的镜像>（不可用自动跳过）；最后 git 浅克隆兜底。
+#    每次下载的来源/HTTP 码/字节/耗时/完整性写入同级 fetch-report.json。
 powershell -ExecutionPolicy Bypass -File scripts/repro/fetch-source.ps1 -TargetDir D:\iso\Tidwatch
 cd D:\iso\Tidwatch
 
@@ -83,12 +85,30 @@ powershell -ExecutionPolicy Bypass -File scripts/repro/start-services.ps1
 powershell -ExecutionPolicy Bypass -File scripts/repro/stop-services.ps1
 ```
 
+**一键计时编排（推荐用于正式留证）**：`run-repro-timing.ps1` 把上述 A 核心复现各阶段用
+Stopwatch 逐段计时，自动采集环境/缓存信息、退出码、原始日志、核心路由检查与总览无头截图，
+输出 `timing-cold.json`/`timing-warm.json`；B 回归用 `run-regression-timing.ps1` 单独计时：
+
+```powershell
+# A 冷（含网络取源）；也可先备好隔离源码后省略 -DoSourceFetch
+powershell -File scripts/repro/run-repro-timing.ps1 -Mode Cold -WorkRoot D:\iso-runs -DoSourceFetch
+# A 温（复用冷缓存，仍重建环境与数据库）
+powershell -File scripts/repro/run-repro-timing.ps1 -Mode Warm -WorkRoot D:\iso-runs `
+  -ReuseCacheDir <冷缓存目录> -TargetDir D:\iso-runs\Tidwatch-warm
+# B 回归（单独计时，不并入 A）
+powershell -File scripts/repro/run-regression-timing.ps1 -TargetDir <隔离目录> -EvidenceDir D:\iso-runs\evidence-reg
+```
+
+> 无头 one-shot 截图只产出 1 张总览作为“前端已渲染”的视觉证据（SPA 客户端路由在首帧后才区分页面，
+> 且持久 SSE 会让 `--virtual-time-budget` 死锁）；`/monitor`、`/events`、`/tasks`、`/review` 的逐路由
+> 功能由 `core-pages` 阶段 HTTP 200 + 后端 API 真实数据验证，差异化页面截图需人工用浏览器完成。
+
 脚本设计与故障处理见 [scripts/repro/README.md](../../scripts/repro/README.md)。
 所有日志在 `.repro-cache/<run>/logs/`，该目录已 gitignore。
 
 ### 2.1 方式二：逐条手动命令
 
-#### 2.1.1 代码获取（三种通道，按序兜底）
+#### 2.1.1 代码获取（官方优先；镜像可选；git 浅克隆兜底）
 
 ```powershell
 # 通道 1：官方 codeload tar.gz（实测本环境 git smart-http 可能被重置，codeload 更稳）
@@ -97,15 +117,18 @@ curl.exe -L --fail --retry 2 -o tidewatch.tar.gz `
 tar -xzf tidewatch.tar.gz
 # 解压出 Tidwatch-<branch>/ 目录，重命名为工作目录后进入
 
-# 通道 2（通道 1 失败）：镜像前缀，例如
-#   https://gh-proxy.com/https://codeload.github.com/core567/Tidwatch/tar.gz/refs/heads/fusion/f2-overview-migration
+# 通道 2（可选，仅当你有可用镜像时）：在官方 URL 前加你的镜像前缀，例如
+#   https://<你的镜像>/https://codeload.github.com/core567/Tidwatch/tar.gz/refs/heads/fusion/f2-overview-migration
+# 本项目不内置任何固定第三方镜像；镜像不可用应直接跳过，回退通道 1 或 3。
 
 # 通道 3（前两者失败）：官方 git 浅克隆（历史很浅，体积与全量接近）
 git clone --depth 1 --single-branch --branch fusion/f2-overview-migration https://github.com/core567/Tidwatch.git
 ```
 
-完整性校验：确认 `backend/requirements-lock.txt`、`frontend/package-lock.json`、`README.md` 均存在。
+完整性校验：确认 `backend/requirements-lock.txt`、`frontend/package-lock.json`、`README.md` 均存在；
+tar 包先用 `tar -tzf tidewatch.tar.gz` 验证 gzip 完整性。
 git 克隆方式用 `git rev-parse HEAD` 记录实际 commit；codeload 包不含 `.git`，以 fetch-source 记录的 API commit 为准。
+每次下载应记录来源、HTTP 码、字节数、耗时与完整性结果（工具集自动写入 `fetch-report.json`）。
 
 #### 2.1.2 后端（lock 精确版本 + 镜像/官方备用）
 
