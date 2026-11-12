@@ -117,6 +117,39 @@ TideWatch 把 **观测 → 变化识别 → 活动事件 → 时序关系 → �
 
 ## 6. 快速开始
 
+> **两套口径，请按需选择。**
+> - **隔离环境复现（参赛评审 / 第三方，推荐用工具集）**：在全新空目录、独立缓存下从零复现，
+>   使用 `scripts/repro/` 的 PowerShell 脚本，后端装 `requirements-lock.txt` 精确版本、前端用 `npm ci`、
+>   pip 与 npm 并行、健康检查带超时轮询、Uvicorn 不带 `--reload`。详见 [scripts/repro/README.md](scripts/repro/README.md)
+>   与 [docs/contest/REPRODUCE.md](docs/contest/REPRODUCE.md)。
+> - **本地开发（下方 6.1–6.4）**：保留 `uvicorn --reload`、`npm install` 等开发期习惯，互不影响。
+
+### 6.0 隔离环境复现（Windows PowerShell 5.1+，一键工具集）
+
+```powershell
+# 在仓库根目录执行；脚本不依赖全局 pip/npm 缓存或任何个人环境变量
+Set-ExecutionPolicy -Scope Process -Bypass
+
+# 1) 获取源码到全新空目录（官方 codeload → 镜像 → git 浅克隆，自动兜底）
+powershell -ExecutionPolicy Bypass -File scripts/repro/fetch-source.ps1 -TargetDir D:\iso\Tidwatch
+cd D:\iso\Tidwatch
+
+# 2) 并行安装依赖（冷启动，独立空缓存；默认清华 PyPI + npmmirror）
+powershell -ExecutionPolicy Bypass -File scripts/repro/install-deps.ps1 -Mode Cold
+
+# 3) 数据库初始化（保留 init_db.py 建表 + seed_data.py 种子两个必要步骤）
+powershell -ExecutionPolicy Bypass -File scripts/repro/init-db.ps1
+
+# 4) 启动服务并自动健康检查（uvicorn 无 --reload；后端 JSON、前端入口、Vite 代理三项轮询）
+powershell -ExecutionPolicy Bypass -File scripts/repro/start-services.ps1
+
+# 5) 用完停止
+powershell -ExecutionPolicy Bypass -File scripts/repro/stop-services.ps1
+```
+
+镜像不可用时加 `-Official` 切官方源；GitHub 下载失败时脚本自动换通道。冷/温缓存口径、
+逐条手动命令与故障处理见 [docs/contest/REPRODUCE.md](docs/contest/REPRODUCE.md)。
+
 ### 6.1 获取代码
 
 ```bash
@@ -148,6 +181,12 @@ cp .env.example .env          # Git Bash / macOS / Linux
 
 macOS / Linux 将 `.venv/Scripts/python.exe` 替换为 `.venv/bin/python`，`py -3.12` 替换为 `python3.12`。
 
+> **复现/隔离环境的差异**（开发方式不变）：依赖改装精确锁定的 `requirements-lock.txt`
+> （`... -m pip install -r requirements-lock.txt`，可加 `-i https://pypi.tuna.tsinghua.edu.cn/simple`，
+> 官方源备用去掉该参数）；启动去掉 `--reload`：
+> `.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000`。
+> `init_db.py` 与 `seed_data.py` 两步在任何口径下都必须保留。
+
 验证：
 
 ```bash
@@ -167,6 +206,12 @@ npm run dev        # http://localhost:5173 ，/api 由 Vite 代理到 8000
 ```
 
 本地演示模式免登录，打开后直达智慧监测总览。生产构建：`npm run build`。
+
+> **复现/隔离环境的差异**：正式复现用确定性的 `npm ci`（不使用 `npm install`，且不重新生成
+> `package-lock.json`）。npm 默认走官方源；国内可加 `--registry https://registry.npmmirror.com`，
+> 官方源备用去掉该参数。npm 11 可能提示 `esbuild ... install-scripts not yet covered by allowScripts`，
+> 这是**警告不是错误**：esbuild 的平台二进制由 `@esbuild/win32-x64` 提供，`npm ci` 退出码为 0、vite 可正常运行；
+> 只有退出码非 0 才是真正失败。
 
 ### 6.4 微信小程序
 

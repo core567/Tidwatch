@@ -63,3 +63,6 @@ handoff/_*/
 handoff/tidewatch-mobile-v2-prototype/*.png
 handoff/tidewatch-mobile-v2-prototype/*.jpg
 handoff/*.zip
+
+# ===== 复现隔离测试产物（独立缓存、日志、PID，不入库）=====
+.repro-cache/
