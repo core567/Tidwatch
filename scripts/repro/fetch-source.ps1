@@ -37,7 +37,16 @@ if ([string]::IsNullOrEmpty($ReportPath)) { $ReportPath = Join-Path $workRoot 'f
 
 $codeloadUrl = "https://codeload.github.com/$Repo/tar.gz/refs/heads/$Branch"
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$archive = Join-Path $workRoot "tidewatch-$stamp.tar.gz"
+# 每次下载使用【独立临时文件】，失败文件隔离保留到 artifactDir 取证，不覆盖、不立即删除
+$artifactDir = Join-Path $workRoot "fetch-artifacts-$stamp"
+New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+$script:attemptSeq = 0
+$validArchive = $null
+
+function New-AttemptFile {
+    $script:attemptSeq++
+    return Join-Path $artifactDir ("dl-{0:D2}.tar.gz" -f $script:attemptSeq)
+}
 
 $report = [ordered]@{
     repo            = $Repo
@@ -53,6 +62,8 @@ $report = [ordered]@{
     contentIntegrity = $null
     commitSha       = $null
     reportPath      = $ReportPath
+    artifactDir     = $artifactDir
+    failedArtifactsDir = $null
     attempts        = New-Object System.Collections.ArrayList
 }
 
@@ -104,39 +115,68 @@ function Invoke-Download {
     return $rec
 }
 
-# gzip 完整性：tar 能否列出内容
+# gzip 完整性：tar 能否列出内容。带重试，规避杀软实时扫描在大文件下载后短暂锁定导致的瞬时误报。
+# 用 try/catch + 2>$null 吸收原生命令 stderr（PS5.1 下坏包的 tar 报错可能被包装为 RemoteException）。
 function Test-Gzip {
-    param([string]$Path)
+    param([string]$Path, [int]$Retries = 3)
     if (-not (Test-Path $Path)) { return $false }
-    & tar.exe -tzf $Path *> $null
-    return ($LASTEXITCODE -eq 0)
+    for ($k = 0; $k -lt $Retries; $k++) {
+        $ok = $false
+        try {
+            & tar.exe -tzf $Path 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) { $ok = $true }
+        } catch {
+            $ok = $false
+        }
+        if ($ok) { return $true }
+        Start-Sleep -Seconds 1
+    }
+    return $false
+}
+
+# 一次完整 codeload 尝试 = 下载到【独立临时文件】 + gzip 完整性。HTTP 200 但完整性不过视为失败，
+# 失败文件保留在 fetch-artifacts 目录取证（不覆盖、不删除），交由上层重试；成功文件路径回传。
+function Invoke-CodeloadAttempt {
+    param([string]$Url, [string]$Out, [string]$Method)
+    $r = Invoke-Download -Url $Url -Out $Out -Method $Method
+    $r.artifact = $Out
+    if ($r.ok) {
+        $r.gzipIntegrity = Test-Gzip -Path $Out
+        if (-not $r.gzipIntegrity) {
+            $r.ok = $false
+            $r.error = 'curl 成功但 gzip 完整性失败（包截断或文件被瞬时锁定），本次作废并重试；失败文件已保留取证'
+        }
+    } else {
+        $r.gzipIntegrity = $false
+    }
+    return $r
 }
 
 $totalSw = [System.Diagnostics.Stopwatch]::StartNew()
 $ok = $false
 
-# ---- 方法 1：官方 codeload ----
+# ---- 方法 1：官方 codeload（每次尝试独立临时文件 + 下载即校验，HTTP200 但损坏会重试）----
 for ($i = 1; $i -le $Attempts -and -not $ok; $i++) {
-    Write-Phase 'SOURCE' "官方 codeload 尝试 $i/$Attempts：$codeloadUrl"
-    if (Test-Path $archive) { Remove-Item -Force $archive }
-    $r = Invoke-Download -Url $codeloadUrl -Out $archive -Method "codeload-official#$i"
+    $attemptFile = New-AttemptFile
+    Write-Phase 'SOURCE' "官方 codeload 尝试 $i/$Attempts：$codeloadUrl -> $(Split-Path $attemptFile -Leaf)"
+    $r = Invoke-CodeloadAttempt -Url $codeloadUrl -Out $attemptFile -Method "codeload-official#$i"
     [void]$report.attempts.Add($r)
-    if ($r.ok) { $ok = $true; $report.chosenMethod = 'codeload-official' }
-    else { Write-Phase 'SOURCE' "官方 codeload 失败：$($r.error)" }
+    if ($r.ok) { $ok = $true; $validArchive = $attemptFile; $report.chosenMethod = 'codeload-official' }
+    else { Write-Phase 'SOURCE' "官方 codeload 本次失败（失败文件保留于 $artifactDir）：$($r.error)" }
 }
 
-# ---- 方法 2：镜像（仅在显式配置时启用，不可用自动跳过）----
+# ---- 方法 2：镜像（仅在显式配置时启用，不可用自动跳过；同样独立临时文件 + 校验）----
 if (-not $ok) {
     if ([string]::IsNullOrEmpty($MirrorUrl)) {
         Write-Phase 'SOURCE' '未配置 -MirrorUrl，跳过镜像通道'
     } else {
         $mirrorUrl = "$MirrorUrl/$codeloadUrl"
-        Write-Phase 'SOURCE' "尝试备用镜像（失败将自动跳过）：$mirrorUrl"
-        if (Test-Path $archive) { Remove-Item -Force $archive }
-        $r = Invoke-Download -Url $mirrorUrl -Out $archive -Method 'codeload-mirror'
+        $attemptFile = New-AttemptFile
+        Write-Phase 'SOURCE' "尝试备用镜像（失败将自动跳过）：$mirrorUrl -> $(Split-Path $attemptFile -Leaf)"
+        $r = Invoke-CodeloadAttempt -Url $mirrorUrl -Out $attemptFile -Method 'codeload-mirror'
         [void]$report.attempts.Add($r)
-        if ($r.ok) { $ok = $true; $report.chosenMethod = 'codeload-mirror' }
-        else { Write-Phase 'SOURCE' "镜像不可用，自动跳过：$($r.error)" }
+        if ($r.ok) { $ok = $true; $validArchive = $attemptFile; $report.chosenMethod = 'codeload-mirror' }
+        else { Write-Phase 'SOURCE' "镜像不可用或完整性失败，自动跳过（失败文件保留）：$($r.error)" }
     }
 }
 
@@ -166,13 +206,19 @@ if (-not $ok) {
     exit 1
 }
 
-# ---- 下载包完整性与解压 ----
+# ---- 下载包完整性复核与解压（仅在每次尝试已校验通过的独立临时文件上进行）----
+$archive = $validArchive
+if (-not $archive -or -not (Test-Path $archive)) {
+    $totalSw.Stop(); $report.totalElapsedSec = [math]::Round($totalSw.Elapsed.TotalSeconds, 3); Save-Report
+    Write-Phase 'ERROR' '没有通过完整性校验的下载文件，禁止解压（不把校验失败伪装为成功）'
+    exit 1
+}
 $report.archiveBytes = (Get-Item $archive).Length
 $gzipOk = Test-Gzip -Path $archive
-$report.gzipIntegrity = if ($gzipOk) { 'tar -tzf list OK' } else { 'FAILED' }
+$report.gzipIntegrity = if ($gzipOk) { 'tar -tzf list OK (with retry)' } else { 'FAILED' }
 if (-not $gzipOk) {
     $totalSw.Stop(); $report.totalElapsedSec = [math]::Round($totalSw.Elapsed.TotalSeconds, 3); Save-Report
-    Write-Phase 'ERROR' 'gzip 完整性检查失败，包可能下载不完整'
+    Write-Phase 'ERROR' "gzip 完整性复核失败（已重试仍失败），包确属损坏；失败文件保留于 $artifactDir"
     exit 1
 }
 
@@ -187,6 +233,10 @@ if (-not $inner) { Save-Report; Write-Phase 'ERROR' '压缩包内未找到顶层
 Move-Item $inner.FullName $TargetDir
 Remove-Item -Recurse -Force $extractTmp
 Remove-Item -Force $archive
+# 成功后：移除空的 artifacts 目录；若存在失败尝试文件则保留取证并在报告中记录
+$leftArtifacts = @(Get-ChildItem $artifactDir -File -ErrorAction SilentlyContinue)
+if ($leftArtifacts.Count -eq 0) { Remove-Item -Recurse -Force $artifactDir -ErrorAction SilentlyContinue }
+else { $report.failedArtifactsDir = $artifactDir; Write-Phase 'SOURCE' "保留失败下载文件用于取证：$artifactDir（$($leftArtifacts.Count) 个）" }
 
 # ---- 内容完整性：关键文件必须存在 ----
 $mustHave = @('backend/requirements-lock.txt', 'frontend/package-lock.json', 'frontend/package.json', 'README.md')
